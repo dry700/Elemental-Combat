@@ -32,6 +32,9 @@ enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED }
 @export var secondary_weapon: WeaponStats  ## DEBUG ONLY — for testing Sinh with two elements.
 @export var attack_lunge_speed: float = 150.0
 
+@export var skill_1: SkillData
+@export var skill_2: SkillData
+
 ## --- Health (didn't exist before — DoT needs something real to damage) ---
 @export var max_health: float = 100.0
 var current_health: float
@@ -56,6 +59,7 @@ var _dodge_timer: float = 0.0
 var _dodge_cooldown_timer: float = 0.0
 var _attack_timer: float = 0.0
 var _drop_through_timer: float = 0.0
+var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
 ## Set on ANY jump-key press during State.DISABLED (however early in the
 ## stagger/stun/root it happens), consumed the instant the disable ends.
 ## Exists because the ordinary jump buffer (jump_buffer_time, ~0.1s) is
@@ -103,12 +107,16 @@ func _physics_process(delta: float) -> void:
 			_handle_move_and_jump(delta)
 			_try_start_dodge()
 			_try_start_attack()
+			_try_cast_skill(skill_1, "skill_1")
+			_try_cast_skill(skill_2, "skill_2")
 			if state == State.IDLE or state == State.RUN:
 				state = State.RUN if abs(velocity.x) > 10.0 else State.IDLE
 		State.JUMP, State.FALL:
 			_handle_move_and_jump(delta)
 			_try_start_dodge()
 			_try_start_attack()
+			_try_cast_skill(skill_1, "skill_1")
+			_try_cast_skill(skill_2, "skill_2")
 			if state == State.JUMP or state == State.FALL:
 				state = State.JUMP if velocity.y < 0.0 else State.FALL
 		State.DODGE:
@@ -129,6 +137,8 @@ func _update_timers(delta: float) -> void:
 	_coyote_timer = max(_coyote_timer - delta, 0.0)
 	_jump_buffer_timer = max(_jump_buffer_timer - delta, 0.0)
 	_dodge_cooldown_timer = max(_dodge_cooldown_timer - delta, 0.0)
+	for skill in _skill_cooldowns.keys():
+		_skill_cooldowns[skill] = maxf(_skill_cooldowns[skill] - delta, 0.0)
 	
 	if _drop_through_timer > 0.0:
 		_drop_through_timer -= delta
@@ -273,6 +283,69 @@ func _try_debug_test_effects() -> void:
 		print("DEBUG: applying test Slow/Disable/DoT to player")
 		elemental.debug_apply_test_effects()
 
+## Q/E skill casting (A.5). Both slots share one dispatcher rather than
+## duplicating per-slot logic — mirrors how weapon/secondary_weapon
+## already share _process_attack via _active_weapon.
+func _try_cast_skill(skill: SkillData, action_name: String) -> void:
+	if skill == null:
+		return
+	if not Input.is_action_just_pressed(action_name):
+		return
+	if _skill_cooldowns.get(skill, 0.0) > 0.0:
+		print("Skill on cooldown: ", skill.skill_name, " (", "%.1f" % _skill_cooldowns[skill], "s left)")
+		return
+
+	var charge := _resolve_skill_charge(skill)
+
+	match skill.function:
+		SkillData.Function.APPLY_SELF:
+			elemental.cast_apply_self(skill.element, charge)
+		SkillData.Function.REMOVE_APPLY_SELF:
+			elemental.cast_cleanse_and_apply_self(skill.element, charge)
+		SkillData.Function.APPLY_SINGLE_TARGET:
+			var target := _find_skill_target(skill.cast_range)
+			if target != null:
+				elemental.cast_apply_enemy(target, skill.element, charge)
+		SkillData.Function.REMOVE_ENEMY:
+			var enemy_target := _find_skill_target(skill.cast_range)
+			if enemy_target != null:
+				elemental.cast_remove_enemy(enemy_target)
+		SkillData.Function.APPLY_AREA:
+			elemental.cast_apply_area(skill.element, skill.zone_radius, skill.zone_lifetime)
+
+	_skill_cooldowns[skill] = skill.cooldown
+	print("Cast ", skill.skill_name)
+
+
+## A.3's rune-to-skill bonus: a same-element rune's +1 Charge applies to
+## any equipped skill sharing that element too, checked against either
+## weapon slot — "one bonus, not two", so this returns on the first match
+## rather than stacking. Base 2 matches A.4's Active Skill Charge row.
+func _resolve_skill_charge(skill: SkillData) -> int:
+	for w in [weapon, secondary_weapon]:
+		if w == null:
+			continue
+		if w.rune_element != &"none" and w.rune_element == w.innate_element and w.innate_element == skill.element:
+			return 3
+	return 2
+
+
+## No aim/targeting system exists anywhere else in this project (same
+## reasoning as SkillData.cast_range) — "target" is the nearest OTHER
+## combatant within range, enough to test Ignite Dart/Rending Edge
+## against the arena's dummies.
+func _find_skill_target(max_range: float) -> ElementalCombatant:
+	var nearest: ElementalCombatant = null
+	var nearest_dist := max_range
+	for node in get_tree().get_nodes_in_group(ElementalCombatant.ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null or other == elemental:
+			continue
+		var dist := global_position.distance_to(other.global_position)
+		if dist <= nearest_dist:
+			nearest = other
+			nearest_dist = dist
+	return nearest
 
 func _update_facing() -> void:
 	if state in [State.DODGE, State.ATTACK]:

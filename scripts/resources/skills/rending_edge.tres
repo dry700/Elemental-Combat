@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Rending Edge"
+element = &"kim"
+function = 3
+cooldown = 16.0
+cast_range = 220.0

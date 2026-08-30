@@ -25,6 +25,7 @@ below for the most likely failure points and how to fix them fast.
 | Jump | Space |
 | Dodge | Left Shift |
 | Attack | left and right click |
+| Skills | Q / E |
 
 Input actions are defined in code (`autoloads/input_setup.gd`), not in
 Project Settings → Input Map. To rebind, edit the `*_KEYS` constants at the

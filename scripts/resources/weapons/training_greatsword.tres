@@ -1,13 +1,12 @@
 [gd_resource type="Resource" script_class="WeaponStats" format=3]
 
-[ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapon_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-weapon_name = "Runed Greatsword (Kim/Kim)"
+weapon_name = "Training Greatsword"
 weight = 2
 damage = 16.0
 attack_duration = 0.45
 active_window = Vector2(0.18, 0.3)
 innate_element = &"kim"
-rune_element = &"kim"

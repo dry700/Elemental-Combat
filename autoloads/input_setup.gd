@@ -18,6 +18,8 @@ const JUMP_KEYS: Array[Key] = [KEY_SPACE]
 const DODGE_KEYS: Array[Key] = [KEY_SHIFT]
 const ATTACK_KEYS: Array[MouseButton] = [MOUSE_BUTTON_LEFT]
 const ATTACK_SECONDARY_BUTTONS: Array[MouseButton] = [MOUSE_BUTTON_RIGHT]
+const SKILL_1_KEYS: Array[Key] = [KEY_Q]
+const SKILL_2_KEYS: Array[Key] = [KEY_E]
 const DEBUG_TEST_EFFECTS_KEYS: Array[Key] = [KEY_T]
 
 
@@ -30,6 +32,8 @@ func _init() -> void:
 	_register_mouse_action("attack", ATTACK_KEYS)
 	_register_mouse_action("attack_secondary", ATTACK_SECONDARY_BUTTONS)
 	_register_action("debug_test_effects", DEBUG_TEST_EFFECTS_KEYS)
+	_register_action("skill_1", SKILL_1_KEYS)
+	_register_action("skill_2", SKILL_2_KEYS)
 
 func _register_action(action_name: String, keys: Array[Key]) -> void:
 	if InputMap.has_action(action_name):

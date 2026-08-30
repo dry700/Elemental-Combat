@@ -234,11 +234,11 @@ func _icd_key(attacker: Node, element: StringName) -> String:
 ## hit_data.damage and knockback itself (this method is elemental-only —
 ## ICD below gates everything in here, never the damage the owner already
 ## dealt before calling this).
-func handle_hit(hit_data: HitData) -> void:
+func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 	if hit_data.element == Elements.NONE:
 		return
 
-	if hit_data.source != null:
+	if not bypass_icd and hit_data.source != null:
 		var icd_key := _icd_key(hit_data.source, hit_data.element)
 		if _icd_windows.has(icd_key):
 			print("ICD: ", hit_data.element, " from ", hit_data.source.name, " blocked — still on cooldown")
@@ -309,7 +309,7 @@ func handle_hit(hit_data: HitData) -> void:
 				# which a one-shot radius check can't represent.
 				status.apply(generated, hit_data.charge)
 				_apply_cinder_bloom_burn(sinh_tier2, hit_data.source)
-				_spawn_zone(generated)
+				spawn_zone(generated)
 			elif Elements.pair_is(result.reaction_pair, Elements.THO, Elements.KIM):
 				# Ore Surge: "Armor-shredding projectiles pierce multiple
 				# enemies, spreading Metal status to each hit" (A.2) — a
@@ -323,7 +323,7 @@ func handle_hit(hit_data: HitData) -> void:
 				# fragments themselves.
 				status.apply(generated, hit_data.charge)
 				_spawn_ore_surge_fragments(generated, hit_data.charge, hit_data.source)
-				_spawn_zone(generated)
+				spawn_zone(generated)
 		Reactions.Outcome.KHAC_FULL_CLEAR, Reactions.Outcome.KHAC_THUA:
 			print("Khắc: ", result.reaction_pair, " -> ", Reactions.Outcome.keys()[result.outcome])
 			status.clear()
@@ -456,13 +456,17 @@ func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 ## (never scaled by the triggering hit), decaying after ~6-10s (8s used
 ## here, the middle of that range) — this reads the definition literally
 ## rather than reusing the triggering hit's own charge/duration numbers.
-func _spawn_zone(element: StringName) -> void:
+func spawn_zone(element: StringName, radius: float = -1.0, lifetime: float = -1.0) -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
 		return
 	var zone := ReactionZone.new()
 	zone.global_position = global_position
 	zone.element = element
+	if radius > 0.0:
+		zone.radius = radius
+	if lifetime > 0.0:
+		zone.lifetime = lifetime
 	scene_root.add_child(zone)
 
 
@@ -547,3 +551,58 @@ const BREAK_FREE_REDUCTION: float = 0.4
 ## non-player combatants simply never call it.
 func break_free_press() -> void:
 	disable_effect.reduce_duration(BREAK_FREE_REDUCTION)
+	
+	## --- A.5 Skill effects ---
+## Player-facing entry points, called from player.gd's Q/E handling.
+## Kept here rather than on Player because every one touches state that
+## already lives on this component — and A.5 frames skills as shared
+## between player and elemental enemies/bosses, so a future enemy
+## skill-caster reuses these exact methods instead of duplicating them.
+
+## Stoneguard: applies straight to THIS combatant's own status, bypassing
+## Reactions.resolve() — building a status on yourself, not reacting to
+## an incoming hit. This is what makes the A.3 Wu-bait case possible:
+## self-apply at Charge 3, then a later weak enemy hit resolves as Vũ
+## (reversed) against this pre-set status via the normal handle_hit path.
+func cast_apply_self(element: StringName, charge: int) -> void:
+	status.apply(element, charge)
+
+
+## Cleansing Tide. A.3 draws a hard line between cleanse (answers the
+## elemental status itself) and Break-Free (answers the lock/disable
+## component) — "two tools for two different problems" — so this only
+## ever touches `status`, never slow/disable/dot, same as every Khắc
+## handler above already leaves those alone unless it explicitly applies
+## its own. Clearing first means the follow-up apply can't itself trigger
+## a reaction — nothing left to react against.
+func cast_cleanse_and_apply_self(element: StringName, charge: int) -> void:
+	status.clear()
+	status.apply(element, charge)
+
+
+## Ignite Dart, cast on an enemy: routed through the SAME handle_hit()
+## pipeline a weapon swing uses, via a synthetic zero-damage HitData —
+## A.5 only says "no weapon hit needed" to deliver it, not that it skips
+## reaction resolution. This is the cross-source "weapon + skill" combo
+## A.4 calls out as the reward for coordinating tools. ICD bypassed per
+## A.3 ("skills... self-limit via their own cooldowns"). get_parent() is
+## the owning Node, matching how Hitbox sets HitData.source to its owner.
+func cast_apply_enemy(target: ElementalCombatant, element: StringName, charge: int) -> void:
+	var hit_data := HitData.new(0.0, Vector2.ZERO, get_parent())
+	hit_data.element = element
+	hit_data.charge = charge
+	target.handle_hit(hit_data, true)
+
+
+## Rending Edge: strips the target's status outright — "bypasses Charge,
+## no damage" (A.5), same cleanse-exemption family as Cleansing Tide,
+## aimed instead of self-cast. Only touches status, same reasoning above.
+func cast_remove_enemy(target: ElementalCombatant) -> void:
+	target.status.clear()
+
+
+## Overgrowth Snare: spawns an A.7 Zone centred on the caster — no
+## separately-aimed location, since nothing else in this project aims
+## (Hitbox is melee-proximity, Ore Surge radiates in a fixed spread).
+func cast_apply_area(element: StringName, radius: float, lifetime: float) -> void:
+	spawn_zone(element, radius, lifetime)

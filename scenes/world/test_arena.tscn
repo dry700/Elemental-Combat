@@ -2,9 +2,11 @@
 
 [ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="2_dummy"]
-[ext_resource type="Resource" path="res://scripts/resources/training_spear.tres" id="3_4vrqs"]
-[ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/training_dagger.tres" id="3_vpfk0"]
+[ext_resource type="Resource" path="res://scripts/resources/weapons/training_spear.tres" id="3_4vrqs"]
+[ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_vpfk0"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
+[ext_resource type="Resource" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
+[ext_resource type="Resource" path="res://scripts/resources/skills/cleansing_tide.tres" id="7_skill2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(800, 40)
@@ -43,6 +45,8 @@ position = Vector2(-250, 180)
 collision_mask = 5
 weapon = ExtResource("3_vpfk0")
 secondary_weapon = ExtResource("3_4vrqs")
+skill_1 = ExtResource("7_skill2")
+skill_2 = ExtResource("6_skill1")
 
 [node name="TestDummy" parent="." unique_id=731283486 instance=ExtResource("2_dummy")]
 position = Vector2(-66, 187)

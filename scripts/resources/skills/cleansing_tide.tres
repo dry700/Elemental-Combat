@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" uid="uid://bmna2stcijh8k" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+
+[resource]
+script = ExtResource("1")
+skill_name = "Cleansing Tide"
+element = &"thuy"
+function = 1
+cooldown = 22.0
