@@ -393,6 +393,7 @@ func _on_disabled_expired() -> void:
 
 
 func _on_hurtbox_hit(hit_data: HitData) -> void:
+	current_health = maxf(current_health - hit_data.damage, 0.0)
 	velocity += hit_data.knockback
 	HitStop.freeze(0.05)
 	elemental.handle_hit(hit_data)

@@ -1,7 +1,6 @@
-[gd_resource type="Resource" script_class="SkillData" format=3]
+[gd_resource type="Resource" script_class="SkillData" format=3 uid="uid://ck7psobfj0h6l"]
 
 [ext_resource type="Script" uid="uid://bmna2stcijh8k" path="res://scripts/resources/skills/skill_data.gd" id="1"]
-
 
 [resource]
 script = ExtResource("1")
@@ -9,4 +8,3 @@ skill_name = "Ignite Dart"
 element = &"hoa"
 function = 2
 cooldown = 8.0
-cast_range = 220.0

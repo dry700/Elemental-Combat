@@ -1,35 +1,36 @@
 class_name TestDummy
 extends StaticBody2D
-## Sprint 2 elemental reaction test target. Static (StaticBody2D), so
-## SlowEffect/DisableEffect only ever show as a colour tint here, not
-## actual movement — see PatrolDummy for a moving target that shows both
-## for real. All reaction logic now lives in ElementalCombatant (composed,
-## not inherited — StaticBody2D and CharacterBody2D don't share a useful
-## common ancestor); this script is just visuals + raw damage bookkeeping.
+## Sprint 2 elemental reaction test target, now doubling as a stationary
+## "turret" enemy (A.6) when enemy_stats is assigned. Static (StaticBody2D),
+## so it can never chase — combat_ai.can_chase is forced false and it
+## simply attacks whenever the player wanders into attack_range.
 
 @export var flash_duration: float = 0.08
 @export var starting_element: StringName = Elements.KIM
 @export var starting_charge: int = 1
 @export var starting_armor: float = 10.0
+@export var enemy_stats: EnemyStats  ## A.6 — null keeps this a pure punching bag with zero AI, same as before.
 
-## Pale blue while SlowEffect is active — TestDummy is a StaticBody2D and
-## never moves, so this tint is the only visible confirmation a slow
-## (Condensation, Silt) actually landed.
 const SLOWED_TINT: Color = Color(0.55, 0.75, 1.0)
-## Orange while DisableEffect (stagger/stun/root) is active. Takes priority
-## over the slow tint if both happen to be active — "can't act" reads as
-## the more severe state.
 const DISABLED_TINT: Color = Color(1.0, 0.55, 0.25)
+## Telegraph tints take priority over slow/disabled — a wind-up about to
+## land is the most actionable thing on screen right now (A.6's "natural
+## tutorial" framing only works if the tell is legible).
+const TELEGRAPH_TINT: Color = Color(1.0, 0.9, 0.3)
+const SPECIAL_TELEGRAPH_TINT: Color = Color(1.0, 0.5, 0.9)
 
 @onready var hurtbox: Hurtbox = $Hurtbox
 @onready var visual: Polygon2D = $PlaceholderVisual
 @onready var damage_label: Label = $DamageLabel
 
 var elemental := ElementalCombatant.new()
+var combat_ai: EnemyCombatAI
 
 var _total_damage_taken: float = 0.0
 var _base_color: Color
 var _is_flashing: bool = false
+var _is_telegraphing: bool = false
+var _telegraph_is_special: bool = false
 
 
 func _ready() -> void:
@@ -38,21 +39,36 @@ func _ready() -> void:
 
 	elemental.indicator_offset = Vector2(0, -52)  ## Above the DamageLabel (-36..-16).
 	elemental.armor = starting_armor
+	elemental.innate_element = starting_element  ## A.6 spirit re-tag — see ElementalCombatant.tick().
 	add_child(elemental)
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
 	elemental.apply_starting_status(starting_element, starting_charge)
 
+	if enemy_stats != null:
+		combat_ai = EnemyCombatAI.new()
+		combat_ai.stats = enemy_stats
+		combat_ai.can_chase = false  ## StaticBody2D — attacks in place, never moves.
+		add_child(combat_ai)
+		combat_ai.telegraph_started.connect(_on_telegraph_started)
 
-func _physics_process(_delta: float) -> void:
-	var dot_damage := elemental.tick(_delta)
+
+func _physics_process(delta: float) -> void:
+	var dot_damage := elemental.tick(delta)
 	if dot_damage > 0.0:
 		_apply_damage(dot_damage)
+
+	if combat_ai != null:
+		var player := get_tree().get_first_node_in_group("player") as Node2D
+		if player != null:
+			combat_ai.update(delta, player.global_position)
 
 	if not _is_flashing:
 		visual.color = _resting_color()
 
 
 func _resting_color() -> Color:
+	if _is_telegraphing:
+		return SPECIAL_TELEGRAPH_TINT if _telegraph_is_special else TELEGRAPH_TINT
 	if elemental.is_disabled():
 		return DISABLED_TINT
 	if elemental.is_slowed():
@@ -83,3 +99,14 @@ func _flash() -> void:
 	await get_tree().create_timer(flash_duration).timeout
 	_is_flashing = false
 	visual.color = _resting_color()
+
+
+## No separate "attack ended" signal exists on EnemyCombatAI — this timer
+## is sized to exactly the telegraph + active window it just started,
+## same await-timer approach _flash() already uses above.
+func _on_telegraph_started(is_special: bool) -> void:
+	_is_telegraphing = true
+	_telegraph_is_special = is_special
+	var total := (combat_ai.stats.special_telegraph_duration if is_special else combat_ai.stats.telegraph_duration) + combat_ai.stats.active_window
+	await get_tree().create_timer(total).timeout
+	_is_telegraphing = false

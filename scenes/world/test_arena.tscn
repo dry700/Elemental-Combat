@@ -4,9 +4,11 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="2_dummy"]
 [ext_resource type="Resource" path="res://scripts/resources/weapons/training_spear.tres" id="3_4vrqs"]
 [ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_vpfk0"]
+[ext_resource type="Resource" path="res://scripts/resources/skills/overgrowth_snare.tres" id="4_u8yuk"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
-[ext_resource type="Resource" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
-[ext_resource type="Resource" path="res://scripts/resources/skills/cleansing_tide.tres" id="7_skill2"]
+[ext_resource type="Resource" uid="uid://ck7psobfj0h6l" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
+[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scenes/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
+[ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scenes/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(800, 40)
@@ -45,14 +47,29 @@ position = Vector2(-250, 180)
 collision_mask = 5
 weapon = ExtResource("3_vpfk0")
 secondary_weapon = ExtResource("3_4vrqs")
-skill_1 = ExtResource("7_skill2")
+skill_1 = ExtResource("4_u8yuk")
 skill_2 = ExtResource("6_skill1")
 
 [node name="TestDummy" parent="." unique_id=731283486 instance=ExtResource("2_dummy")]
 position = Vector2(-66, 187)
+enemy_stats = ExtResource("8_enemystats1")
 
 [node name="PatrolDummy" parent="." unique_id=674837910 instance=ExtResource("5_vpfk0")]
 position = Vector2(154, 186)
+patrol_speed = 60.0
+patrol_distance = 120.0
+flash_duration = 0.08
+starting_element = &"none"
+starting_charge = 1
+starting_armor = 10.0
+enemy_stats = ExtResource("9_enemystats2")
 
 [node name="PatrolDummy2" parent="." unique_id=928974705 instance=ExtResource("5_vpfk0")]
 position = Vector2(133, 186)
+patrol_speed = 60.0
+patrol_distance = 120.0
+flash_duration = 0.08
+starting_element = &"none"
+starting_charge = 1
+starting_armor = 10.0
+enemy_stats = ExtResource("9_enemystats2")

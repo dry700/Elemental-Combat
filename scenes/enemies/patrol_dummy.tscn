@@ -8,6 +8,12 @@ size = Vector2(16, 24)
 
 [node name="PatrolDummy" type="CharacterBody2D" unique_id=928974705]
 script = ExtResource("1_patrol")
+patrol_speed = null
+patrol_distance = null
+flash_duration = null
+starting_element = null
+starting_charge = null
+starting_armor = null
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1873276997]
 shape = SubResource("RectangleShape2D_patrol")

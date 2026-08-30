@@ -57,6 +57,18 @@ signal disabled_expired
 ## nothing else in the class depends on it existing.
 @export var show_debug_readout: bool = true
 
+## A.6: elemental spirits carry one element as an innate, self-sustaining
+## trait, not just a one-off status pickup. Whenever their status is
+## empty (natural decay, OR a player successfully Khắc'd it away), this
+## re-tags them after a short delay rather than leaving them permanently
+## blank. That delay IS the "vulnerable window" A.6 implies by calling
+## Khắc "a natural tutorial for one reaction" — a real, visible beat
+## where the reaction just worked, before the creature re-arms itself.
+@export var innate_element: StringName = Elements.NONE
+@export var innate_charge: int = 1
+const INNATE_RECHARGE_DELAY: float = 1.5
+var _innate_recharge_timer: float = 0.0
+
 ## A.7 Link footprint: not physical geometry, just a group membership
 ## used as a status tag. Overgrowth adds a combatant to this group;
 ## Wildfire radius-queries it to chain outward and clear the tag. Fixed
@@ -123,6 +135,13 @@ func tick(delta: float) -> float:
 	var dot_damage := dot_effect.tick(delta)
 	if show_debug_readout:
 		_update_debug_readout()
+	if innate_element != Elements.NONE:
+		if status.has_status():
+			_innate_recharge_timer = INNATE_RECHARGE_DELAY
+		else:
+			_innate_recharge_timer -= delta
+			if _innate_recharge_timer <= 0.0:
+				status.apply(innate_element, innate_charge)
 	return dot_damage
 
 
