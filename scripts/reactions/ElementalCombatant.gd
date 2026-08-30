@@ -351,11 +351,15 @@ func handle_hit(hit_data: HitData) -> void:
 				var shred_amount := 6.0 if thua else 3.0
 				armor = maxf(armor - shred_amount, 0.0)
 			elif Elements.pair_is(result.reaction_pair, Elements.THUY, Elements.HOA):
-				# Douse: brief stun. Steam-cloud vision-block Zone
-				# deferred, same reason as Silt's telegraph-obscure.
-				var base_stun := 0.5
-				var thua_stun := 0.9
-				disable_effect.apply(thua_stun if thua else base_stun, base_stun)
+				# Douse: removes burn (status.clear() above), then emits
+				# a steam cloud (A.2). The stun is AoE now, not just the
+				# direct target — same bystander-exclusion pattern as
+				# every other AoE here — and its DisableEffect duration
+				# (0.3s base) IS the "stuns for the first 0.3s it exists"
+				# window; the cloud keeps existing, purely visually, for
+				# the rest of its 5s lifetime after that. Thừa scales per
+				# A.2's own table: "Larger cloud radius, longer stun."
+				_spawn_steam_cloud(thua, hit_data.source)
 		Reactions.Outcome.KHAC_PARTIAL:
 			print("Khắc partial: ", result.reaction_pair)
 			status.charge = maxi(status.charge - hit_data.charge, 0)
@@ -489,6 +493,30 @@ func _spawn_ore_surge_fragments(element: StringName, charge: int, attacker: Node
 		fragment.shred_amount = ORE_SURGE_SHRED_PER_FRAGMENT
 		fragment.attacker = attacker
 		scene_root.add_child(fragment)
+
+
+## Douse's steam cloud spawn. Radius/stun both scale on Thừa per A.2's
+## own table row for Douse ("Larger cloud radius, longer stun") — 0.3s
+## base stun matches "the first 0.3s it exists" exactly; Thừa's longer
+## version and the larger radius are my own reasonable scaling, since
+## A.2 only says "larger"/"longer" without giving numbers.
+const STEAM_CLOUD_LIFETIME: float = 5.0
+const STEAM_CLOUD_BASE_RADIUS: float = 90.0
+const STEAM_CLOUD_THUA_RADIUS: float = 130.0
+const STEAM_CLOUD_BASE_STUN: float = 0.3
+const STEAM_CLOUD_THUA_STUN: float = 0.5
+
+func _spawn_steam_cloud(thua: bool, attacker: Node) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var cloud := SteamCloud.new()
+	cloud.global_position = global_position
+	cloud.lifetime = STEAM_CLOUD_LIFETIME
+	cloud.radius = STEAM_CLOUD_THUA_RADIUS if thua else STEAM_CLOUD_BASE_RADIUS
+	cloud.stun_duration = STEAM_CLOUD_THUA_STUN if thua else STEAM_CLOUD_BASE_STUN
+	cloud.excluded_combatant = _bystander_attacker(attacker)
+	scene_root.add_child(cloud)
 
 
 ## DEBUG ONLY — mirrors what used to be Player's own debug key handler

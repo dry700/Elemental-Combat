@@ -73,6 +73,7 @@ const ONE_WAY_PLATFORM_LAYER: int = 3  ## Must match Platform's Collision Layer 
 @export var drop_through_duration: float = 0.25  ## Long enough to fall clear of the platform.
 
 func _ready() -> void:
+	add_to_group("player")  # Lets VisionBlocker (Douse's steam cloud, A.2) find the player generically.
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	current_health = max_health
 	if weapon == null:

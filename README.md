@@ -24,7 +24,7 @@ below for the most likely failure points and how to fix them fast.
 | Move | A/D or Left/Right arrows |
 | Jump | Space |
 | Dodge | Left Shift |
-| Attack | J |
+| Attack | left and right click |
 
 Input actions are defined in code (`autoloads/input_setup.gd`), not in
 Project Settings → Input Map. To rebind, edit the `*_KEYS` constants at the
