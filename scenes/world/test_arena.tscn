@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://d3ajnrxitnamy"]
+
+[ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="2_dummy"]
+[ext_resource type="Resource" path="res://scripts/resources/training_spear.tres" id="3_4vrqs"]
+[ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/training_dagger.tres" id="3_vpfk0"]
+[ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(800, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+size = Vector2(120, 20)
+
+[node name="TestArena" type="Node2D" unique_id=1402509638]
+
+[node name="Ground" type="StaticBody2D" parent="." unique_id=349605284]
+position = Vector2(0, 220)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground" unique_id=1547785022]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="Polygon2D" parent="Ground" unique_id=61069821]
+color = Color(0.25, 0.25, 0.3, 1)
+polygon = PackedVector2Array(-400, -20, 400, -20, 400, 20, -400, 20)
+
+[node name="Platform" type="StaticBody2D" parent="." unique_id=1743370980]
+position = Vector2(250, 120)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform" unique_id=1153215089]
+shape = SubResource("RectangleShape2D_platform")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="Platform" unique_id=1947805130]
+color = Color(0.35, 0.35, 0.4, 1)
+polygon = PackedVector2Array(-60, -10, 60, -10, 60, 10, -60, 10)
+
+[node name="Player" parent="." unique_id=588556231 instance=ExtResource("1_player")]
+position = Vector2(-250, 180)
+collision_mask = 5
+weapon = ExtResource("3_vpfk0")
+secondary_weapon = ExtResource("3_4vrqs")
+
+[node name="TestDummy" parent="." unique_id=731283486 instance=ExtResource("2_dummy")]
+position = Vector2(-66, 187)
+
+[node name="PatrolDummy" parent="." unique_id=674837910 instance=ExtResource("5_vpfk0")]
+position = Vector2(154, 186)
+
+[node name="PatrolDummy2" parent="." unique_id=928974705 instance=ExtResource("5_vpfk0")]
+position = Vector2(133, 186)
