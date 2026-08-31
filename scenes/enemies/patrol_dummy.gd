@@ -25,6 +25,8 @@ const SPECIAL_TELEGRAPH_TINT: Color = Color(1.0, 0.5, 0.9)
 
 var elemental := ElementalCombatant.new()
 var combat_ai: EnemyCombatAI
+var _current_health: float = 0.0
+var _is_dead: bool = false
 
 var _total_damage_taken: float = 0.0
 var _base_color: Color
@@ -48,6 +50,8 @@ func _ready() -> void:
 	elemental.apply_starting_status(starting_element, starting_charge)
 
 	if enemy_stats != null:
+		_current_health = enemy_stats.max_health
+		add_to_group("enemies")
 		combat_ai = EnemyCombatAI.new()
 		combat_ai.stats = enemy_stats
 		combat_ai.can_chase = true
@@ -56,9 +60,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var dot_damage := elemental.tick(delta)
-	if dot_damage > 0.0:
-		_apply_damage(dot_damage)
+	if _is_dead:
+		return
+	var _dot_damage := elemental.tick(delta)
 
 	if not _is_flashing:
 		visual.color = _resting_color()
@@ -130,6 +134,22 @@ func _apply_damage(amount: float) -> void:
 	_total_damage_taken += amount
 	damage_label.text = str(int(_total_damage_taken))
 	_flash()
+	if enemy_stats != null and not _is_dead:
+		_current_health -= amount
+		if _current_health <= 0.0:
+			_die()
+
+
+const DEATH_TINT: Color = Color(0.3, 0.3, 0.3)
+const DEATH_FADE_DELAY: float = 0.3
+
+func _die() -> void:
+	_is_dead = true
+	hurtbox.invulnerable = true
+	visual.color = DEATH_TINT
+	damage_label.text = "X"
+	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
+	queue_free()
 
 
 func _flash() -> void:

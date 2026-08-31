@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/room_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
+[ext_resource type="Script" path="res://scripts/world/room_exit.gd" id="3_exit"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/patrol_dummy.tscn" id="4_patrol"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="5_dummy"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="6_stats_patrol"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_stats_kim"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(800, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
+size = Vector2(20, 60)
+
+[node name="RoomC" type="Node2D"]
+script = ExtResource("1_controller")
+exit = NodePath("Exit")
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(0, 220)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="Polygon2D" parent="Ground"]
+color = Color(0.25, 0.25, 0.3, 1)
+polygon = PackedVector2Array(-400, -20, 400, -20, 400, 20, -400, 20)
+
+[node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
+position = Vector2(-350, 180)
+
+[node name="EnemySpawnPoint1" type="Node2D" parent="."]
+position = Vector2(-50, 186)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("4_patrol")
+enemy_stats = ExtResource("6_stats_patrol")
+
+[node name="EnemySpawnPoint2" type="Node2D" parent="."]
+position = Vector2(150, 187)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("5_dummy")
+enemy_stats = ExtResource("7_stats_kim")
+starting_element = &"kim"
+
+[node name="Exit" type="Area2D" parent="."]
+position = Vector2(370, 190)
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("3_exit")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit"]
+shape = SubResource("RectangleShape2D_exit")
+
+[node name="Visual" type="Polygon2D" parent="Exit"]
+polygon = PackedVector2Array(-10, -30, 10, -30, 10, 30, -10, 30)

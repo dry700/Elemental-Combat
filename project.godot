@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7")
 InputSetup="*res://autoloads/input_setup.gd"
 HitStop="*res://autoloads/hit_stop.gd"
 VisionBlocker="*res://autoloads/vision_blocker.gd"
+RunManager="*res://autoloads/run_manager.gd"
 
 [physics]
 

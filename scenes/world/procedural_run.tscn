@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://b2t2rshplq0wm"]
+
+[ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dw17afsho5lsv" path="res://scripts/world/procedural_run.gd" id="2_script"]
+[ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_weapon"]
+
+[node name="ProceduralRun" type="Node2D" unique_id=1270196363]
+script = ExtResource("2_script")
+
+[node name="RoomContainer" type="Node2D" parent="." unique_id=2017555854]
+
+[node name="Player" parent="." unique_id=361648020 instance=ExtResource("1_player")]
+weapon = ExtResource("3_weapon")

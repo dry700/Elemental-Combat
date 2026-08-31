@@ -7,8 +7,8 @@
 [ext_resource type="Resource" path="res://scripts/resources/skills/overgrowth_snare.tres" id="4_u8yuk"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
 [ext_resource type="Resource" uid="uid://ck7psobfj0h6l" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
-[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scenes/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
-[ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scenes/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
+[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
+[ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(800, 40)
