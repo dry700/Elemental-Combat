@@ -21,6 +21,10 @@ HitStop="*res://autoloads/hit_stop.gd"
 VisionBlocker="*res://autoloads/vision_blocker.gd"
 RunManager="*res://autoloads/run_manager.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [physics]
 
 2d/default_gravity=1400

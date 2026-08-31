@@ -86,8 +86,16 @@ None of these would be silent failures — Godot's editor and output panel
 will flag missing shapes/scripts on scene open, so the first F5 run should
 surface anything wrong quickly.
 
-## Next steps (Sprint 2)
+## Running Tests
 
-Wire up `HitData.element` / `HitData.charge`, add the Sinh/Khắc resolver
-(Appendix A.3) as a new autoload, and give `TestDummy` an element so
-reactions have something to fire against.
+This project uses GUT (Godot Unit Test) — see Section 6.2 of the proposal.
+1. Install/enable the Gut plugin (AssetLib → "Gut" → Install; Project
+   Settings → Plugins → enable).
+2. Open the Gut panel (bottom of the editor) and click "Run All", or
+   headless: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
+
+Covers the full reaction system (all 10 named reactions, the 3x3 Khắc
+Charge grid, ICD, Break-Free's floor rule) and A.5 skill effects
+(cleanse-skill Charge bypass, ICD bypass). Room generation is
+deliberately out of scope here — verified through playtesting instead,
+per Section 8.1.

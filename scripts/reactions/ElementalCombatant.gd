@@ -358,17 +358,22 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# no telegraph system exists yet).
 				slow_effect.apply(0.4 if thua else 0.6, 5.0 if thua else 3.5)
 			elif Elements.pair_is(result.reaction_pair, Elements.MOC, Elements.THO):
-				# Root Break: staggers. Floor always the base duration —
+				# Root Break: removes earth shield (status.clear() above),
+				# then staggers — floor always the base duration, since
 				# Break-Free (A.3) can only claw an overwhelmed lock back
-				# to baseline, never past it.
+				# to baseline, never past it. A.7: Burst footprint — an
+				# instant radius pulse, not just the single directly-hit
+				# target (previously single-target only; no longer
+				# deferred now that rooms spawn multiple enemies).
 				var base_stagger := 0.6
 				var thua_stagger := 1.1
-				disable_effect.apply(thua_stagger if thua else base_stagger, base_stagger)
+				_apply_root_break_burst(thua_stagger if thua else base_stagger, base_stagger, hit_data.source)
 			elif Elements.pair_is(result.reaction_pair, Elements.KIM, Elements.MOC):
-				# Sever: armor shred, single-target (true Burst
-				# radius-query deferred until multiple enemies exist).
+				# Sever: strips Wood status (status.clear() above), then
+				# shreds armor. A.7: Burst footprint — same AoE upgrade
+				# as Root Break above.
 				var shred_amount := 6.0 if thua else 3.0
-				armor = maxf(armor - shred_amount, 0.0)
+				_apply_sever_burst(shred_amount, hit_data.source)
 			elif Elements.pair_is(result.reaction_pair, Elements.THUY, Elements.HOA):
 				# Douse: removes burn (status.clear() above), then emits
 				# a steam cloud (A.2). The stun is AoE now, not just the
@@ -467,6 +472,43 @@ func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 		if global_position.distance_to(other.global_position) <= CINDER_BLOOM_BURN_RADIUS:
 			other.dot_effect.apply(burn_dps, 1.0, 3.0)
 
+## A.7 Burst: "an instant radius pulse with no duration or spawned
+## object lifetime to manage" — Sever's armor shred and Root Break's
+## stagger both use this footprint (A.7's own table). Deliberately
+## smaller than Overgrowth/Cinder Bloom's own AoE radii — a "pulse"
+## should read as tighter and more immediate than a lingering AoE, and
+## Khắc reactions are meant to read as disruption, not a big area clear.
+const BURST_RADIUS: float = 100.0
+
+
+## Sever's Burst: shreds armor on everyone caught in the pulse, not just
+## the single directly-hit target — the Wood-status STRIP itself stays
+## single-target (only the reacting entity had that status to strip;
+## status.clear() above already handled that), but the armor-shred half
+## of the effect radiates outward, same bystander-exclusion pattern as
+## every other AoE in this file. Distance-to-self is 0, so the direct
+## target is naturally included without a separate special case.
+func _apply_sever_burst(shred_amount: float, attacker: Node) -> void:
+	var bystander := _bystander_attacker(attacker)
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null or other == bystander:
+			continue
+		if global_position.distance_to(other.global_position) <= BURST_RADIUS:
+			other.armor = maxf(other.armor - shred_amount, 0.0)
+
+
+## Root Break's Burst — same shape as Sever's above, staggering instead
+## of shredding. The earth-shield status REMOVAL stays single-target
+## (status.clear() above); the stagger radiates.
+func _apply_root_break_burst(stagger_duration: float, base_stagger: float, attacker: Node) -> void:
+	var bystander := _bystander_attacker(attacker)
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null or other == bystander:
+			continue
+		if global_position.distance_to(other.global_position) <= BURST_RADIUS:
+			other.disable_effect.apply(stagger_duration, base_stagger)
 
 ## Spawns an A.7 Zone at this combatant's current position — the
 ## "scorched terrain" (Cinder Bloom) / scattered debris (Ore Surge's own
