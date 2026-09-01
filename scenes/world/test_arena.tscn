@@ -2,13 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="2_dummy"]
-[ext_resource type="Resource" path="res://scripts/resources/weapons/training_spear.tres" id="3_4vrqs"]
+[ext_resource type="Resource" uid="uid://qrytbfi2t63m" path="res://scripts/resources/weapons/training_spear.tres" id="3_4vrqs"]
 [ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_vpfk0"]
 [ext_resource type="Resource" path="res://scripts/resources/skills/overgrowth_snare.tres" id="4_u8yuk"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
 [ext_resource type="Resource" uid="uid://ck7psobfj0h6l" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
 [ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
 [ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
+[ext_resource type="Script" uid="uid://b2nqw7d1ejgkl" path="res://scripts/items/weapon_pickup.gd" id="10_pickup"]
+[ext_resource type="Resource" path="res://scripts/resources/weapons/training_greatsword.tres" id="11_greatsword"]
+[ext_resource type="Resource" path="res://scripts/resources/weapons/training_hammer.tres" id="12_hammer"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(800, 40)
@@ -49,6 +52,17 @@ weapon = ExtResource("3_vpfk0")
 secondary_weapon = ExtResource("3_4vrqs")
 skill_1 = ExtResource("4_u8yuk")
 skill_2 = ExtResource("6_skill1")
+
+[node name="GreatswordPickup" type="Area2D" parent="." unique_id=1166049925]
+position = Vector2(-150, 190)
+script = ExtResource("10_pickup")
+weapon = ExtResource("11_greatsword")
+
+[node name="HammerPickup" type="Area2D" parent="." unique_id=798762263]
+position = Vector2(-180, 190)
+script = ExtResource("10_pickup")
+weapon = ExtResource("12_hammer")
+slot = 1
 
 [node name="TestDummy" parent="." unique_id=731283486 instance=ExtResource("2_dummy")]
 position = Vector2(-66, 187)

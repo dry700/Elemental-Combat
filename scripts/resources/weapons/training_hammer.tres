@@ -10,3 +10,7 @@ damage = 18.0
 attack_duration = 0.5
 active_window = Vector2(0.2, 0.32)
 innate_element = &"tho"
+lunge_speed = 80.0
+reach = 20.0
+hitbox_radius = 16.0
+combo_length = 1

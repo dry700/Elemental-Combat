@@ -16,6 +16,28 @@ enum Weight { LIGHT, MEDIUM, HEAVY }
 ## for what each does — this field alone doesn't do anything by itself.
 @export var rune_element: StringName = &"none"
 
+## --- Lunge, reach, and combo (A.4's "combo style" column, made
+## mechanical) — previously a single global lunge value on Player and a
+## fixed hitbox size/offset baked into player.tscn, identical across
+## every weapon regardless of archetype. ---
+@export var lunge_speed: float = 150.0  ## Forward speed during the pre-active-window wind-up.
+@export var reach: float = 14.0         ## Local x-offset of the hitbox from the wielder's centre.
+@export var hitbox_radius: float = 10.0 ## Size of the hit area itself.
+
+## Dead Cells-style combo string: pressing attack again — mid-swing, or
+## in the short grace window right after — chains into the next hit
+## instead of resetting. 1 means "no combo," a single swing every time;
+## appropriate for a slow, high-impact heavy weapon (A.4: "Slow,
+## high-impact" / "Slow, crowd control") rather than a rapid light one.
+@export var combo_length: int = 1
+## Grace period after a swing ends during which another attack press
+## still continues the combo instead of restarting at hit 1.
+@export var combo_window: float = 0.3
+## Multiplies damage per successive hit in the combo, compounding —
+## rewards actually following a combo through rather than only ever
+## landing hit 1 on cooldown. 1.0 = no scaling.
+@export var combo_damage_step_multiplier: float = 1.0
+
 ## Different-element rune only: which of the weapon's two elements the
 ## NEXT swing applies. Runtime-only, not exported/persisted — starts
 ## fresh each time the game runs. Same-element runes never touch this.

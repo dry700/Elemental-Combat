@@ -11,3 +11,7 @@ attack_duration = 0.45
 active_window = Vector2(0.18, 0.3)
 innate_element = &"kim"
 rune_element = &"kim"
+lunge_speed = 90.0
+reach = 22.0
+hitbox_radius = 14.0
+combo_length = 1

@@ -43,3 +43,11 @@ func test_different_element_rune_alternates_starting_with_innate():
 	assert_eq(w.resolve_swing().element, Elements.HOA, "first swing uses innate")
 	assert_eq(w.resolve_swing().element, Elements.THO, "second swing alternates")
 	assert_eq(w.resolve_swing().element, Elements.HOA, "third swing alternates back")
+
+func test_new_weapon_stats_have_sane_lunge_range_and_combo_defaults():
+	var w := WeaponStats.new()
+	assert_eq(w.lunge_speed, 150.0)
+	assert_eq(w.reach, 14.0)
+	assert_eq(w.hitbox_radius, 10.0)
+	assert_eq(w.combo_length, 1)
+	assert_almost_eq(w.combo_damage_step_multiplier, 1.0, 0.01)

@@ -9,6 +9,14 @@ extends CharacterBody2D
 
 enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED }
 
+## Emitted whenever a weapon slot changes — currently only WeaponPickup
+## calls swap_weapon() below, but this is exposed generally in case
+## anything else ever wants to react to an equip change immediately
+## rather than on next frame (Hud itself just polls weapon/
+## secondary_weapon directly each frame, simpler than wiring a listener
+## from an autoload into whichever Player instance currently exists).
+signal weapon_changed(is_primary: bool, new_weapon: WeaponStats)
+
 ## --- Movement tuning (starting points) ---
 @export var max_speed: float = 220.0
 @export var acceleration: float = 1800.0
@@ -30,7 +38,6 @@ enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED }
 ## --- Attack ---
 @export var weapon: WeaponStats
 @export var secondary_weapon: WeaponStats  ## DEBUG ONLY — for testing Sinh with two elements.
-@export var attack_lunge_speed: float = 150.0
 
 @export var skill_1: SkillData
 @export var skill_2: SkillData
@@ -42,6 +49,7 @@ var current_health: float
 
 @onready var visuals: Node2D = $Visuals
 @onready var hitbox: Hitbox = $Visuals/Hitbox
+@onready var hitbox_shape: CollisionShape2D = $Visuals/Hitbox/CollisionShape2D
 @onready var hurtbox: Hurtbox = $Hurtbox
 
 var state: State = State.IDLE
@@ -58,6 +66,9 @@ var _air_jumps_used: int = 0
 var _dodge_timer: float = 0.0
 var _dodge_cooldown_timer: float = 0.0
 var _attack_timer: float = 0.0
+var _combo_step: int = 0
+var _combo_window_timer: float = 0.0
+var _attack_buffered: bool = false
 var _drop_through_timer: float = 0.0
 var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
 ## Set on ANY jump-key press during State.DISABLED (however early in the
@@ -82,6 +93,13 @@ func _ready() -> void:
 	current_health = max_health
 	if weapon == null:
 		weapon = WeaponStats.new()  # Fallback so the scene still runs unassigned.
+	# Defensive: the CircleShape2D loaded from the .tscn is ONE shared
+	# Resource — mutating its radius per-swing (see
+	# _configure_hitbox_for_current_swing) without duplicating first would
+	# leak that mutation into every other node/scene referencing the same
+	# sub-resource.
+	if hitbox_shape.shape is CircleShape2D:
+		hitbox_shape.shape = hitbox_shape.shape.duplicate()
 
 	elemental.indicator_offset = Vector2(0, -26)
 	elemental.armor = starting_armor
@@ -98,6 +116,8 @@ func _physics_process(delta: float) -> void:
 	_try_start_drop_through()
 
 	if elemental.is_disabled() and state not in [State.DODGE, State.ATTACK]:
+		if state != State.DISABLED:
+			_combo_window_timer = 0.0  # Getting staggered breaks any pending combo continuation.
 		state = State.DISABLED
 	# No elif here anymore — escaping DISABLED happens in _on_disabled_expired,
 	# fired the instant elemental.disabled_expired emits, not polled here.
@@ -137,6 +157,7 @@ func _update_timers(delta: float) -> void:
 	_coyote_timer = max(_coyote_timer - delta, 0.0)
 	_jump_buffer_timer = max(_jump_buffer_timer - delta, 0.0)
 	_dodge_cooldown_timer = max(_dodge_cooldown_timer - delta, 0.0)
+	_combo_window_timer = maxf(_combo_window_timer - delta, 0.0)
 	for skill in _skill_cooldowns.keys():
 		_skill_cooldowns[skill] = maxf(_skill_cooldowns[skill] - delta, 0.0)
 	
@@ -159,6 +180,16 @@ func _update_timers(delta: float) -> void:
 	# returns, the same way landing-buffer already worked for platforming.
 	if Input.is_action_just_pressed("jump"):
 		_jump_buffer_timer = jump_buffer_time
+
+	# Attack buffering — same reasoning as jump's buffer just above: a
+	# press landing mid-swing needs to be captured somewhere
+	# state-independent, since _try_start_attack() only gets polled from
+	# IDLE/RUN/JUMP/FALL, never from State.ATTACK itself. Gated to
+	# State.ATTACK specifically (unlike jump's unconditional capture)
+	# because _try_start_attack() already handles a press landing in any
+	# OTHER state directly — capturing it again here too would be redundant.
+	if state == State.ATTACK and Input.is_action_just_pressed("attack"):
+		_attack_buffered = true
 
 	var dot_damage := elemental.tick(delta)
 	if dot_damage > 0.0:
@@ -230,13 +261,29 @@ func _process_dodge(delta: float) -> void:
 
 func _try_start_attack() -> void:
 	if Input.is_action_just_pressed("attack"):
-		_active_weapon = weapon
-		state = State.ATTACK
-		_attack_timer = 0.0
+		_start_attack(weapon)
 	elif Input.is_action_just_pressed("attack_secondary") and secondary_weapon != null:
-		_active_weapon = secondary_weapon
-		state = State.ATTACK
-		_attack_timer = 0.0
+		_start_attack(secondary_weapon, true)
+
+
+## Starts a fresh swing, OR — same weapon, still inside its post-swing
+## combo_window, and the combo hasn't already hit its weapon-defined cap
+## — advances to the next hit in the combo string instead of restarting
+## at hit 1. force_fresh (used by the secondary/debug weapon) always
+## restarts at hit 1 regardless, so testing a second element never
+## accidentally inherits the primary weapon's combo progress.
+func _start_attack(weapon_to_use: WeaponStats, force_fresh: bool = false) -> void:
+	if weapon_to_use == null:
+		return
+	if not force_fresh and _active_weapon == weapon_to_use and _combo_window_timer > 0.0 and _combo_step < weapon_to_use.combo_length:
+		_combo_step += 1
+	else:
+		_combo_step = 1
+	_active_weapon = weapon_to_use
+	state = State.ATTACK
+	_attack_timer = 0.0
+	_attack_buffered = false
+	_combo_window_timer = 0.0
 
 
 func _process_attack(delta: float) -> void:
@@ -246,24 +293,62 @@ func _process_attack(delta: float) -> void:
 	var active_end: float = _active_weapon.active_window.y
 
 	if _attack_timer < active_start:
-		velocity.x = move_toward(velocity.x, facing * attack_lunge_speed, acceleration * delta)
+		velocity.x = move_toward(velocity.x, facing * _active_weapon.lunge_speed, acceleration * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 
 	if _attack_timer >= active_start and _attack_timer < active_end:
 		if not hitbox.monitoring:
-			hitbox.damage = _active_weapon.damage
-			hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
-			var swing := _active_weapon.resolve_swing()
-			hitbox.element = swing.element
-			hitbox.charge = swing.charge
+			_configure_hitbox_for_current_swing()
 			hitbox.enable()
 	else:
 		hitbox.disable()
 
 	if _attack_timer >= _active_weapon.attack_duration:
 		hitbox.disable()
-		state = State.IDLE if is_on_floor() else State.FALL
+		_end_or_chain_attack()
+
+
+## Called the instant a swing's attack_duration elapses. If the player
+## already buffered another attack press during this swing (captured in
+## _update_timers) AND the weapon's combo hasn't hit its cap, chains
+## straight into the next hit — no idle frame between them, same "no
+## gap" feel jump buffering already gives platforming. Otherwise ends the
+## attack state and opens the post-swing combo_window grace period,
+## during which a FRESH press (via _try_start_attack -> _start_attack)
+## still continues the combo instead of resetting to hit 1.
+func _end_or_chain_attack() -> void:
+	if _attack_buffered and _combo_step < _active_weapon.combo_length:
+		_combo_step += 1
+		_attack_timer = 0.0
+		_attack_buffered = false
+		return  # Stays in State.ATTACK.
+	_attack_buffered = false
+	_combo_window_timer = _active_weapon.combo_window
+	state = State.IDLE if is_on_floor() else State.FALL
+
+
+## Sets up the Hitbox for the swing currently starting — per-weapon reach
+## and hitbox size (A.4's Weapon System, previously a single hardcoded
+## offset/shape baked into player.tscn), plus the current combo step's
+## scaled damage. Called once per swing, right as its active window opens.
+func _configure_hitbox_for_current_swing() -> void:
+	hitbox.damage = _active_weapon.damage * _combo_damage_multiplier()
+	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
+	var swing := _active_weapon.resolve_swing()
+	hitbox.element = swing.element
+	hitbox.charge = swing.charge
+	hitbox.position.x = _active_weapon.reach
+	var circle := hitbox_shape.shape as CircleShape2D
+	if circle != null:
+		circle.radius = _active_weapon.hitbox_radius
+
+
+## 1.0 for the first hit, compounding by combo_damage_step_multiplier for
+## each hit after that — following a combo string all the way through is
+## meant to reward more than just spamming the first swing on cooldown.
+func _combo_damage_multiplier() -> float:
+	return pow(_active_weapon.combo_damage_step_multiplier, _combo_step - 1)
 
 
 func _process_disabled(delta: float) -> void:
@@ -346,6 +431,24 @@ func _find_skill_target(max_range: float) -> ElementalCombatant:
 			nearest = other
 			nearest_dist = dist
 	return nearest
+	
+## Called by WeaponPickup on contact — swaps whichever slot the pickup
+## targets and returns the weapon that was previously equipped there
+## (null if the slot was empty), so the caller can leave it behind as a
+## new, walkable pickup. Mid-swing safety: if the swapped-out weapon
+## happened to be _active_weapon, the current swing itself isn't
+## interrupted — resolve_swing() already captured what it needed at
+## swing-start; only the NEXT attack picks up the new weapon.
+func swap_weapon(is_primary: bool, new_weapon: WeaponStats) -> WeaponStats:
+	var previous: WeaponStats
+	if is_primary:
+		previous = weapon
+		weapon = new_weapon
+	else:
+		previous = secondary_weapon
+		secondary_weapon = new_weapon
+	weapon_changed.emit(is_primary, new_weapon)
+	return previous
 
 func _update_facing() -> void:
 	if state in [State.DODGE, State.ATTACK]:

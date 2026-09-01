@@ -11,12 +11,13 @@ extends Node2D
 ## that, which is exactly "stuns for the first bit, then just sits there
 ## blocking vision for the rest."
 ##
-## There is no line-of-sight/fog-of-war system anywhere in this project
-## to mechanically block sight with. "Blocks vision" is implemented as
-## exactly what it says for a human player looking at the screen: a
-## genuinely dense, opaque visual obstruction over the area. It has zero
-## effect on any AI — nothing currently uses vision for anything anyway
-## (PatrolDummy patrols blind regardless of what's drawn on top of it).
+## There is no true line-of-sight/fog-of-war system anywhere in this
+## project — no raycasting, just radius checks, same simplification
+## VisionBlocker already makes for the player's own screen. "Blocks
+## vision" now ALSO gates EnemyCombatAI's aggro/chase logic via
+## blocks_vision() below: a player standing inside an active cloud is
+## untrackable by any enemy not also standing in it. Previously this had
+## zero effect on any AI; that's no longer true as of A.6's enemy AI.
 ##
 ## Distinct from ReactionZone: a Zone re-ticks its status onto whoever's
 ## inside it, repeatedly, for its whole life (A.7's own definition).
@@ -48,6 +49,27 @@ const CLOUD_COLOR: Color = Color(0.82, 0.85, 0.88)  ## RGB only — alpha comes 
 ## as a thin Zone tint doing the same, arguably more so.
 const MAX_ACTIVE_CLOUDS: int = 3
 static var _active_clouds: Array[SteamCloud] = []
+
+
+## A.2's vision-block, extended to enemy perception (EnemyCombatAI, not
+## just VisionBlocker's player-screen overlay). Deliberately NOT a real
+## raycast/line-of-sight check — no such system exists anywhere in this
+## project (VisionBlocker itself makes the same simplification). Instead:
+## the target is "hidden" if they're standing inside an active cloud AND
+## the observer isn't standing in that SAME cloud with them — someone
+## fighting you point-blank inside the steam still sees you fine; it's
+## only an outside observer peering in that's blocked. Reuses the same
+## tracking list VisionBlocker already reads from, for the same reason
+## it does: no separate query system needed for something this simple.
+static func blocks_vision(observer_pos: Vector2, target_pos: Vector2) -> bool:
+	for cloud in _active_clouds:
+		if not is_instance_valid(cloud):
+			continue
+		var target_inside := target_pos.distance_to(cloud.global_position) <= cloud.radius
+		var observer_inside_same_cloud := observer_pos.distance_to(cloud.global_position) <= cloud.radius
+		if target_inside and not observer_inside_same_cloud:
+			return true
+	return false
 
 var _lifetime_timer: float = 0.0
 

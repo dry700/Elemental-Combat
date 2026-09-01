@@ -23,6 +23,15 @@ enum State { IDLE, CHASE, TELEGRAPH, ACTIVE, COOLDOWN }
 ## should_chase()'s true branch changes.
 @export var can_chase: bool = true
 
+## Boss phase-swap hook (see Boss.gd) — NONE means "use stats.element"
+## unchanged. Never mutates `stats` itself, since it's a shared .tres
+## resource; one boss instance changing phase must not affect every
+## other instance of the same BossStats asset.
+@export var element_override: StringName = Elements.NONE
+## Same reasoning as element_override above — a runtime-only multiplier
+## rather than touching stats.attack_cooldown directly. 1.0 = no change.
+@export var attack_cooldown_multiplier: float = 1.0
+
 ## Fires the instant a telegraph starts — owner uses this for a colour
 ## flash/tell. is_special distinguishes the Charge-1 vs Charge-2 wind-up.
 signal telegraph_started(is_special: bool)
@@ -74,13 +83,24 @@ func update(delta: float, player_global_pos: Vector2) -> void:
 
 	_cooldown_timer = maxf(_cooldown_timer - delta, 0.0)
 	var distance := global_position.distance_to(player_global_pos)
+	# Douse's vision-block (A.2), extended to enemy perception — see
+	# SteamCloud.blocks_vision(). Checked once per frame here rather than
+	# per-state, since it can break an ongoing CHASE/COOLDOWN engagement
+	# just as easily as it can prevent a new one starting from IDLE.
+	# Deliberately NOT checked during TELEGRAPH/ACTIVE — an attack
+	# already committed to isn't interrupted by a cloud appearing
+	# mid-swing, same reasoning as why those two states ignore distance
+	# too once started.
+	var sight_blocked := SteamCloud.blocks_vision(global_position, player_global_pos)
 
 	match _state:
 		State.IDLE:
-			if distance <= stats.aggro_range:
+			if distance <= stats.aggro_range and not sight_blocked:
 				_state = State.CHASE
 		State.CHASE:
-			if distance > stats.aggro_range:
+			if distance > stats.aggro_range or sight_blocked:
+				if sight_blocked:
+					print("Enemy loses sight of player (steam cloud)")
 				_state = State.IDLE
 			elif distance <= stats.attack_range:
 				if _cooldown_timer <= 0.0:
@@ -94,7 +114,7 @@ func update(delta: float, player_global_pos: Vector2) -> void:
 			elif _state == State.ACTIVE and _timer <= 0.0:
 				_end_attack()
 		State.COOLDOWN:
-			if distance > stats.aggro_range:
+			if distance > stats.aggro_range or sight_blocked:
 				_state = State.IDLE
 			elif _cooldown_timer <= 0.0:
 				_state = State.CHASE
@@ -113,12 +133,12 @@ func _start_active_window() -> void:
 	_timer = stats.active_window
 	_hitbox.damage = stats.damage
 	_hitbox.knockback_strength = stats.knockback_strength
-	_hitbox.element = stats.element
+	_hitbox.element = element_override if element_override != Elements.NONE else stats.element
 	_hitbox.charge = 2 if _current_is_special else 1
 	_hitbox.enable()
 
 
 func _end_attack() -> void:
 	_hitbox.disable()
-	_cooldown_timer = stats.attack_cooldown
+	_cooldown_timer = stats.attack_cooldown * attack_cooldown_multiplier
 	_state = State.COOLDOWN

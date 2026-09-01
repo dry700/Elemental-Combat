@@ -1,10 +1,10 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bqdhlcxwksg6n"]
 
-[ext_resource type="Script" path="res://scripts/world/room_controller.gd" id="1_controller"]
-[ext_resource type="Script" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
-[ext_resource type="Script" path="res://scripts/world/room_exit.gd" id="3_exit"]
+[ext_resource type="Script" uid="uid://cehj7nvox6aaa" path="res://scripts/world/room_controller.gd" id="1_controller"]
+[ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
+[ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="4_dummy"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
+[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(700, 40)
@@ -12,39 +12,38 @@ size = Vector2(700, 40)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
 size = Vector2(20, 60)
 
-[node name="RoomA" type="Node2D"]
+[node name="RoomA" type="Node2D" unique_id=918832063]
 script = ExtResource("1_controller")
 exit = NodePath("Exit")
 
-[node name="Ground" type="StaticBody2D" parent="."]
+[node name="Ground" type="StaticBody2D" parent="." unique_id=380521806]
 position = Vector2(0, 220)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground" unique_id=911764752]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="Visual" type="Polygon2D" parent="Ground"]
+[node name="Visual" type="Polygon2D" parent="Ground" unique_id=1971810832]
 color = Color(0.25, 0.25, 0.3, 1)
 polygon = PackedVector2Array(-350, -20, 350, -20, 350, 20, -350, 20)
 
-[node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
+[node name="PlayerSpawn" type="Node2D" parent="." unique_id=1087561665 groups=["player_spawn"]]
 position = Vector2(-300, 180)
 
-[node name="EnemySpawnPoint" type="Node2D" parent="."]
+[node name="EnemySpawnPoint" type="Node2D" parent="." unique_id=614173844]
 position = Vector2(0, 187)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_dummy")
 enemy_stats = ExtResource("5_stats")
 starting_element = &"kim"
 
-[node name="Exit" type="Area2D" parent="."]
+[node name="Exit" type="Area2D" parent="." unique_id=661309711]
 position = Vector2(320, 190)
 collision_layer = 0
-collision_mask = 1
 script = ExtResource("3_exit")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit" unique_id=93534656]
 shape = SubResource("RectangleShape2D_exit")
 
-[node name="Visual" type="Polygon2D" parent="Exit"]
+[node name="Visual" type="Polygon2D" parent="Exit" unique_id=768351727]
 polygon = PackedVector2Array(-10, -30, 10, -30, 10, 30, -10, 30)
