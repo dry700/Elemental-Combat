@@ -12,6 +12,9 @@
 [ext_resource type="Script" uid="uid://b2nqw7d1ejgkl" path="res://scripts/items/weapon_pickup.gd" id="10_pickup"]
 [ext_resource type="Resource" path="res://scripts/resources/weapons/training_greatsword.tres" id="11_greatsword"]
 [ext_resource type="Resource" path="res://scripts/resources/weapons/training_hammer.tres" id="12_hammer"]
+[ext_resource type="Script" uid="uid://b6v1l5656vegb" path="res://scripts/items/skill_pickup.gd" id="13_skillpickup"]
+[ext_resource type="Resource" uid="uid://cwh5qrh6lyskl" path="res://scripts/resources/skills/cleansing_tide.tres" id="14_cleanse"]
+[ext_resource type="Resource" path="res://scripts/resources/skills/rending_edge.tres" id="15_rending"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(800, 40)
@@ -54,14 +57,25 @@ skill_1 = ExtResource("4_u8yuk")
 skill_2 = ExtResource("6_skill1")
 
 [node name="GreatswordPickup" type="Area2D" parent="." unique_id=1166049925]
-position = Vector2(-150, 190)
+position = Vector2(-166, 191)
 script = ExtResource("10_pickup")
 weapon = ExtResource("11_greatsword")
 
 [node name="HammerPickup" type="Area2D" parent="." unique_id=798762263]
-position = Vector2(-180, 190)
+position = Vector2(-191, 190)
 script = ExtResource("10_pickup")
 weapon = ExtResource("12_hammer")
+slot = 1
+
+[node name="CleansingTidePickup" type="Area2D" parent="." unique_id=1324299158]
+position = Vector2(-138, 191)
+script = ExtResource("13_skillpickup")
+skill = ExtResource("14_cleanse")
+
+[node name="RendingEdgePickup" type="Area2D" parent="." unique_id=1827954559]
+position = Vector2(-114, 186)
+script = ExtResource("13_skillpickup")
+skill = ExtResource("15_rending")
 slot = 1
 
 [node name="TestDummy" parent="." unique_id=731283486 instance=ExtResource("2_dummy")]

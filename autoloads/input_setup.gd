@@ -21,6 +21,11 @@ const ATTACK_SECONDARY_BUTTONS: Array[MouseButton] = [MOUSE_BUTTON_RIGHT]
 const SKILL_1_KEYS: Array[Key] = [KEY_Q]
 const SKILL_2_KEYS: Array[Key] = [KEY_E]
 const PICKUP_KEYS: Array[Key] = [KEY_F]
+const EQUIP_SLOT_1_KEYS: Array[Key] = [KEY_1]
+const EQUIP_SLOT_2_KEYS: Array[Key] = [KEY_2]
+const MENU_UP_KEYS: Array[Key] = [KEY_W, KEY_UP]
+const MENU_DOWN_KEYS: Array[Key] = [KEY_S, KEY_DOWN]
+const MENU_CANCEL_KEYS: Array[Key] = [KEY_ESCAPE]
 const DEBUG_TEST_EFFECTS_KEYS: Array[Key] = [KEY_T]
 
 
@@ -36,6 +41,11 @@ func _init() -> void:
 	_register_action("skill_1", SKILL_1_KEYS)
 	_register_action("skill_2", SKILL_2_KEYS)
 	_register_action("pickup", PICKUP_KEYS)
+	_register_action("equip_slot_1", EQUIP_SLOT_1_KEYS)
+	_register_action("equip_slot_2", EQUIP_SLOT_2_KEYS)
+	_register_action("menu_up", MENU_UP_KEYS)
+	_register_action("menu_down", MENU_DOWN_KEYS)
+	_register_action("menu_cancel", MENU_CANCEL_KEYS)
 
 func _register_action(action_name: String, keys: Array[Key]) -> void:
 	if InputMap.has_action(action_name):

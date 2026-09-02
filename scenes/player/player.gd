@@ -17,6 +17,9 @@ enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED }
 ## from an autoload into whichever Player instance currently exists).
 signal weapon_changed(is_primary: bool, new_weapon: WeaponStats)
 
+## Same reasoning as weapon_changed above, for SkillPickup.
+signal skill_changed(is_primary: bool, new_skill: SkillData)
+
 ## --- Movement tuning (starting points) ---
 @export var max_speed: float = 220.0
 @export var acceleration: float = 1800.0
@@ -112,6 +115,19 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_timers(delta)
 	_apply_gravity(delta)
+
+	# Hud's weapon/skill pickup overlay (opened via the "pickup" action)
+	# freezes voluntary action input — movement, jump, dodge, attack,
+	# skills — so the player can't wander off or swing mid-choice, while
+	# gravity and elemental.tick() (already run via _update_timers above)
+	# keep ticking normally, so opening the menu doesn't feel like the
+	# whole game paused.
+	if Hud.is_overlay_active():
+		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+		move_and_slide()
+		_update_facing()
+		return
+
 	_try_debug_test_effects()
 	_try_start_drop_through()
 
@@ -448,6 +464,24 @@ func swap_weapon(is_primary: bool, new_weapon: WeaponStats) -> WeaponStats:
 		previous = secondary_weapon
 		secondary_weapon = new_weapon
 	weapon_changed.emit(is_primary, new_weapon)
+	return previous
+
+
+## Called by SkillPickup on an F press — same swap-and-return-the-old-one
+## shape as swap_weapon() above, targeting skill_1/skill_2 instead. A
+## swapped-out skill still on cooldown loses its remaining cooldown
+## timer entirely (skill_cooldowns is keyed by the SkillData resource
+## itself) — a deliberate simplification, not a bug: cooldowns tracking
+## a skill no longer even equipped wouldn't mean anything to carry over.
+func swap_skill(is_primary: bool, new_skill: SkillData) -> SkillData:
+	var previous: SkillData
+	if is_primary:
+		previous = skill_1
+		skill_1 = new_skill
+	else:
+		previous = skill_2
+		skill_2 = new_skill
+	skill_changed.emit(is_primary, new_skill)
 	return previous
 
 func _update_facing() -> void:

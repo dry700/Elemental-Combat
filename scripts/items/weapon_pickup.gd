@@ -1,22 +1,17 @@
 class_name WeaponPickup
 extends Area2D
 ## A weapon lying in the world (A.4's loadout, made physically pickable).
-## Standing near it and pressing F swaps whichever of the player's two
-## weapon slots this pickup targets — a deliberate manual prompt rather
-## than an automatic walk-over swap, so a player mid-fight doesn't
-## accidentally re-equip by brushing past a pickup at the wrong moment.
-## The weapon PREVIOUSLY in that slot is left behind as a new pickup at
-## this same spot — a swap is always reversible, never a one-way trade
-## the player didn't mean to make.
+## All pickup INPUT now lives on the Hud autoload (see hud.gd's pickup
+## selection overlay) — this script only tracks proximity
+## (_player_in_range, via body_entered/body_exited) and draws the
+## in-world prompt/visual. Hud reads _player_in_range and calls
+## _do_pickup()/_default_target_is_primary() directly once the player
+## has chosen a slot through the overlay (keyboard nav, numeric
+## shortcut, or a mouse click on one of its two options).
 ##
-## body_entered/body_exited here ONLY track proximity (_player_in_range)
-## — they never mutate monitoring or free anything, so this sidesteps
-## the "Can't change this state while flushing queries" class of bug
-## RoomExit/RunManager and the earlier walk-over version of this same
-## script both hit. The actual pickup (_do_pickup: queue_free + spawning
-## a replacement pickup) now runs from _process() on an F press, a
-## normal frame, not from inside a physics-engine callback — nothing to
-## defer here at all.
+## The weapon PREVIOUSLY in the chosen slot is left behind as a new
+## pickup at this same spot — a swap is always reversible, never a
+## one-way trade the player didn't mean to make.
 ##
 ## Built entirely in code (_ready()/_draw()), same convention as
 ## Projectile/ReactionZone/SteamCloud/ElementIndicator already use in
@@ -25,6 +20,10 @@ extends Area2D
 enum Slot { PRIMARY, SECONDARY }
 
 @export var weapon: WeaponStats
+## Which slot this pickup is visually marked as ("1"/"2" on its sprite),
+## and which slot the overlay highlights BY DEFAULT when it opens —
+## overridden entirely once the player actually navigates or clicks a
+## different option.
 @export var slot: Slot = Slot.PRIMARY
 
 const HALF_SIZE: float = 10.0
@@ -37,6 +36,7 @@ var _player_in_range: Player = null
 
 
 func _ready() -> void:
+	add_to_group("weapon_pickups")
 	monitoring = true
 	collision_layer = 0
 	collision_mask = 1  ## Player's own body layer — CharacterBody2D, not an Area2D, so this side must do the watching.
@@ -48,13 +48,6 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	queue_redraw()
-
-
-func _process(_delta: float) -> void:
-	if _picked_up or _player_in_range == null:
-		return
-	if Input.is_action_just_pressed("pickup"):
-		_do_pickup(_player_in_range)
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -73,21 +66,40 @@ func _on_body_exited(body: Node2D) -> void:
 		queue_redraw()  ## Hides the prompt again.
 
 
-func _do_pickup(player: Player) -> void:
+## The overlay's initial highlight when it opens: prefer whichever slot
+## is currently EMPTY (so the common case needs no navigation at all —
+## just an immediate confirm), falling back to this pickup's own `slot`
+## once both are already full.
+func _default_target_is_primary(player: Player) -> bool:
+	if player.weapon == null:
+		return true
+	if player.secondary_weapon == null:
+		return false
+	return slot == Slot.PRIMARY
+
+
+## Called by Hud once the player has chosen a slot (keyboard confirm,
+## numeric shortcut, or a click on one of the overlay's two options) —
+## never called directly from this script's own input handling anymore.
+func _do_pickup(player: Player, is_primary: bool) -> void:
 	_picked_up = true
-	var previous := player.swap_weapon(slot == Slot.PRIMARY, weapon)
+	var previous := player.swap_weapon(is_primary, weapon)
 	if previous != null:
-		_spawn_dropped(previous)
+		_spawn_dropped(previous, is_primary)
 	queue_free()
 
 
-func _spawn_dropped(old_weapon: WeaponStats) -> void:
+## from_slot_primary marks the dropped replacement pickup with whichever
+## slot it just vacated, so its own "1"/"2" visual and its own default
+## stay accurate to where it actually came from, not to this pickup's
+## original `slot`.
+func _spawn_dropped(old_weapon: WeaponStats, from_slot_primary: bool) -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
 		return
 	var dropped := WeaponPickup.new()
 	dropped.weapon = old_weapon
-	dropped.slot = slot
+	dropped.slot = Slot.PRIMARY if from_slot_primary else Slot.SECONDARY
 	dropped.global_position = global_position
 	scene_root.add_child(dropped)
 
