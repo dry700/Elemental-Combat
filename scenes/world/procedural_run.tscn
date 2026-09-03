@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://dw17afsho5lsv" path="res://scripts/world/procedural_run.gd" id="2_script"]
 [ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_weapon"]
-[ext_resource type="Resource" path="res://scripts/resources/weapons/training_spear.tres" id="4_mfidv"]
+[ext_resource type="Resource" uid="uid://qrytbfi2t63m" path="res://scripts/resources/weapons/training_spear.tres" id="4_mfidv"]
 
 [node name="ProceduralRun" type="Node2D" unique_id=1270196363]
 script = ExtResource("2_script")

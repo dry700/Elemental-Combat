@@ -12,7 +12,18 @@ const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 var player: Player
 var pickup: WeaponPickup
 
+const SaveTestIsolation := preload("res://test/helpers/save_test_isolation.gd")
+
+var _original_save_path: String
+
+func before_all():
+	_original_save_path = SaveManager._save_path
+
+func after_all():
+	SaveTestIsolation.restore(_original_save_path)
+
 func before_each():
+	SaveTestIsolation.isolate()
 	var player_scene: PackedScene = load(PLAYER_SCENE_PATH)
 	player = player_scene.instantiate()
 	add_child_autofree(player)

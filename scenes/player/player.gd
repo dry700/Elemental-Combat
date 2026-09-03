@@ -20,6 +20,13 @@ signal weapon_changed(is_primary: bool, new_weapon: WeaponStats)
 ## Same reasoning as weapon_changed above, for SkillPickup.
 signal skill_changed(is_primary: bool, new_skill: SkillData)
 
+## Fires exactly once, the instant current_health first reaches 0 — see
+## _apply_damage()/_die(). RunManager listens to this to know a run has
+## ended in a loss (Section 6.2's save/progression data needs a real
+## "loss" case to log; nothing in this project previously did anything
+## when the player's health hit zero).
+signal died
+
 ## --- Movement tuning (starting points) ---
 @export var max_speed: float = 220.0
 @export var acceleration: float = 1800.0
@@ -62,6 +69,7 @@ var facing: int = 1  ## 1 = right, -1 = left
 ## shared with TestDummy and PatrolDummy — see elemental_combatant.gd.
 var elemental := ElementalCombatant.new()
 var _active_weapon: WeaponStats
+var _is_dead: bool = false
 
 var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
@@ -113,6 +121,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _is_dead:
+		return
 	_update_timers(delta)
 	_apply_gravity(delta)
 
@@ -209,7 +219,7 @@ func _update_timers(delta: float) -> void:
 
 	var dot_damage := elemental.tick(delta)
 	if dot_damage > 0.0:
-		current_health = maxf(current_health - dot_damage, 0.0)
+		_apply_damage(dot_damage)
 		print("Player DoT tick: -", dot_damage, " (", current_health, "/", max_health, " HP)")
 
 	if is_on_floor():
@@ -463,6 +473,8 @@ func swap_weapon(is_primary: bool, new_weapon: WeaponStats) -> WeaponStats:
 	else:
 		previous = secondary_weapon
 		secondary_weapon = new_weapon
+	if new_weapon != null:
+		SaveManager.record_weapon_unlock(new_weapon.resource_path)  ## Meta-progression (Section 6.2) — found once, unlocked forever.
 	weapon_changed.emit(is_primary, new_weapon)
 	return previous
 
@@ -481,6 +493,8 @@ func swap_skill(is_primary: bool, new_skill: SkillData) -> SkillData:
 	else:
 		previous = skill_2
 		skill_2 = new_skill
+	if new_skill != null:
+		SaveManager.record_skill_unlock(new_skill.resource_path)  ## Meta-progression (Section 6.2) — found once, unlocked forever.
 	skill_changed.emit(is_primary, new_skill)
 	return previous
 
@@ -530,7 +544,7 @@ func _on_disabled_expired() -> void:
 
 
 func _on_hurtbox_hit(hit_data: HitData) -> void:
-	current_health = maxf(current_health - hit_data.damage, 0.0)
+	_apply_damage(hit_data.damage)
 	velocity += hit_data.knockback
 	HitStop.freeze(0.05)
 	elemental.handle_hit(hit_data)
@@ -538,5 +552,91 @@ func _on_hurtbox_hit(hit_data: HitData) -> void:
 
 ## Wildfire's chain (A.7 Link) landed on the player.
 func _on_bonus_damage_dealt(amount: float) -> void:
-	current_health = maxf(current_health - amount, 0.0)
+	_apply_damage(amount)
 	print("Player takes Wildfire chain damage: -", amount, " (", current_health, "/", max_health, " HP)")
+
+
+## Centralised health-reduction path (every damage source — hits, DoT,
+## Wildfire chain — routes through here) so death only needs to be
+## checked in ONE place. Mirrors the _apply_damage()/_die() pattern
+## already used by TestDummy/PatrolDummy/Boss, just inverted (their
+## version tracks a rising damage-taken counter; this one drains a
+## falling health float) since Player's health model has always been
+## different from the dummies' own damage-counter approach.
+func _apply_damage(amount: float) -> void:
+	if _is_dead:
+		return
+	current_health = maxf(current_health - amount, 0.0)
+	if current_health <= 0.0:
+		_die()
+
+
+func _die() -> void:
+	_is_dead = true
+	hurtbox.invulnerable = true  ## No further hits register — same convention as every enemy's own _die().
+	died.emit()
+	print("Player died")
+
+
+## --- Save/resume (SaveManager, Section 6.2) ---
+
+## Serializes the player's own persistable state — health/armor and
+## which weapons/skills are equipped, by resource path rather than by
+## value, since a WeaponStats/SkillData instance itself isn't JSON-safe
+## but the res:// path that loads it back is. Read by RunManager's
+## autosave — see run_manager.gd's own header comment on what this
+## deliberately does NOT capture (position, in-flight cooldowns, etc.).
+func to_save_state() -> Dictionary:
+	return {
+		"current_health": current_health,
+		"max_health": max_health,
+		"armor": elemental.armor,
+		"weapon_path": weapon.resource_path if weapon != null else "",
+		"secondary_weapon_path": secondary_weapon.resource_path if secondary_weapon != null else "",
+		"skill_1_path": skill_1.resource_path if skill_1 != null else "",
+		"skill_2_path": skill_2.resource_path if skill_2 != null else "",
+	}
+
+
+## Restores a previously-saved state (RunManager, on resume). Weapon/
+## skill paths are loaded fresh via load() rather than resolving back to
+## some in-memory instance — safe because every real .tres weapon/skill
+## is a stable, shared Resource, the same assumption swap_weapon/
+## swap_skill already make when a pickup hands one over directly.
+## Deliberately does NOT go through swap_weapon/swap_skill — resuming a
+## run must not re-trigger a meta-progression unlock for something that
+## was already unlocked the first time it was ever picked up.
+func apply_save_state(state: Dictionary) -> void:
+	current_health = state.get("current_health", current_health)
+	max_health = state.get("max_health", max_health)
+	elemental.armor = state.get("armor", elemental.armor)
+	_load_weapon_path(state.get("weapon_path", ""), true)
+	_load_weapon_path(state.get("secondary_weapon_path", ""), false)
+	_load_skill_path(state.get("skill_1_path", ""), true)
+	_load_skill_path(state.get("skill_2_path", ""), false)
+
+
+func _load_weapon_path(path: String, is_primary: bool) -> void:
+	if path == "":
+		return
+	var loaded := load(path) as WeaponStats
+	if loaded == null:
+		push_warning("Player.apply_save_state: could not load weapon at %s" % path)
+		return
+	if is_primary:
+		weapon = loaded
+	else:
+		secondary_weapon = loaded
+
+
+func _load_skill_path(path: String, is_primary: bool) -> void:
+	if path == "":
+		return
+	var loaded := load(path) as SkillData
+	if loaded == null:
+		push_warning("Player.apply_save_state: could not load skill at %s" % path)
+		return
+	if is_primary:
+		skill_1 = loaded
+	else:
+		skill_2 = loaded

@@ -101,3 +101,24 @@ Charge grid, ICD, Break-Free's floor rule) and A.5 skill effects
 (cleanse-skill Charge bypass, ICD bypass). Room generation is
 deliberately out of scope here — verified through playtesting instead,
 per Section 8.1.
+## Save Data (Section 6.2)
+
+Local JSON at Godot's `user://save_data.json` (a real per-OS user data
+folder — AppData/Library/.local — not `res://`), managed by the
+`SaveManager` autoload. Three independent things, one file:
+
+- **Mid-run resume**: every room transition autosaves the room
+  sequence, current room, elapsed time, and your health/armor/equipped
+  weapons+skills. Relaunching `procedural_run.tscn` resumes
+  automatically if a save exists. NOT mid-room precise — enemies always
+  respawn fresh from their EnemySpawnPoints; only room-boundary state
+  is captured.
+- **Meta-progression**: any weapon or skill you've ever equipped from a
+  world pickup is recorded permanently (by resource path), independent
+  of death or a new run starting. There's no UI for this yet — query it
+  via `SaveManager.get_unlocked_weapon_paths()`/`get_unlocked_skill_paths()`.
+- **Run history**: every finished run (win or loss) logs its outcome,
+  rooms cleared, and duration — capped at the 50 most recent.
+
+To force a completely fresh run during testing, delete
+`user://save_data.json` (Project → Open User Data Folder in the editor).

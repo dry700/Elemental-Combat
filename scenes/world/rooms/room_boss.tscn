@@ -5,9 +5,6 @@
 [ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/boss.tscn" id="4_boss"]
 [ext_resource type="Resource" path="res://scripts/resources/enemies/ember_tide_boss_stats.tres" id="5_stats"]
-[ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="6_player"]
-[ext_resource type="Resource" uid="uid://qrytbfi2t63m" path="res://scripts/resources/weapons/training_spear.tres" id="7_weapon"]
-[ext_resource type="Resource" path="res://scripts/resources/weapons/training_hammer.tres" id="8_fn7lk"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(900, 40)
@@ -49,8 +46,3 @@ shape = SubResource("RectangleShape2D_exit")
 
 [node name="Visual" type="Polygon2D" parent="Exit" unique_id=1237763999]
 polygon = PackedVector2Array(-10, -30, 10, -30, 10, 30, -10, 30)
-
-[node name="Player" parent="." unique_id=12187457 instance=ExtResource("6_player")]
-position = Vector2(-380, 180)
-weapon = ExtResource("7_weapon")
-secondary_weapon = ExtResource("8_fn7lk")
