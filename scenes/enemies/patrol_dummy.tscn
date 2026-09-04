@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://3x11vij7pkew" path="res://scenes/enemies/patrol_dummy.gd" id="1_patrol"]
 [ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
+[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_patrol"]
 size = Vector2(16, 24)
@@ -21,6 +22,11 @@ shape = SubResource("RectangleShape2D_patrol")
 [node name="PlaceholderVisual" type="Polygon2D" parent="." unique_id=1195349901]
 color = Color(0.3, 0.75, 0.55, 1)
 polygon = PackedVector2Array(-8, -12, 8, -12, 8, 12, -8, 12)
+
+[node name="SpriteVisual" type="Node2D" parent="." unique_id=2004417733]
+script = ExtResource("3_sprite_visual")
+entity_id = "patrol_dummy"
+fallback_polygon = NodePath("../PlaceholderVisual")
 
 [node name="Hurtbox" type="Area2D" parent="." unique_id=1790191211]
 collision_layer = 2

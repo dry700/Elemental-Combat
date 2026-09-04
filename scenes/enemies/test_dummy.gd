@@ -20,7 +20,8 @@ const TELEGRAPH_TINT: Color = Color(1.0, 0.9, 0.3)
 const SPECIAL_TELEGRAPH_TINT: Color = Color(1.0, 0.5, 0.9)
 
 @onready var hurtbox: Hurtbox = $Hurtbox
-@onready var visual: Polygon2D = $PlaceholderVisual
+@onready var visual_polygon: Polygon2D = $PlaceholderVisual
+@onready var visual: SpriteVisual = $SpriteVisual
 @onready var damage_label: Label = $DamageLabel
 
 var elemental := ElementalCombatant.new()
@@ -37,7 +38,7 @@ var _telegraph_is_special: bool = false
 
 func _ready() -> void:
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
-	_base_color = visual.color
+	_base_color = visual_polygon.color
 
 	elemental.indicator_offset = Vector2(0, -52)  ## Above the DamageLabel (-36..-16).
 	elemental.armor = starting_armor
@@ -67,7 +68,7 @@ func _physics_process(delta: float) -> void:
 			combat_ai.update(delta, player.global_position)
 
 	if not _is_flashing:
-		visual.color = _resting_color()
+		visual.set_tint(_resting_color())
 
 
 func _resting_color() -> Color:
@@ -107,7 +108,7 @@ const DEATH_FADE_DELAY: float = 0.3
 func _die() -> void:
 	_is_dead = true
 	hurtbox.invulnerable = true  ## Existing flag on Hurtbox — no new mechanism needed.
-	visual.color = DEATH_TINT
+	visual.set_tint(DEATH_TINT)
 	damage_label.text = "X"
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
@@ -115,10 +116,10 @@ func _die() -> void:
 
 func _flash() -> void:
 	_is_flashing = true
-	visual.color = Color.WHITE
+	visual.set_tint(Color.WHITE)
 	await get_tree().create_timer(flash_duration).timeout
 	_is_flashing = false
-	visual.color = _resting_color()
+	visual.set_tint(_resting_color())
 
 
 ## No separate "attack ended" signal exists on EnemyCombatAI — this timer

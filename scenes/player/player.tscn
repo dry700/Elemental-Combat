@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://daxydjjclf6ji" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" uid="uid://dicmasbu416ty" path="res://scripts/combat/hitbox.gd" id="2_hitbox"]
 [ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="3_hurtbox"]
+[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="4_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(12, 16)
@@ -40,6 +41,11 @@ knockback_strength = 200.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Hitbox" unique_id=1556207956]
 shape = SubResource("CircleShape2D_hitbox")
+
+[node name="SpriteVisual" type="Node2D" parent="Visuals" unique_id=1998234561]
+script = ExtResource("4_sprite_visual")
+entity_id = "player"
+fallback_polygon = NodePath("../PlaceholderVisual")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1823877880]
 position_smoothing_enabled = true

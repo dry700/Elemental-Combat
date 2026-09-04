@@ -20,7 +20,8 @@ const TELEGRAPH_TINT: Color = Color(1.0, 0.9, 0.3)
 const SPECIAL_TELEGRAPH_TINT: Color = Color(1.0, 0.5, 0.9)
 
 @onready var hurtbox: Hurtbox = $Hurtbox
-@onready var visual: Polygon2D = $PlaceholderVisual
+@onready var visual_polygon: Polygon2D = $PlaceholderVisual
+@onready var visual: SpriteVisual = $SpriteVisual
 @onready var damage_label: Label = $DamageLabel
 
 var elemental := ElementalCombatant.new()
@@ -39,7 +40,7 @@ var _patrol_direction: int = 1
 
 func _ready() -> void:
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
-	_base_color = visual.color
+	_base_color = visual_polygon.color
 	_spawn_x = global_position.x
 
 	elemental.indicator_offset = Vector2(0, -52)
@@ -65,7 +66,7 @@ func _physics_process(delta: float) -> void:
 	var _dot_damage := elemental.tick(delta)
 
 	if not _is_flashing:
-		visual.color = _resting_color()
+		visual.set_tint(_resting_color())
 
 	if not is_on_floor():
 		var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
@@ -146,7 +147,7 @@ const DEATH_FADE_DELAY: float = 0.3
 func _die() -> void:
 	_is_dead = true
 	hurtbox.invulnerable = true
-	visual.color = DEATH_TINT
+	visual.set_tint(DEATH_TINT)
 	damage_label.text = "X"
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
@@ -154,10 +155,10 @@ func _die() -> void:
 
 func _flash() -> void:
 	_is_flashing = true
-	visual.color = Color.WHITE
+	visual.set_tint(Color.WHITE)
 	await get_tree().create_timer(flash_duration).timeout
 	_is_flashing = false
-	visual.color = _resting_color()
+	visual.set_tint(_resting_color())
 
 
 func _on_telegraph_started(is_special: bool) -> void:

@@ -606,14 +606,14 @@ func to_save_state() -> Dictionary:
 ## Deliberately does NOT go through swap_weapon/swap_skill — resuming a
 ## run must not re-trigger a meta-progression unlock for something that
 ## was already unlocked the first time it was ever picked up.
-func apply_save_state(state: Dictionary) -> void:
-	current_health = state.get("current_health", current_health)
-	max_health = state.get("max_health", max_health)
-	elemental.armor = state.get("armor", elemental.armor)
-	_load_weapon_path(state.get("weapon_path", ""), true)
-	_load_weapon_path(state.get("secondary_weapon_path", ""), false)
-	_load_skill_path(state.get("skill_1_path", ""), true)
-	_load_skill_path(state.get("skill_2_path", ""), false)
+func apply_save_state(saved_state: Dictionary) -> void:
+	current_health = saved_state.get("current_health", current_health)
+	max_health = saved_state.get("max_health", max_health)
+	elemental.armor = saved_state.get("armor", elemental.armor)
+	_load_weapon_path(saved_state.get("weapon_path", ""), true)
+	_load_weapon_path(saved_state.get("secondary_weapon_path", ""), false)
+	_load_skill_path(saved_state.get("skill_1_path", ""), true)
+	_load_skill_path(saved_state.get("skill_2_path", ""), false)
 
 
 func _load_weapon_path(path: String, is_primary: bool) -> void:

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/enemies/test_dummy.gd" id="1_dummy"]
 [ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
+[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dummy"]
 size = Vector2(16, 24)
@@ -17,6 +18,11 @@ shape = SubResource("RectangleShape2D_dummy")
 [node name="PlaceholderVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-8, -12, 8, -12, 8, 12, -8, 12)
 color = Color(0.8, 0.3, 0.3, 1)
+
+[node name="SpriteVisual" type="Node2D" parent="."]
+script = ExtResource("3_sprite_visual")
+entity_id = "test_dummy"
+fallback_polygon = NodePath("../PlaceholderVisual")
 
 [node name="Hurtbox" type="Area2D" parent="."]
 collision_layer = 2
