@@ -12,7 +12,7 @@ extends Resource
 enum Function {
 	APPLY_SELF,          ## Stoneguard: status.apply() straight to self, no reaction check (A.3's Wu-bait case — building up your OWN status, not reacting to a hit).
 	REMOVE_APPLY_SELF,   ## Cleansing Tide: clears own status (bypasses Charge), then applies a fresh one.
-	APPLY_SINGLE_TARGET, ## Ignite Dart: applies to a target enemy through the full Sinh/Khắc pipeline, same as a weapon hit.
+		APPLY_SINGLE_TARGET, ## Ignite Dart: fires a traveling SkillProjectile that resolves through the full Sinh/Khắc pipeline on its first hit, same as a weapon hit — no longer an instant hitscan (see SkillProjectile).
 	REMOVE_ENEMY,        ## Rending Edge: strips a target enemy's status, bypasses Charge, no damage.
 	APPLY_AREA,          ## Overgrowth Snare: spawns an A.7 Zone at the caster's position.
 }

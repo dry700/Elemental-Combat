@@ -655,6 +655,35 @@ func cast_apply_enemy(target: ElementalCombatant, element: StringName, charge: i
 	target.handle_hit(hit_data, true)
 
 
+## Ignite Dart's actual cast path (A.5) as of its projectile conversion —
+## spawns a traveling SkillProjectile aimed in `direction` instead of
+## resolving instantly via cast_apply_enemy above. cast_apply_enemy
+## itself is unchanged and still the generic "apply straight through the
+## full reaction pipeline onto an already-known target" primitive — it's
+## also still exactly what SkillProjectile calls (via handle_hit()) the
+## moment it actually connects. This method only changes WHEN and
+## WHETHER that resolution happens, not how. `direction` is resolved by
+## the caller (Player — see _try_cast_skill) since no aim/targeting
+## system exists anywhere else in this project, same reasoning
+## SkillData.cast_range's own doc comment already gives.
+const IGNITE_DART_SPEED: float = 520.0
+const IGNITE_DART_LIFETIME: float = 0.6
+
+func cast_apply_projectile(element: StringName, charge: int, direction: Vector2) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var dart := SkillProjectile.new()
+	dart.global_position = global_position
+	dart.direction = direction
+	dart.speed = IGNITE_DART_SPEED
+	dart.lifetime = IGNITE_DART_LIFETIME
+	dart.element = element
+	dart.charge = charge
+	dart.attacker = get_parent()
+	scene_root.add_child(dart)
+
+
 ## Rending Edge: strips the target's status outright — "bypasses Charge,
 ## no damage" (A.5), same cleanse-exemption family as Cleansing Tide,
 ## aimed instead of self-cast. Only touches status, same reasoning above.

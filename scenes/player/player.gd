@@ -414,9 +414,23 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 		SkillData.Function.REMOVE_APPLY_SELF:
 			elemental.cast_cleanse_and_apply_self(skill.element, charge)
 		SkillData.Function.APPLY_SINGLE_TARGET:
-			var target := _find_skill_target(skill.cast_range)
-			if target != null:
-				elemental.cast_apply_enemy(target, skill.element, charge)
+			# No longer an instant hitscan resolution — fires a real
+			# traveling SkillProjectile instead (see ElementalCombatant.
+			# cast_apply_projectile). _find_skill_target(cast_range) is
+			# only used to pick a DIRECTION to aim at now, not to
+			# resolve the hit immediately — same "no aim/targeting
+			# system exists elsewhere" reasoning SkillData.cast_range's
+			# own doc comment already gives. Falls back to facing
+			# direction with nothing in range, so the dart can now miss
+			# a target that moves out of its path, same as it always
+			# could with Ore Surge's fragments.
+			var aim_target := _find_skill_target(skill.cast_range)
+			var aim_direction := Vector2(facing, 0)
+			if aim_target != null:
+				var to_target := aim_target.global_position - global_position
+				if not to_target.is_zero_approx():
+					aim_direction = to_target.normalized()
+			elemental.cast_apply_projectile(skill.element, charge, aim_direction)
 		SkillData.Function.REMOVE_ENEMY:
 			var enemy_target := _find_skill_target(skill.cast_range)
 			if enemy_target != null:
