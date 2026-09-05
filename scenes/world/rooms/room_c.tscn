@@ -9,17 +9,17 @@
 [ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_stats_kim"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(800, 40)
+size = Vector2(400, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
-size = Vector2(20, 60)
+size = Vector2(10, 30)
 
 [node name="RoomC" type="Node2D"]
 script = ExtResource("1_controller")
 exit = NodePath("Exit")
 
 [node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(0, 220)
+position = Vector2(0, 110)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
@@ -27,26 +27,26 @@ shape = SubResource("RectangleShape2D_ground")
 
 [node name="Visual" type="Polygon2D" parent="Ground"]
 color = Color(0.25, 0.25, 0.3, 1)
-polygon = PackedVector2Array(-400, -20, 400, -20, 400, 20, -400, 20)
+polygon = PackedVector2Array(-200, -10, 200, -10, 200, 10, -200, 10)
 
 [node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
-position = Vector2(-350, 180)
+position = Vector2(-175, 90)
 
 [node name="EnemySpawnPoint1" type="Node2D" parent="."]
-position = Vector2(-50, 186)
+position = Vector2(-25, 93)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_patrol")
 enemy_stats = ExtResource("6_stats_patrol")
 
 [node name="EnemySpawnPoint2" type="Node2D" parent="."]
-position = Vector2(150, 187)
+position = Vector2(75, 93.5)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("5_dummy")
 enemy_stats = ExtResource("7_stats_kim")
 starting_element = &"kim"
 
 [node name="Exit" type="Area2D" parent="."]
-position = Vector2(370, 190)
+position = Vector2(185, 95)
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("3_exit")
@@ -55,4 +55,4 @@ script = ExtResource("3_exit")
 shape = SubResource("RectangleShape2D_exit")
 
 [node name="Visual" type="Polygon2D" parent="Exit"]
-polygon = PackedVector2Array(-10, -30, 10, -30, 10, 30, -10, 30)
+polygon = PackedVector2Array(-5, -15, 5, -15, 5, 15, -5, 15)

@@ -23,11 +23,11 @@ extends Area2D
 ## every projectile in this project has always made; nothing here
 ## reacts to Ground/Platform bodies.
 
-@export var speed: float = 400.0
+@export var speed: float = 200.0
 @export var lifetime: float = 0.8
 @export var element: StringName = Elements.NONE
 @export var charge: int = 1
-@export var radius: float = 5.0  ## Collision shape size — set per spawn call, or defaulted in a child's _init().
+@export var radius: float = 2.5  ## Collision shape size — set per spawn call, or defaulted in a child's _init().
 
 var direction: Vector2 = Vector2.RIGHT
 var attacker: Node = null  ## Never hits its own wielder — same guard on every projectile type.

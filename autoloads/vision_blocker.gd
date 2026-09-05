@@ -17,8 +17,8 @@ extends CanvasLayer
 ## ever affected ElementalCombatants directly, never any AI perception
 ## (none of which uses vision for anything currently).
 
-const EXTRA_REVEAL_DISTANCE: float = 40.0  ## "A short distance around the cloud" — no number given in A.2, a reasonable pick.
-const FALLOFF_DISTANCE: float = 50.0  ## Soft-edge width so the cutoff isn't a hard, unnatural circle.
+const EXTRA_REVEAL_DISTANCE: float = 20.0  ## "A short distance around the cloud" — no number given in A.2, a reasonable pick.
+const FALLOFF_DISTANCE: float = 25.0  ## Soft-edge width so the cutoff isn't a hard, unnatural circle.
 const DARKNESS: float = 0.92  ## How opaque the blocked-out area gets. 1.0 would be pure black.
 
 var _material: ShaderMaterial

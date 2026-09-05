@@ -66,7 +66,7 @@ func test_hit_bypasses_icd():
 
 func test_never_hits_its_own_wielder():
 	var t := _make_target_owner()
-	var original_element := t["elemental"].status.element
+	var original_element: StringName = t["elemental"].status.element
 	var dart := _make_dart(Elements.HOA, 1, t["owner"])  # attacker == the target's own owner
 
 	dart._on_area_entered(t["hurtbox"])

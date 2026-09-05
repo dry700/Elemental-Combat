@@ -25,7 +25,7 @@ const SLOWED_TINT: Color = Color(0.55, 0.75, 1.0)
 const DISABLED_TINT: Color = Color(1.0, 0.55, 0.25)
 const DEATH_TINT: Color = Color(0.3, 0.3, 0.3)
 const DEATH_FADE_DELAY: float = 0.5
-const DECEL_WHEN_NOT_CHASING: float = 800.0
+const DECEL_WHEN_NOT_CHASING: float = 400.0
 
 @onready var hurtbox: Hurtbox = $Hurtbox
 @onready var visual_polygon: Polygon2D = $PlaceholderVisual

@@ -29,8 +29,17 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [physics]
 
-2d/default_gravity=1400
+2d/default_gravity=700
 
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
+
+[display]
+
+window/size/viewport_width=576
+window/size/viewport_height=324
+window/size/window_width_override=1152
+window/size/window_height_override=648
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"

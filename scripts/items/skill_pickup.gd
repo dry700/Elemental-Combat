@@ -15,7 +15,7 @@ enum Slot { PRIMARY, SECONDARY }
 @export var skill: SkillData
 @export var slot: Slot = Slot.PRIMARY
 
-const RADIUS: float = 10.0
+const RADIUS: float = 5.0
 const PRIMARY_COLOR := Color(0.45, 0.8, 0.75)
 const SECONDARY_COLOR := Color(0.75, 0.45, 0.8)
 const PROMPT_COLOR := Color(1.0, 1.0, 1.0, 0.9)

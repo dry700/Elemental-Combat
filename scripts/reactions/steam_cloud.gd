@@ -25,7 +25,7 @@ extends Node2D
 ## mechanical for the rest of its life. Reusing Zone's periodic-tick
 ## shape here would be modeling the wrong thing.
 
-@export var radius: float = 90.0
+@export var radius: float = 45.0
 @export var lifetime: float = 5.0
 @export var stun_duration: float = 0.3
 ## 0.0 = fully see-through, 1.0 = fully opaque. Tune this by feel —

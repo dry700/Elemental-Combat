@@ -18,7 +18,7 @@ extends Node2D
 
 @export var element: StringName = Elements.NONE
 @export var charge: int = 1  ## A.7: "fixed at 1" — never scaled by the triggering hit's Charge.
-@export var radius: float = 90.0
+@export var radius: float = 45.0
 @export var tick_interval: float = 1.0
 @export var lifetime: float = 8.0  ## A.7: "~6-10s" — 8s is the middle of that range.
 

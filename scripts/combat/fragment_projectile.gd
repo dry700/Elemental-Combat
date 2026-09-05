@@ -24,7 +24,7 @@ var _already_hit: Array[Hurtbox] = []
 
 
 func _init() -> void:
-	radius = 5.0  ## Was FRAGMENT_SIZE — kept as this class's own default; still overridable per spawn call.	
+	radius = 2.5  ## Was FRAGMENT_SIZE — kept as this class's own default; still overridable per spawn call.	
 
 func _resolve_hit(hurtbox: Hurtbox) -> void:
 	if hurtbox in _already_hit:

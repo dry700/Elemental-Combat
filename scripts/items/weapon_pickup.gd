@@ -26,7 +26,7 @@ enum Slot { PRIMARY, SECONDARY }
 ## different option.
 @export var slot: Slot = Slot.PRIMARY
 
-const HALF_SIZE: float = 10.0
+const HALF_SIZE: float = 5.0
 const PRIMARY_COLOR := Color(0.85, 0.75, 0.3)
 const SECONDARY_COLOR := Color(0.4, 0.75, 0.85)
 const PROMPT_COLOR := Color(1.0, 1.0, 1.0, 0.9)

@@ -43,7 +43,7 @@ func _ready() -> void:
 	_base_color = visual_polygon.color
 	_spawn_x = global_position.x
 
-	elemental.indicator_offset = Vector2(0, -52)
+	elemental.indicator_offset = Vector2(0, -26)
 	elemental.armor = starting_armor
 	elemental.innate_element = starting_element
 	add_child(elemental)

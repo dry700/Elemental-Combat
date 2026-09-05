@@ -13,7 +13,8 @@ extends Node2D
 ## entity-by-entity (R05, Section 9.3) without breaking anything.
 
 const SPRITE_DIR: String = "res://assets/sprites/"
-const PIXEL_SCALE: float = 2.0  ## Upscales 16x16 art to sit at the placeholders' existing visual scale.
+## Upscaling is now the window's job (project.godot's display/window/stretch
+## settings), not this node's — every sprite renders at native 1:1 here.
 
 @export var entity_id: String = ""
 @export var fallback_polygon: Polygon2D  ## Kept as a child, only ever hidden, never freed.
@@ -24,17 +25,14 @@ var _using_sprite: bool = false
 
 func _ready() -> void:
 	if fallback_polygon == null:
-		# Not fatal — same "fails safe, doesn't crash" convention as the
-		# rest of this project's null-guards (EnemySpawnPoint.spawn(),
-		# RoomController's own missing-Exit case uses push_error since
-		# THAT one breaks room progression; a visual with no fallback
-		# just means nothing is drawn, which is recoverable at runtime).
-		push_warning("SpriteVisual on %s has no fallback_polygon (and no sibling named \"PlaceholderVisual\" to recover it from)" % get_parent())
-		return
+		# Recover from a resaved .tscn silently dropping this NodePath
+		# export — same known quirk RoomController.exit already guards
+		# against. Actually do what this warning always claimed to do.
+		fallback_polygon = get_parent().find_child("PlaceholderVisual", false, false) as Polygon2D
 	if fallback_polygon == null:
 		push_error("SpriteVisual on %s has no fallback_polygon (and no sibling named \"PlaceholderVisual\" to recover it from)" % get_parent())
 		return
-	_try_load_sprite()	
+	_try_load_sprite()
 
 
 func _try_load_sprite() -> void:
@@ -50,11 +48,26 @@ func _try_load_sprite() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.texture = texture
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_sprite.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_sprite.offset = _ground_aligned_offset(texture)
 	add_child(_sprite)
 
 	fallback_polygon.visible = false
 	_using_sprite = true
+
+
+## Aligns the loaded sprite's bottom edge with the placeholder polygon's
+## own bottom edge — see the class-level note on why this reuses the
+## placeholder's already-correct bound instead of a per-entity constant.
+## No PIXEL_SCALE conversion needed anymore: with global window stretch,
+## poly_bottom and the texture's own height are already in the same 1:1
+## unit space.
+func _ground_aligned_offset(texture: Texture2D) -> Vector2:
+	if fallback_polygon == null:
+		return Vector2.ZERO
+	var poly_bottom := -INF
+	for point in fallback_polygon.polygon:
+		poly_bottom = maxf(poly_bottom, point.y)
+	return Vector2(0, poly_bottom - texture.get_height() / 2.0)
 
 
 ## Single entry point every caller uses instead of Polygon2D.color /

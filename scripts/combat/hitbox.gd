@@ -5,7 +5,7 @@ extends Area2D
 ## animation frames (see WeaponStats.active_window).
 
 @export var damage: float = 10.0
-@export var knockback_strength: float = 300.0
+@export var knockback_strength: float = 150.0
 @export var weapon_weight: StringName = &"none"
 @export var element: StringName = Elements.NONE
 @export var charge: int = 0

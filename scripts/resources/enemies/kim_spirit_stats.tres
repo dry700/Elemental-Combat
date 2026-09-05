@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1")
-aggro_range = 160.0
-attack_range = 30.0
+aggro_range = 80.0
+attack_range = 15.0
 chase_speed = 0.0
 damage = 6.0
-knockback_strength = 180.0
+knockback_strength = 90.0
 attack_cooldown = 1.4
 element = &"kim"
 telegraph_duration = 0.4

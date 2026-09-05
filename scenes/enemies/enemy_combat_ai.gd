@@ -52,7 +52,7 @@ func _ready() -> void:
 	_hitbox.collision_mask = 2  ## Hurtbox layer — same convention as the player's own Hitbox.
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = (stats.attack_range if stats != null else 26.0) * 0.6
+	circle.radius = (stats.attack_range if stats != null else 13.0) * 0.6
 	shape.shape = circle
 	_hitbox.add_child(shape)
 	add_child(_hitbox)

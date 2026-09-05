@@ -1,40 +1,40 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://wdowtgl1sbw8"]
 
-[ext_resource type="Script" path="res://scenes/enemies/boss.gd" id="1_boss"]
-[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
-[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
+[ext_resource type="Script" uid="uid://b3r7uu0u6b4of" path="res://scenes/enemies/boss.gd" id="1_boss"]
+[ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
+[ext_resource type="Script" uid="uid://dt3h3wgas43p5" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_boss"]
-size = Vector2(32, 48)
+size = Vector2(16, 24)
 
-[node name="Boss" type="CharacterBody2D"]
+[node name="Boss" type="CharacterBody2D" unique_id=2139997490]
 script = ExtResource("1_boss")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1267922995]
 shape = SubResource("RectangleShape2D_boss")
 
-[node name="PlaceholderVisual" type="Polygon2D" parent="."]
+[node name="PlaceholderVisual" type="Polygon2D" parent="." unique_id=201733916]
 color = Color(0.5, 0.25, 0.55, 1)
-polygon = PackedVector2Array(-16, -24, 16, -24, 16, 24, -16, 24)
+polygon = PackedVector2Array(-8, -12, 8, -12, 8, 12, -8, 12)
 
-[node name="SpriteVisual" type="Node2D" parent="."]
+[node name="SpriteVisual" type="Node2D" parent="." unique_id=1063430867]
 script = ExtResource("3_sprite_visual")
 entity_id = "boss"
 fallback_polygon = NodePath("../PlaceholderVisual")
 
-[node name="Hurtbox" type="Area2D" parent="."]
+[node name="Hurtbox" type="Area2D" parent="." unique_id=1631367832]
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 script = ExtResource("2_hurtbox")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox" unique_id=2080768499]
 shape = SubResource("RectangleShape2D_boss")
 
-[node name="DamageLabel" type="Label" parent="."]
-offset_left = -30.0
-offset_top = -56.0
-offset_right = 30.0
-offset_bottom = -36.0
-horizontal_alignment = 1
+[node name="DamageLabel" type="Label" parent="." unique_id=1645317170]
+offset_left = -15.0
+offset_top = -28.0
+offset_right = 15.0
+offset_bottom = -18.0
 text = "0"
+horizontal_alignment = 1

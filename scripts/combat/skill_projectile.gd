@@ -29,7 +29,7 @@ var _spent: bool = false  ## Guards against resolving a second hit once this dar
 
 
 func _init() -> void:
-	radius = 4.0  ## Was DART_RADIUS — kept as this class's own default; still overridable per spawn call.
+	radius = 2.0  ## Was DART_RADIUS — kept as this class's own default; still overridable per spawn call.
 
 func _resolve_hit(hurtbox: Hurtbox) -> void:
 	if _spent:

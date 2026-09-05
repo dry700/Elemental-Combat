@@ -20,9 +20,9 @@ enum Weight { LIGHT, MEDIUM, HEAVY }
 ## mechanical) — previously a single global lunge value on Player and a
 ## fixed hitbox size/offset baked into player.tscn, identical across
 ## every weapon regardless of archetype. ---
-@export var lunge_speed: float = 150.0  ## Forward speed during the pre-active-window wind-up.
-@export var reach: float = 14.0         ## Local x-offset of the hitbox from the wielder's centre.
-@export var hitbox_radius: float = 10.0 ## Size of the hit area itself.
+@export var lunge_speed: float = 75.0 ## Forward speed during the pre-active-window wind-up.
+@export var reach: float = 7.0         ## Local x-offset of the hitbox from the wielder's centre.
+@export var hitbox_radius: float = 5.0 ## Size of the hit area itself.
 
 ## Dead Cells-style combo string: pressing attack again — mid-swing, or
 ## in the short grace window right after — chains into the next hit

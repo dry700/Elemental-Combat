@@ -47,7 +47,7 @@ signal disabled_expired
 ## Local offset for the A.1 element-pattern indicator above this entity.
 ## Set this right after ElementalCombatant.new(), before add_child() —
 ## it's read once in _ready().
-@export var indicator_offset: Vector2 = Vector2(0, -30)
+@export var indicator_offset: Vector2 = Vector2(0, -15)
 
 ## DEBUG ONLY — shows remaining duration of each active timed effect
 ## (Disable/Slow/DoT) above the entity, stacked above the element
@@ -75,7 +75,7 @@ var _innate_recharge_timer: float = 0.0
 ## now that every combatant is the same class — no more owner-side
 ## duplication of this constant.
 const OVERGROWTH_GROUP: StringName = &"overgrowth_linked"
-const WILDFIRE_CHAIN_RADIUS: float = 220.0
+const WILDFIRE_CHAIN_RADIUS: float = 110.0
 
 ## Every ElementalCombatant joins this in _ready(), tagged or not — lets
 ## an AoE effect (currently just Overgrowth) radius-query "every nearby
@@ -92,7 +92,7 @@ const ALL_COMBATANTS_GROUP: StringName = &"elemental_combatants"
 ## deliberately smaller than WILDFIRE_CHAIN_RADIUS above (Overgrowth
 ## roots what's immediately around the hit; Wildfire's payoff reaches
 ## further out through the tagged group afterward).
-const OVERGROWTH_RADIUS: float = 150.0
+const OVERGROWTH_RADIUS: float = 75.0
 
 var status := ElementalStatus.new()
 var dot_effect := DotEffect.new()
@@ -114,10 +114,10 @@ func _ready() -> void:
 
 	if show_debug_readout:
 		_debug_label = Label.new()
-		_debug_label.custom_minimum_size = Vector2(100, 0)
-		_debug_label.position = indicator_offset + Vector2(-50, -30)  ## Stacked above the indicator.
+		_debug_label.custom_minimum_size = Vector2(50, 0)
+		_debug_label.position = indicator_offset + Vector2(-25, -15)
 		_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_debug_label.add_theme_font_size_override("font_size", 11)
+		_debug_label.add_theme_font_size_override("font_size", 6)
 		_debug_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 		_debug_label.add_theme_color_override("font_outline_color", Color.BLACK)
 		_debug_label.add_theme_constant_override("outline_size", 3)
@@ -460,7 +460,7 @@ func _propagate_wildfire(tier2: bool, generated_element: StringName, charge: int
 ## and Wildfire's chain. The OTHER half, the lingering scorched terrain,
 ## is _spawn_zone() below — this only covers "AoE burn," not "scorched
 ## terrain spreads Earth status" (A.2).
-const CINDER_BLOOM_BURN_RADIUS: float = 130.0
+const CINDER_BLOOM_BURN_RADIUS: float = 65.0
 
 func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 	var bystander := _bystander_attacker(attacker)
@@ -478,7 +478,7 @@ func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 ## smaller than Overgrowth/Cinder Bloom's own AoE radii — a "pulse"
 ## should read as tighter and more immediate than a lingering AoE, and
 ## Khắc reactions are meant to read as disruption, not a big area clear.
-const BURST_RADIUS: float = 100.0
+const BURST_RADIUS: float = 50.0
 
 
 ## Sever's Burst: shreds armor on everyone caught in the pulse, not just
@@ -538,7 +538,7 @@ func spawn_zone(element: StringName, radius: float = -1.0, lifetime: float = -1.
 ## pierce several different combatants along its own path (Projectile
 ## handles the piercing itself, not this loop).
 const ORE_SURGE_FRAGMENT_COUNT: int = 6
-const ORE_SURGE_FRAGMENT_SPEED: float = 400.0
+const ORE_SURGE_FRAGMENT_SPEED: float = 200.0
 const ORE_SURGE_FRAGMENT_LIFETIME: float = 0.8
 const ORE_SURGE_SHRED_PER_FRAGMENT: float = 2.0
 
@@ -566,8 +566,8 @@ func _spawn_ore_surge_fragments(element: StringName, charge: int, attacker: Node
 ## version and the larger radius are my own reasonable scaling, since
 ## A.2 only says "larger"/"longer" without giving numbers.
 const STEAM_CLOUD_LIFETIME: float = 5.0
-const STEAM_CLOUD_BASE_RADIUS: float = 90.0
-const STEAM_CLOUD_THUA_RADIUS: float = 130.0
+const STEAM_CLOUD_BASE_RADIUS: float = 45.0
+const STEAM_CLOUD_THUA_RADIUS: float = 65.0
 const STEAM_CLOUD_BASE_STUN: float = 0.3
 const STEAM_CLOUD_THUA_STUN: float = 0.5
 
@@ -666,7 +666,7 @@ func cast_apply_enemy(target: ElementalCombatant, element: StringName, charge: i
 ## the caller (Player — see _try_cast_skill) since no aim/targeting
 ## system exists anywhere else in this project, same reasoning
 ## SkillData.cast_range's own doc comment already gives.
-const IGNITE_DART_SPEED: float = 520.0
+const IGNITE_DART_SPEED: float = 260.0
 const IGNITE_DART_LIFETIME: float = 0.6
 
 func cast_apply_projectile(element: StringName, charge: int, direction: Vector2) -> void:

@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_patrol"]
-size = Vector2(16, 24)
+size = Vector2(8, 12)
 
 [node name="PatrolDummy" type="CharacterBody2D" unique_id=928974705]
 script = ExtResource("1_patrol")
@@ -21,7 +21,7 @@ shape = SubResource("RectangleShape2D_patrol")
 
 [node name="PlaceholderVisual" type="Polygon2D" parent="." unique_id=1195349901]
 color = Color(0.3, 0.75, 0.55, 1)
-polygon = PackedVector2Array(-8, -12, 8, -12, 8, 12, -8, 12)
+polygon = PackedVector2Array(-4, -6, 4, -6, 4, 6, -4, 6)
 
 [node name="SpriteVisual" type="Node2D" parent="." unique_id=2004417733]
 script = ExtResource("3_sprite_visual")
@@ -38,9 +38,9 @@ script = ExtResource("2_hurtbox")
 shape = SubResource("RectangleShape2D_patrol")
 
 [node name="DamageLabel" type="Label" parent="." unique_id=1457175515]
-offset_left = -20.0
-offset_top = -36.0
-offset_right = 20.0
-offset_bottom = -16.0
+offset_left = -10.0
+offset_top = -18.0
+offset_right = 10.0
+offset_bottom = -8.0
 text = "0"
 horizontal_alignment = 1

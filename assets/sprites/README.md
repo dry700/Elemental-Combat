@@ -13,6 +13,6 @@ entity's existing flat-colour `Polygon2D` placeholder until real art
 lands for it, so this folder can fill in one sprite at a time (R05,
 Section 9.3) without anything breaking in between.
 
-Export at 16×16, no padding — `SpriteVisual` upscales with a fixed
-factor (`PIXEL_SCALE`) and nearest-neighbour filtering, not per-sprite
-manual scaling.
+Export at 16×16, no padding — sprites render at native 1:1; the project's
+global window stretch (project.godot) handles upscaling everything at
+once, not this pipeline.

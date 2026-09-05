@@ -40,7 +40,7 @@ func _ready() -> void:
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	_base_color = visual_polygon.color
 
-	elemental.indicator_offset = Vector2(0, -52)  ## Above the DamageLabel (-36..-16).
+	elemental.indicator_offset = Vector2(0, -26)  ## Above the DamageLabel (-36..-16).
 	elemental.armor = starting_armor
 	elemental.innate_element = starting_element  ## A.6 spirit re-tag — see ElementalCombatant.tick().
 	add_child(elemental)

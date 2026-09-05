@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="SkillData" format=3]
+[gd_resource type="Resource" script_class="SkillData" format=3 uid="uid://drwb4tr8v66l0"]
 
-[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+[ext_resource type="Script" uid="uid://bmna2stcijh8k" path="res://scripts/resources/skills/skill_data.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
@@ -8,5 +8,4 @@ skill_name = "Overgrowth Snare"
 element = &"moc"
 function = 4
 cooldown = 14.0
-zone_radius = 140.0
-zone_lifetime = 9.0
+zone_radius = 70.0

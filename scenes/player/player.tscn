@@ -3,12 +3,48 @@
 [ext_resource type="Script" uid="uid://daxydjjclf6ji" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" uid="uid://dicmasbu416ty" path="res://scripts/combat/hitbox.gd" id="2_hitbox"]
 [ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="3_hurtbox"]
-[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="4_sprite_visual"]
+[ext_resource type="Script" uid="uid://dt3h3wgas43p5" path="res://scripts/visuals/sprite_visual.gd" id="4_sprite_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(12, 16)
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
+[sub_resource type="Animation" id="Animation_lvxji"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_p47bc"]
+resource_name = "idle"
+length = 0.6
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.3, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(0, -1), Vector2(0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_75vfm"]
+_data = {
+&"RESET": SubResource("Animation_lvxji"),
+&"idle": SubResource("Animation_p47bc")
+}
 
 [node name="Player" type="CharacterBody2D" unique_id=1738001616]
 script = ExtResource("1_player")
@@ -29,24 +65,26 @@ shape = SubResource("RectangleShape2D_body")
 
 [node name="PlaceholderVisual" type="Polygon2D" parent="Visuals" unique_id=2099649814]
 color = Color(0.3, 0.6, 0.9, 1)
-polygon = PackedVector2Array(-6, -8, 6, -8, 6, 8, -6, 8)
-
-[node name="Hitbox" type="Area2D" parent="Visuals" unique_id=706943547]
-position = Vector2(14, 0)
-collision_layer = 0
-collision_mask = 2
-monitoring = false
-script = ExtResource("2_hitbox")
-knockback_strength = 200.0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Hitbox" unique_id=1556207956]
-shape = SubResource("CircleShape2D_hitbox")
+polygon = PackedVector2Array(-3, -4, 3, -4, 3, 4, -3, 4)
 
 [node name="SpriteVisual" type="Node2D" parent="Visuals" unique_id=1998234561]
 script = ExtResource("4_sprite_visual")
 entity_id = "player"
 fallback_polygon = NodePath("../PlaceholderVisual")
 
+[node name="Hitbox" type="Area2D" parent="Visuals" unique_id=3789456123]
+collision_layer = 1
+collision_mask = 2
+script = ExtResource("2_hitbox")
+knockback_strength = 100.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Hitbox" unique_id=3789456124]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Visuals" unique_id=1075489074]
+libraries/ = SubResource("AnimationLibrary_75vfm")
+autoplay = &"idle"
+
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1823877880]
 position_smoothing_enabled = true
-position_smoothing_speed = 8.0
+position_smoothing_speed = 4.0

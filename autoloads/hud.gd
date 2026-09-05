@@ -28,9 +28,17 @@ extends CanvasLayer
 ## via DoT ticks, not just discrete hits, so a light _process poll is
 ## simpler here than wiring a listener for every source of change —
 ## consistent with ElementalCombatant's own debug readout doing the same.
+## Native canvas render size is half the window's actual pixel size now
+## (project.godot's display/window/stretch settings) — the engine stretches
+## the whole low-res frame up rather than this file pre-scaling anything
+## itself. Every absolute number below was tuned against the old
+## unstretched assumption; multiplying by this factor keeps them correctly
+## proportioned. Retune this one constant if the stretch ratio (window
+## override size ÷ viewport size in project.godot) ever changes.
+const UI_SCALE: float = 0.5
 
-const SLOT_SIZE: float = 40.0
-const SLOT_SEPARATION: float = 8.0
+const SLOT_SIZE: float = 40.0 * UI_SCALE
+const SLOT_SEPARATION: float = 8.0 * UI_SCALE
 const SLOT_EMPTY_COLOR := Color(0.2, 0.2, 0.24, 0.9)
 const BAR_BG_COLOR := Color(0.15, 0.15, 0.18, 0.9)
 const PLAYER_HP_COLOR := Color(0.35, 0.85, 0.4)
@@ -39,6 +47,7 @@ const PHASE_TICK_COLOR := Color(1.0, 1.0, 1.0, 0.85)
 const PROMPT_TEXT_COLOR := Color(1.0, 0.9, 0.3, 1.0)  ## Matches WeaponPickup/SkillPickup's own prompt colour family.
 const OVERLAY_BG_COLOR := Color(0.08, 0.08, 0.1, 0.92)
 const OVERLAY_SELECTED_COLOR := Color(0.35, 0.55, 0.85, 0.9)
+
 
 var _player_hp_bg: ColorRect
 var _player_hp_fill: ColorRect
@@ -102,8 +111,8 @@ func _build_player_hp_bar(root: Control) -> void:
 	var container := Control.new()
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	container.position = Vector2(20, -40)
-	container.size = Vector2(180, 20)
+	container.position = Vector2(20, -40) * UI_SCALE
+	container.size = Vector2(180, 20) * UI_SCALE
 	root.add_child(container)
 
 	_player_hp_bg = _make_rect(container, BAR_BG_COLOR, Vector2.ZERO, container.size)
@@ -115,7 +124,7 @@ func _build_slots(root: Control) -> void:
 	var container := HBoxContainer.new()
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	container.position = Vector2(-total_width - 20, -SLOT_SIZE - 20)
+	container.position = Vector2(-total_width - 20 * UI_SCALE, -SLOT_SIZE - 20 * UI_SCALE)
 	container.size = Vector2(total_width, SLOT_SIZE)
 	container.add_theme_constant_override("separation", int(SLOT_SEPARATION))
 	root.add_child(container)
@@ -143,16 +152,16 @@ func _make_slot(parent: Control, prompt_text: String) -> Array:
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", int(18 * UI_SCALE))
 	slot.add_child(label)
 
 	var prompt := Label.new()
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	prompt.text = prompt_text
-	prompt.position = Vector2(0, -18)
-	prompt.size = Vector2(SLOT_SIZE, 16)
-	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt.add_theme_font_size_override("font_size", 13)
+	prompt.position = Vector2(0, -18 * UI_SCALE)
+	prompt.size = Vector2(SLOT_SIZE, 16 * UI_SCALE)
+	prompt.add_theme_font_size_override("font_size", int(13 * UI_SCALE))
+	prompt.add_theme_constant_override("outline_size", maxi(1, int(3 * UI_SCALE)))
 	prompt.add_theme_color_override("font_color", PROMPT_TEXT_COLOR)
 	prompt.add_theme_color_override("font_outline_color", Color.BLACK)
 	prompt.add_theme_constant_override("outline_size", 3)
@@ -163,24 +172,24 @@ func _make_slot(parent: Control, prompt_text: String) -> Array:
 
 
 func _build_boss_panel(root: Control) -> void:
-	var panel_width := 440.0
+	var panel_width := 440.0 * UI_SCALE
 	_boss_panel = Control.new()
 	_boss_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_boss_panel.position = Vector2(-panel_width / 2.0, 16)
-	_boss_panel.size = Vector2(panel_width, 44)
+	_boss_panel.position = Vector2(-panel_width / 2.0, 16 * UI_SCALE)
+	_boss_panel.size = Vector2(panel_width, 44 * UI_SCALE)
 	_boss_panel.visible = false
 	root.add_child(_boss_panel)
 
 	_boss_name_label = Label.new()
 	_boss_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_boss_name_label.size = Vector2(panel_width, 20)
+	_boss_name_label.size = Vector2(panel_width, 20 * UI_SCALE)
 	_boss_panel.add_child(_boss_name_label)
 
-	_boss_hp_bg = _make_rect(_boss_panel, BAR_BG_COLOR, Vector2(0, 26), Vector2(panel_width, 18))
+	_boss_hp_bg = _make_rect(_boss_panel, BAR_BG_COLOR, Vector2(0, 26 * UI_SCALE), Vector2(panel_width, 18 * UI_SCALE))
 	_boss_hp_fill = _make_rect(_boss_hp_bg, BOSS_HP_COLOR, Vector2.ZERO, _boss_hp_bg.size)
-	_boss_phase_tick = _make_rect(_boss_hp_bg, PHASE_TICK_COLOR, Vector2.ZERO, Vector2(2, _boss_hp_bg.size.y))
+	_boss_phase_tick = _make_rect(_boss_panel, PHASE_TICK_COLOR, Vector2.ZERO, Vector2(2 * UI_SCALE, _boss_hp_bg.size.y))
 
 
 ## The pickup selection menu — hidden by default, shown centre-screen by
@@ -189,8 +198,8 @@ func _build_boss_panel(root: Control) -> void:
 ## plus a title naming the item and a hint line covering all three input
 ## methods (keyboard nav+confirm, numeric shortcuts, click).
 func _build_overlay(root: Control) -> void:
-	var panel_width := 300.0
-	var panel_height := 150.0
+	var panel_width := 300.0 * UI_SCALE
+	var panel_height := 150.0 * UI_SCALE
 	_overlay_panel = Control.new()
 	_overlay_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## The panel itself passes clicks through; only its option Controls below opt in.
 	_overlay_panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -203,17 +212,17 @@ func _build_overlay(root: Control) -> void:
 
 	_overlay_title = Label.new()
 	_overlay_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_overlay_title.position = Vector2(10, 8)
-	_overlay_title.size = Vector2(panel_width - 20, 20)
+	_overlay_title.position = Vector2(10 * UI_SCALE, 8 * UI_SCALE)
+	_overlay_title.size = Vector2(panel_width - 20 * UI_SCALE, 20 * UI_SCALE)
 	_overlay_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_overlay_title.add_theme_font_size_override("font_size", 14)
+	_overlay_title.add_theme_font_size_override("font_size", int(14 * UI_SCALE))
 	_overlay_panel.add_child(_overlay_title)
 
 	var options_container := VBoxContainer.new()
 	options_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	options_container.position = Vector2((panel_width - 260) / 2.0, 38)
-	options_container.size = Vector2(260, 84)
-	options_container.add_theme_constant_override("separation", 8)
+	options_container.position = Vector2((panel_width - 260 * UI_SCALE) / 2.0, 38 * UI_SCALE)
+	options_container.size = Vector2(260 * UI_SCALE, 84 * UI_SCALE)
+	options_container.add_theme_constant_override("separation", int(8 * UI_SCALE))
 	_overlay_panel.add_child(options_container)
 
 	var opt1 := _make_overlay_option(options_container, true)
@@ -224,11 +233,11 @@ func _build_overlay(root: Control) -> void:
 	var hint := Label.new()
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.text = "W/S or \u2191/\u2193 + F to confirm  \u00b7  1/2 or click to pick  \u00b7  Esc to cancel"
-	hint.position = Vector2(6, panel_height - 22)
-	hint.size = Vector2(panel_width - 12, 16)
+	hint.position = Vector2(6 * UI_SCALE, panel_height - 22 * UI_SCALE)
+	hint.size = Vector2(panel_width - 12 * UI_SCALE, 16 * UI_SCALE)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 9)
-	hint.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	hint.add_theme_font_size_override("font_size", maxi(5, int(9 * UI_SCALE)))
 	_overlay_panel.add_child(hint)
 
 
@@ -240,7 +249,7 @@ func _build_overlay(root: Control) -> void:
 ## Controls entirely), actually need to receive one.
 func _make_overlay_option(parent: Control, is_primary: bool) -> Array:
 	var option := Control.new()
-	option.custom_minimum_size = Vector2(260, 36)
+	option.custom_minimum_size = Vector2(260, 36) * UI_SCALE
 	option.mouse_filter = Control.MOUSE_FILTER_STOP
 	option.gui_input.connect(_on_overlay_option_gui_input.bind(is_primary))
 	parent.add_child(option)
@@ -252,7 +261,7 @@ func _make_overlay_option(parent: Control, is_primary: bool) -> Array:
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_size_override("font_size", int(13 * UI_SCALE))
 	option.add_child(label)
 
 	return [box, label]

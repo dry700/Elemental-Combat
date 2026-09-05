@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1")
-aggro_range = 150.0
-attack_range = 22.0
-chase_speed = 90.0
+aggro_range = 75.0
+attack_range = 11.0
+chase_speed = 45.0
 attack_cooldown = 1.1
 telegraph_duration = 0.3
 special_telegraph_duration = 0.6

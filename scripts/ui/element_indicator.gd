@@ -15,9 +15,9 @@ extends Node2D
 ##   status.status_applied.connect(func(e, _c): indicator.set_element(e))
 ##   status.status_cleared.connect(func(_e): indicator.set_element(Elements.NONE))
 
-const HALF_SIZE: float = 6.0
-const LINE_WIDTH: float = 1.6
-const BG_RADIUS: float = 9.0
+const HALF_SIZE: float = 3.0
+const LINE_WIDTH: float = 0.8
+const BG_RADIUS: float = 4.5
 
 ## Reinforcing accent colour per element — intentionally secondary to the
 ## glyph shape above, not a replacement for it (A.1).

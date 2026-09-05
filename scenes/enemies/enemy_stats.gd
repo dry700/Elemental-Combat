@@ -11,13 +11,13 @@ extends Resource
 ## enemy class needed. Bosses (up to two elements, phase-based) are an
 ## explicit Sprint 3 stretch goal per A.6 and aren't covered here.
 
-@export var aggro_range: float = 180.0   ## Player within this: enemy notices and engages.
-@export var attack_range: float = 26.0   ## Player within this (and aggroed): attacks instead of chasing.
-@export var chase_speed: float = 70.0    ## Ignored by stationary enemies (can_chase = false) — see EnemyCombatAI.
+@export var aggro_range: float = 90.0   ## Player within this: enemy notices and engages.
+@export var attack_range: float = 13.0   ## Player within this (and aggroed): attacks instead of chasing.
+@export var chase_speed: float = 35.0    ## Ignored by stationary enemies (can_chase = false) — see EnemyCombatAI.
 
 @export var damage: float = 8.0
 @export var max_health: float = 20.0  ## New: rooms need a real "defeated" trigger — nothing had one before this (README: "TestDummy never attacks back or dies").
-@export var knockback_strength: float = 220.0
+@export var knockback_strength: float = 110.0
 @export var attack_cooldown: float = 1.2 ## Gap between one attack ending and the next telegraph starting.
 
 ## A.6: "Basic enemy attacks apply Charge 1; special/telegraphed attacks

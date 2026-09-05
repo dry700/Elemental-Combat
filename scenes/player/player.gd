@@ -28,17 +28,17 @@ signal skill_changed(is_primary: bool, new_skill: SkillData)
 signal died
 
 ## --- Movement tuning (starting points) ---
-@export var max_speed: float = 220.0
-@export var acceleration: float = 1800.0
-@export var friction: float = 2200.0
-@export var air_acceleration: float = 900.0
-@export var jump_velocity: float = -420.0
+@export var max_speed: float = 110.0
+@export var acceleration: float = 900.0
+@export var friction: float = 1100.0
+@export var air_acceleration: float = 450.0
+@export var jump_velocity: float = -210.0
 @export var coyote_time: float = 0.1
 @export var jump_buffer_time: float = 0.1
 @export var max_air_jumps: int = 1
 
 ## --- Dodge tuning ---
-@export var dodge_speed: float = 420.0
+@export var dodge_speed: float = 210.0
 @export var dodge_duration: float = 0.22
 @export var dodge_cooldown: float = 0.4
 ## i-frames only cover part of the dodge, not the whole thing — a
@@ -112,7 +112,7 @@ func _ready() -> void:
 	if hitbox_shape.shape is CircleShape2D:
 		hitbox_shape.shape = hitbox_shape.shape.duplicate()
 
-	elemental.indicator_offset = Vector2(0, -26)
+	elemental.indicator_offset = Vector2(0, -13)
 	elemental.armor = starting_armor
 	add_child(elemental)  # Added to Player root, not Visuals — Visuals
 	# flips scale.x for facing, which would mirror the glyph shape unreadable.
