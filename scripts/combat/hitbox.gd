@@ -52,3 +52,14 @@ func _on_area_entered(area: Area2D) -> void:
 	hit_data.element = element
 	hit_data.charge = charge
 	hurtbox.take_hit(hit_data)
+
+	_spawn_hit_spark(hurtbox.global_position)
+
+
+func _spawn_hit_spark(at_position: Vector2) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var spark := HitSpark.new()
+	spark.global_position = at_position
+	scene_root.add_child(spark)

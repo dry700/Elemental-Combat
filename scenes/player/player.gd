@@ -62,6 +62,7 @@ var current_health: float
 @onready var hitbox_shape: CollisionShape2D = $Visuals/Hitbox/CollisionShape2D
 @onready var hurtbox: Hurtbox = $Hurtbox
 @onready var anim_player: AnimationPlayer = $Visuals/AnimationPlayer
+@onready var weapon_sprite: Sprite2D = $Visuals/Hitbox/WeaponSprite
 
 var state: State = State.IDLE
 var facing: int = 1  ## 1 = right, -1 = left
@@ -115,6 +116,7 @@ func _ready() -> void:
 
 	elemental.indicator_offset = Vector2(0, -13)
 	elemental.armor = starting_armor
+	weapon_sprite.visible = false
 	add_child(elemental)  # Added to Player root, not Visuals — Visuals
 	# flips scale.x for facing, which would mirror the glyph shape unreadable.
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
@@ -318,6 +320,10 @@ func _start_attack(weapon_to_use: WeaponStats, force_fresh: bool = false) -> voi
 
 func _process_attack(delta: float) -> void:
 	_attack_timer += delta
+	weapon_sprite.visible = weapon_sprite.texture != null
+	if weapon_sprite.texture != null:
+		var swing_t := clampf(_attack_timer / _active_weapon.attack_duration, 0.0, 1.0)
+		weapon_sprite.rotation = lerp_angle(deg_to_rad(-30.0), deg_to_rad(70.0), swing_t)
 
 	var active_start: float = _active_weapon.active_window.x
 	var active_end: float = _active_weapon.active_window.y
@@ -331,6 +337,7 @@ func _process_attack(delta: float) -> void:
 		if not hitbox.monitoring:
 			_configure_hitbox_for_current_swing()
 			hitbox.enable()
+			_spawn_slash_vfx()
 	else:
 		hitbox.disable()
 
@@ -338,6 +345,13 @@ func _process_attack(delta: float) -> void:
 		hitbox.disable()
 		_end_or_chain_attack()
 
+## Fires once per swing, the instant its active window opens — visible
+## whether or not the swing actually lands a hit, unlike HitSpark.
+func _spawn_slash_vfx() -> void:
+	if _active_weapon.weapon_texture == null:
+		return  # No visible weapon equipped — a slash with no blade would look like a floating effect.
+	var slash := SlashVFX.new()
+	hitbox.add_child(slash)
 
 ## Called the instant a swing's attack_duration elapses. If the player
 ## already buffered another attack press during this swing (captured in
@@ -353,6 +367,7 @@ func _end_or_chain_attack() -> void:
 		_attack_timer = 0.0
 		_attack_buffered = false
 		return  # Stays in State.ATTACK.
+	weapon_sprite.visible = false
 	_attack_buffered = false
 	_combo_window_timer = _active_weapon.combo_window
 	state = State.IDLE if is_on_floor() else State.FALL
@@ -372,6 +387,8 @@ func _configure_hitbox_for_current_swing() -> void:
 	var circle := hitbox_shape.shape as CircleShape2D
 	if circle != null:
 		circle.radius = _active_weapon.hitbox_radius
+	weapon_sprite.texture = _active_weapon.weapon_texture
+	weapon_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 
 ## 1.0 for the first hit, compounding by combo_damage_step_multiplier for
