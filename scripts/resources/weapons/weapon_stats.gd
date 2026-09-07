@@ -5,6 +5,7 @@ extends Resource
 enum Weight { LIGHT, MEDIUM, HEAVY }
 
 @export var weapon_name: String = "Training Dagger"
+@export var weapon_texture: Texture2D  ## Full swap per A.4 — set per .tres, e.g. hoa_dagger.png.
 @export var weight: Weight = Weight.LIGHT
 @export var damage: float = 10.0
 @export var attack_duration: float = 0.25  ## Total seconds the attack state lasts.

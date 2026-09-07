@@ -55,13 +55,21 @@ func _try_load_sprite() -> void:
 	_using_sprite = true
 
 
-## Aligns the loaded sprite's bottom edge with the placeholder polygon's
-## own bottom edge — see the class-level note on why this reuses the
-## placeholder's already-correct bound instead of a per-entity constant.
-## No PIXEL_SCALE conversion needed anymore: with global window stretch,
-## poly_bottom and the texture's own height are already in the same 1:1
-## unit space.
+## Aligns the loaded sprite's bottom edge with the entity's actual
+## CollisionShape2D bottom edge — reading the collision shape directly
+## (via `owner`, which Godot sets to the instanced scene's root regardless
+## of how deep SpriteVisual is nested) instead of PlaceholderVisual's
+## polygon. The two used to be two separate numbers kept in sync by hand;
+## the recent world-wide unit rescale touched them as independent edits,
+## which is exactly what let them drift and caused the floating gap.
+## Reading the collision shape directly removes the second copy entirely.
 func _ground_aligned_offset(texture: Texture2D) -> Vector2:
+	var collision_shape := owner.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	var shape := collision_shape.shape if collision_shape != null else null
+	if shape is RectangleShape2D:
+		var collision_bottom: float = collision_shape.position.y + shape.size.y / 2.0
+		return Vector2(0, collision_bottom - texture.get_height() / 2.0)
+	# Fallback for any entity without a plain rectangle body collider.
 	if fallback_polygon == null:
 		return Vector2.ZERO
 	var poly_bottom := -INF

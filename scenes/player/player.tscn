@@ -4,6 +4,10 @@
 [ext_resource type="Script" uid="uid://dicmasbu416ty" path="res://scripts/combat/hitbox.gd" id="2_hitbox"]
 [ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="3_hurtbox"]
 [ext_resource type="Script" uid="uid://dt3h3wgas43p5" path="res://scripts/visuals/sprite_visual.gd" id="4_sprite_visual"]
+[ext_resource type="Texture2D" uid="uid://ebv373lyd4ep" path="res://assets/sprites/entities/player/player_torso.png" id="5_qek5x"]
+[ext_resource type="Texture2D" uid="uid://cj2b2m10cpatq" path="res://assets/sprites/entities/player/player_head.png" id="6_0owmy"]
+[ext_resource type="Texture2D" uid="uid://bkqnj7upe2orv" path="res://assets/sprites/entities/player/player_leg_left.png" id="7_5gtgg"]
+[ext_resource type="Texture2D" uid="uid://drxpp3nqf8o45" path="res://assets/sprites/entities/player/player_leg_right.png" id="8_h17s1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(12, 16)
@@ -13,14 +17,74 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
+tracks/0/path = NodePath("PlayerTorso:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(0, 0)]
+"values": [Vector2(0, 3)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("PlayerHead:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0, -5)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("PlayerLegLeft:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(4, 7)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("PlayerLegRight:position")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-4, 7)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("PlayerTorso:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.13962634]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("PlayerHead:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.13962634]
 }
 
 [sub_resource type="Animation" id="Animation_p47bc"]
@@ -30,20 +94,110 @@ loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
+tracks/0/path = NodePath("PlayerTorso:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.3, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector2(0, 0), Vector2(0, -1), Vector2(0, 0)]
+"values": [Vector2(0, 2), Vector2(0, 3), Vector2(0, 2)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("PlayerHead:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.44999996),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -5), Vector2(0, -5), Vector2(0, -4)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("PlayerTorso:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 0.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("PlayerHead:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.0009999999, 0.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 0.0]
+}
+
+[sub_resource type="Animation" id="Animation_je7p5"]
+resource_name = "run"
+length = 0.6
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("PlayerLegLeft:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.3, 0.44999996, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(4, 7), Vector2(3, 7), Vector2(2, 7), Vector2(3, 7), Vector2(4, 7)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("PlayerLegRight:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.3, 0.44999996, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(-4, 7), Vector2(-3, 7), Vector2(-2, 7), Vector2(-3, 7), Vector2(-4, 7)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("PlayerTorso:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.13962634, 0.13962634]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("PlayerHead:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.0009999999, 0.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.13962634, 0.13962634]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_75vfm"]
 _data = {
 &"RESET": SubResource("Animation_lvxji"),
-&"idle": SubResource("Animation_p47bc")
+&"idle": SubResource("Animation_p47bc"),
+&"run": SubResource("Animation_je7p5")
 }
 
 [node name="Player" type="CharacterBody2D" unique_id=1738001616]
@@ -64,26 +218,43 @@ shape = SubResource("RectangleShape2D_body")
 [node name="Visuals" type="Node2D" parent="." unique_id=535641496]
 
 [node name="PlaceholderVisual" type="Polygon2D" parent="Visuals" unique_id=2099649814]
+visible = false
 color = Color(0.3, 0.6, 0.9, 1)
 polygon = PackedVector2Array(-3, -4, 3, -4, 3, 4, -3, 4)
 
 [node name="SpriteVisual" type="Node2D" parent="Visuals" unique_id=1998234561]
 script = ExtResource("4_sprite_visual")
 entity_id = "player"
-fallback_polygon = NodePath("../PlaceholderVisual")
 
-[node name="Hitbox" type="Area2D" parent="Visuals" unique_id=3789456123]
-collision_layer = 1
+[node name="Hitbox" type="Area2D" parent="Visuals" unique_id=-505511173]
 collision_mask = 2
 script = ExtResource("2_hitbox")
 knockback_strength = 100.0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Hitbox" unique_id=3789456124]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Hitbox" unique_id=-505511172]
 shape = SubResource("RectangleShape2D_body")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Visuals" unique_id=1075489074]
 libraries/ = SubResource("AnimationLibrary_75vfm")
 autoplay = &"idle"
+
+[node name="PlayerTorso" type="Sprite2D" parent="Visuals" unique_id=1342636470]
+position = Vector2(0, 3)
+rotation = 0.13962634
+texture = ExtResource("5_qek5x")
+
+[node name="PlayerHead" type="Sprite2D" parent="Visuals" unique_id=1892355756]
+position = Vector2(0, -5)
+rotation = 0.13962634
+texture = ExtResource("6_0owmy")
+
+[node name="PlayerLegLeft" type="Sprite2D" parent="Visuals" unique_id=89328053]
+position = Vector2(4, 7)
+texture = ExtResource("7_5gtgg")
+
+[node name="PlayerLegRight" type="Sprite2D" parent="Visuals" unique_id=1235429670]
+position = Vector2(-4, 7)
+texture = ExtResource("8_h17s1")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1823877880]
 position_smoothing_enabled = true

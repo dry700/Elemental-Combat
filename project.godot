@@ -23,6 +23,14 @@ SaveManager="*res://autoloads/save_manager.gd"
 RunManager="*res://autoloads/run_manager.gd"
 Hud="*res://autoloads/hud.gd"
 
+[display]
+
+window/size/viewport_width=576
+window/size/viewport_height=324
+window/size/window_width_override=1152
+window/size/window_height_override=648
+window/stretch/mode="viewport"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg")
@@ -34,12 +42,3 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
-
-[display]
-
-window/size/viewport_width=576
-window/size/viewport_height=324
-window/size/window_width_override=1152
-window/size/window_height_override=648
-window/stretch/mode="viewport"
-window/stretch/aspect="keep"

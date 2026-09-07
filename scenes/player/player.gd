@@ -61,6 +61,7 @@ var current_health: float
 @onready var hitbox: Hitbox = $Visuals/Hitbox
 @onready var hitbox_shape: CollisionShape2D = $Visuals/Hitbox/CollisionShape2D
 @onready var hurtbox: Hurtbox = $Hurtbox
+@onready var anim_player: AnimationPlayer = $Visuals/AnimationPlayer
 
 var state: State = State.IDLE
 var facing: int = 1  ## 1 = right, -1 = left
@@ -157,6 +158,9 @@ func _physics_process(delta: float) -> void:
 			_try_cast_skill(skill_2, "skill_2")
 			if state == State.IDLE or state == State.RUN:
 				state = State.RUN if abs(velocity.x) > 10.0 else State.IDLE
+				var target_anim := "run" if state == State.RUN else "idle"
+				if anim_player.current_animation != target_anim:
+					anim_player.play(target_anim, -1.0, 1.6 if target_anim == "run" else 1.0)
 		State.JUMP, State.FALL:
 			_handle_move_and_jump(delta)
 			_try_start_dodge()
