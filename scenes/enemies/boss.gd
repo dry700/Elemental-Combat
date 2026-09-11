@@ -109,7 +109,8 @@ func _resting_color() -> Color:
 
 func _on_hurtbox_hit(hit_data: HitData) -> void:
 	_apply_damage(hit_data.damage)
-	HitStop.freeze(0.05)
+	HitStop.freeze_for_weight(hit_data.weapon_weight)
+	ScreenShake.shake_for_weight(hit_data.weapon_weight)
 	elemental.handle_hit(hit_data)
 
 

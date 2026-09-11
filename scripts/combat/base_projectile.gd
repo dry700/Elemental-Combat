@@ -36,6 +36,23 @@ var _lifetime_timer: float = 0.0
 
 
 func _ready() -> void:
+	# Deferred: a projectile can be spawned from WITHIN a physics
+	# callback (e.g. Ore Surge's fragments — ElementalCombatant.
+	# _spawn_ore_surge_fragments() is called from handle_hit(), itself
+	# called from Hitbox._on_area_entered()), meaning this add_child()
+	# can run while the physics server is still mid "flush queries" from
+	# that very collision. Registering a new CollisionShape2D
+	# synchronously in that state throws "Can't change this state while
+	# flushing queries" — same underlying issue run_manager.gd's
+	# advance_room() already works around with call_deferred(), applied
+	# here to whichever specific call actually touches the physics
+	# server rather than the whole room-swap.
+	call_deferred("_setup_collision")
+	area_entered.connect(_on_area_entered)
+	queue_redraw()
+
+
+func _setup_collision() -> void:
 	collision_layer = 0
 	collision_mask = 2  ## Hurtbox layer — matches Hitbox's own convention.
 	var shape := CollisionShape2D.new()
@@ -43,8 +60,6 @@ func _ready() -> void:
 	circle.radius = radius
 	shape.shape = circle
 	add_child(shape)
-	area_entered.connect(_on_area_entered)
-	queue_redraw()
 
 
 func _process(delta: float) -> void:

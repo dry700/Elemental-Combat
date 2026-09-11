@@ -97,6 +97,12 @@ var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown second
 ## refusing to jump right when control visibly returns.
 var _wants_jump_on_recovery: bool = false
 
+## Fixed distance from body-center to the hand/grip — anatomically this
+## doesn't vary per weapon (your hand sits the same distance from your
+## shoulder holding anything); what varies per weapon is `reach`, now
+## read purely as blade length extending beyond this point.
+const WEAPON_GRIP_OFFSET: float = 2.0
+
 const ONE_WAY_PLATFORM_LAYER: int = 3  ## Must match Platform's Collision Layer in the editor.
 @export var drop_through_duration: float = 0.25  ## Long enough to fall clear of the platform.
 
@@ -111,7 +117,7 @@ func _ready() -> void:
 	# _configure_hitbox_for_current_swing) without duplicating first would
 	# leak that mutation into every other node/scene referencing the same
 	# sub-resource.
-	if hitbox_shape.shape is CircleShape2D:
+	if hitbox_shape.shape is RectangleShape2D:
 		hitbox_shape.shape = hitbox_shape.shape.duplicate()
 
 	elemental.indicator_offset = Vector2(0, -13)
@@ -307,7 +313,7 @@ func _try_start_attack() -> void:
 func _start_attack(weapon_to_use: WeaponStats, force_fresh: bool = false) -> void:
 	if weapon_to_use == null:
 		return
-	if not force_fresh and _active_weapon == weapon_to_use and _combo_window_timer > 0.0 and _combo_step < weapon_to_use.combo_length:
+	if not force_fresh and _active_weapon == weapon_to_use and _combo_window_timer > 0.0 and _combo_step < weapon_to_use.combo_steps.size():
 		_combo_step += 1
 	else:
 		_combo_step = 1
@@ -316,17 +322,27 @@ func _start_attack(weapon_to_use: WeaponStats, force_fresh: bool = false) -> voi
 	_attack_timer = 0.0
 	_attack_buffered = false
 	_combo_window_timer = 0.0
+	_configure_hitbox_for_current_swing()
 
+
+const THRUST_EXTEND_DISTANCE: float = 3.0
 
 func _process_attack(delta: float) -> void:
 	_attack_timer += delta
 	weapon_sprite.visible = weapon_sprite.texture != null
-	if weapon_sprite.texture != null:
-		var swing_t := clampf(_attack_timer / _active_weapon.attack_duration, 0.0, 1.0)
-		weapon_sprite.rotation = lerp_angle(deg_to_rad(-30.0), deg_to_rad(70.0), swing_t)
 
 	var active_start: float = _active_weapon.active_window.x
 	var active_end: float = _active_weapon.active_window.y
+
+	if weapon_sprite.texture != null:
+		var t := _swing_progress(active_start, active_end)
+		var step := _current_combo_step_data()
+		if step.style == WeaponStats.AttackStyle.THRUST:
+			hitbox.rotation = 0.0
+			hitbox.position.x = WEAPON_GRIP_OFFSET + sin(t * PI) * step.thrust_extend_distance
+		else:
+			hitbox.rotation = lerp_angle(deg_to_rad(step.swing_rotation_start_deg), deg_to_rad(step.swing_rotation_end_deg), t)
+			hitbox.position.x = WEAPON_GRIP_OFFSET
 
 	if _attack_timer < active_start:
 		velocity.x = move_toward(velocity.x, facing * _active_weapon.lunge_speed, acceleration * delta)
@@ -335,7 +351,6 @@ func _process_attack(delta: float) -> void:
 
 	if _attack_timer >= active_start and _attack_timer < active_end:
 		if not hitbox.monitoring:
-			_configure_hitbox_for_current_swing()
 			hitbox.enable()
 			_spawn_slash_vfx()
 	else:
@@ -345,14 +360,33 @@ func _process_attack(delta: float) -> void:
 		hitbox.disable()
 		_end_or_chain_attack()
 
+
+## Windup (before active_start) holds the pose at t=0 — weapon pulled
+## back, anticipating. The strike sweeps through the FULL motion across
+## just the active window, not the whole attack_duration — that's what
+## makes it snap instead of easing through the entire swing. Recovery
+## (after active_end) holds at t=1 until the attack finishes or chains.
+func _swing_progress(active_start: float, active_end: float) -> float:
+	if _attack_timer < active_start:
+		return 0.0
+	if _attack_timer >= active_end:
+		return 1.0
+	return (_attack_timer - active_start) / maxf(active_end - active_start, 0.001)
+
 ## Fires once per swing, the instant its active window opens — visible
 ## whether or not the swing actually lands a hit, unlike HitSpark.
 func _spawn_slash_vfx() -> void:
 	if _active_weapon.weapon_texture == null:
-		return  # No visible weapon equipped — a slash with no blade would look like a floating effect.
-	var slash := SlashVFX.new()
-	hitbox.add_child(slash)
-
+		return
+	var step := _current_combo_step_data()
+	var vfx: Node2D
+	if step.style == WeaponStats.AttackStyle.THRUST:
+		vfx = ThrustVFX.new()
+	else:
+		vfx = SlashVFX.new()
+	vfx.element = hitbox.element
+	hitbox.add_child(vfx)
+	
 ## Called the instant a swing's attack_duration elapses. If the player
 ## already buffered another attack press during this swing (captured in
 ## _update_timers) AND the weapon's combo hasn't hit its cap, chains
@@ -362,12 +396,15 @@ func _spawn_slash_vfx() -> void:
 ## during which a FRESH press (via _try_start_attack -> _start_attack)
 ## still continues the combo instead of resetting to hit 1.
 func _end_or_chain_attack() -> void:
-	if _attack_buffered and _combo_step < _active_weapon.combo_length:
+	if _attack_buffered and _combo_step < _active_weapon.combo_steps.size():
 		_combo_step += 1
 		_attack_timer = 0.0
 		_attack_buffered = false
+		_configure_hitbox_for_current_swing()
 		return  # Stays in State.ATTACK.
 	weapon_sprite.visible = false
+	hitbox.position.x = WEAPON_GRIP_OFFSET
+	hitbox.rotation = 0.0
 	_attack_buffered = false
 	_combo_window_timer = _active_weapon.combo_window
 	state = State.IDLE if is_on_floor() else State.FALL
@@ -377,18 +414,30 @@ func _end_or_chain_attack() -> void:
 ## and hitbox size (A.4's Weapon System, previously a single hardcoded
 ## offset/shape baked into player.tscn), plus the current combo step's
 ## scaled damage. Called once per swing, right as its active window opens.
+## Sets up everything that's fixed for the WHOLE swing (geometry,
+## texture, element/charge) — called once per swing/combo-step, not
+## once per frame. What actually MOVES during the swing (hitbox.rotation
+## / hitbox.position.x) is driven separately, every frame, by
+## _process_attack — that split is what fixes the sprite/hitbox offset:
+## one transform (Hitbox's own) now carries both the collision rectangle
+## AND its child WeaponSprite, instead of only the sprite animating
+## while the hitbox sat still.
 func _configure_hitbox_for_current_swing() -> void:
 	hitbox.damage = _active_weapon.damage * _combo_damage_multiplier()
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
 	var swing := _active_weapon.resolve_swing()
 	hitbox.element = swing.element
 	hitbox.charge = swing.charge
-	hitbox.position.x = _active_weapon.reach
-	var circle := hitbox_shape.shape as CircleShape2D
-	if circle != null:
-		circle.radius = _active_weapon.hitbox_radius
+	hitbox.position.x = WEAPON_GRIP_OFFSET
+	hitbox.rotation = 0.0
+	var rect := hitbox_shape.shape as RectangleShape2D
+	if rect != null:
+		rect.size = Vector2(_active_weapon.reach, _active_weapon.hitbox_radius * 2.0)
+	hitbox_shape.position.x = _active_weapon.reach / 2.0  # extends OUTWARD from the grip, not centered on it
 	weapon_sprite.texture = _active_weapon.weapon_texture
 	weapon_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	weapon_sprite.position = Vector2.ZERO  # sits at Hitbox's own origin now — Hitbox's transform does the moving
+	weapon_sprite.rotation = 0.0
 
 
 ## 1.0 for the first hit, compounding by combo_damage_step_multiplier for
@@ -397,6 +446,13 @@ func _configure_hitbox_for_current_swing() -> void:
 func _combo_damage_multiplier() -> float:
 	return pow(_active_weapon.combo_damage_step_multiplier, _combo_step - 1)
 
+## Current combo step's motion data, wrapping past the array's end
+## rather than indexing out of bounds — lets a weapon deliberately loop
+## a shorter alternating pattern across a longer combo_length if it
+## wants to (not used yet, but free once the array can be any length).
+func _current_combo_step_data() -> ComboStepData:
+	var steps := _active_weapon.combo_steps
+	return steps[(_combo_step - 1) % steps.size()]
 
 func _process_disabled(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, friction * delta)
@@ -581,7 +637,8 @@ func _on_disabled_expired() -> void:
 func _on_hurtbox_hit(hit_data: HitData) -> void:
 	_apply_damage(hit_data.damage)
 	velocity += hit_data.knockback
-	HitStop.freeze(0.05)
+	HitStop.freeze_for_weight(hit_data.weapon_weight)
+	ScreenShake.shake_for_weight(hit_data.weapon_weight)
 	elemental.handle_hit(hit_data)
 
 

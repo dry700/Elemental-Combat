@@ -49,5 +49,5 @@ func test_new_weapon_stats_have_sane_lunge_range_and_combo_defaults():
 	assert_eq(w.lunge_speed, 150.0)
 	assert_eq(w.reach, 14.0)
 	assert_eq(w.hitbox_radius, 10.0)
-	assert_eq(w.combo_length, 1)
+	assert_eq(w.combo_steps.size(), 1)
 	assert_almost_eq(w.combo_damage_step_multiplier, 1.0, 0.01)

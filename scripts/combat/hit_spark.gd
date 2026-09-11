@@ -11,6 +11,8 @@ extends Node2D
 const LIFETIME: float = 0.15
 const TEXTURE_PATH: String = "res://assets/sprites/vfx/hit_spark.png"
 
+var element: StringName = Elements.NONE
+
 
 func _ready() -> void:
 	var sprite := Sprite2D.new()
@@ -19,6 +21,7 @@ func _ready() -> void:
 		sprite.texture = texture
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
+	ElementIndicator.apply_element_tint(sprite, element)
 
 	sprite.scale = Vector2(0.6, 0.6)
 	var tween := create_tween()

@@ -1,14 +1,28 @@
 [gd_resource type="Resource" script_class="WeaponStats" format=3 uid="uid://qrytbfi2t63m"]
 
 [ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://0fjribao1my8" path="res://scripts/resources/weapons/combo_step_data.gd" id="1_625cj"]
+[ext_resource type="Texture2D" uid="uid://te73vas8dbcf" path="res://assets/sprites/weapons/thuy_spear.png" id="2_uydif"]
+
+[sub_resource type="Resource" id="Resource_eyt3x"]
+script = ExtResource("1_625cj")
+style = 1
+thrust_extend_distance = 10.0
+metadata/_custom_type_script = "uid://0fjribao1my8"
+
+[sub_resource type="Resource" id="Resource_shrxc"]
+script = ExtResource("1_625cj")
+thrust_extend_distance = 10.0
+metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [resource]
 script = ExtResource("1")
 weapon_name = "Training Spear"
+weapon_texture = ExtResource("2_uydif")
 weight = 1
 attack_duration = 0.32
-active_window = Vector2(0.12, 0.22)
+active_window = Vector2(0.08, 0.13)
 innate_element = &"thuy"
 reach = 11.0
-combo_length = 2
 combo_damage_step_multiplier = 1.1
+combo_steps = Array[Object]([SubResource("Resource_eyt3x"), SubResource("Resource_shrxc")])

@@ -108,3 +108,17 @@ func _draw_dot_grid(color: Color) -> void:
 	for dx in [-offset, offset]:
 		for dy in [-offset, offset]:
 			draw_circle(Vector2(dx, dy), 1.4, color)
+			
+## Applies the shared element-recolor shader (shaders/element_recolor.gdshader)
+## to any CanvasItem, tinted to the given element's ELEMENT_COLOR — used by
+## one-shot VFX (SlashVFX, HitSpark) that want to read as "this specific
+## element's hit" without needing five separately-painted copies of the
+## same effect. NONE is a deliberate no-op: elementless hits keep
+## whatever neutral colors the source art already has.
+static func apply_element_tint(target: CanvasItem, element: StringName) -> void:
+	if element == Elements.NONE:
+		return
+	var tint_material := ShaderMaterial.new()
+	tint_material.shader = load("res://shaders/element_recolor.gdshader")
+	tint_material.set_shader_parameter("tint_color", ELEMENT_COLOR.get(element, Color.WHITE))
+	target.material = tint_material

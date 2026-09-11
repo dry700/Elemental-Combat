@@ -16,7 +16,7 @@ func before_each():
 	player = player_scene.instantiate()
 	combo_dagger = WeaponStats.new()
 	combo_dagger.innate_element = Elements.HOA
-	combo_dagger.combo_length = 3
+	combo_dagger.combo_steps = [ComboStepData.new(), ComboStepData.new(), ComboStepData.new()]
 	combo_dagger.combo_window = 0.3
 	combo_dagger.combo_damage_step_multiplier = 1.5
 	combo_dagger.damage = 10.0
@@ -79,15 +79,16 @@ func test_configure_hitbox_applies_weapon_reach_and_radius():
 	player._active_weapon = combo_dagger
 	player._combo_step = 1
 	player._configure_hitbox_for_current_swing()
-	assert_almost_eq(player.hitbox.position.x, 20.0, 0.01)
-	var shape := player.hitbox_shape.shape as CircleShape2D
-	assert_almost_eq(shape.radius, 12.0, 0.01)
-
+	assert_almost_eq(player.hitbox.position.x, Player.WEAPON_GRIP_OFFSET, 0.01)
+	var shape := player.hitbox_shape.shape as RectangleShape2D
+	assert_almost_eq(shape.size.x, 20.0, 0.01)   # combo_dagger.reach
+	assert_almost_eq(shape.size.y, 24.0, 0.01)   # combo_dagger.hitbox_radius * 2
 func test_configure_hitbox_scales_damage_by_combo_step():
 	player._active_weapon = combo_dagger
 	player._combo_step = 2
 	player._configure_hitbox_for_current_swing()
 	assert_almost_eq(player.hitbox.damage, 15.0, 0.01)  # 10 base * 1.5 step multiplier
+
 
 func test_switching_weapon_forces_a_fresh_combo_not_a_chain():
 	var other_weapon := WeaponStats.new()

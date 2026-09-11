@@ -14,6 +14,12 @@ const LIFETIME: float = 0.18
 const TEXTURE_PATH: String = "res://assets/sprites/vfx/slash.png"
 
 
+## Which element to tint toward — Elements.NONE keeps the sprite's own
+## neutral white/orange palette untouched (a weapon with no element,
+## e.g. the debug/fallback WeaponStats.new()).
+var element: StringName = Elements.NONE
+
+
 func _ready() -> void:
 	var sprite := Sprite2D.new()
 	var texture := load(TEXTURE_PATH) as Texture2D
@@ -21,6 +27,7 @@ func _ready() -> void:
 		sprite.texture = texture
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
+	ElementIndicator.apply_element_tint(sprite, element)
 
 	sprite.modulate.a = 0.9
 	var tween := create_tween()

@@ -32,3 +32,20 @@ func _wait_and_restore() -> void:
 
 	Engine.time_scale = 1.0
 	_is_frozen = false
+
+## Per-weight base freeze duration — A.3 already uses weight class to
+## drive speed and Charge; this extends the same "weight = identity"
+## idea to hit-stop, per GUIDE.md's own tuning table ("Hits feel weak →
+## increase the freeze duration"). "none" covers enemy attacks (which
+## never set weapon_weight on their Hitbox) and anything else that
+## still wants the old flat default.
+const WEIGHT_DURATIONS: Dictionary = {
+	&"light": 0.04,
+	&"medium": 0.06,
+	&"heavy": 0.09,
+	&"none": 0.05,
+}
+
+
+func freeze_for_weight(weapon_weight: StringName, time_scale: float = 0.05) -> void:
+	freeze(WEIGHT_DURATIONS.get(weapon_weight, WEIGHT_DURATIONS[&"none"]), time_scale)

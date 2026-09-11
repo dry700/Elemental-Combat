@@ -2,16 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://bmbw0pwhhdvtt" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="2_dummy"]
-[ext_resource type="Resource" uid="uid://qrytbfi2t63m" path="res://scripts/resources/weapons/training_spear.tres" id="3_4vrqs"]
+[ext_resource type="Resource" uid="uid://qrytbfi2t63m" path="res://scripts/resources/weapons/training_spear.tres" id="3_mpvex"]
 [ext_resource type="Resource" uid="uid://jj5lubul6ds" path="res://scripts/resources/weapons/training_dagger.tres" id="3_vpfk0"]
-[ext_resource type="Resource" path="res://scripts/resources/skills/overgrowth_snare.tres" id="4_u8yuk"]
+[ext_resource type="Resource" uid="uid://drwb4tr8v66l0" path="res://scripts/resources/skills/overgrowth_snare.tres" id="4_u8yuk"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
 [ext_resource type="Resource" uid="uid://ck7psobfj0h6l" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
 [ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
 [ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
 [ext_resource type="Script" uid="uid://b2nqw7d1ejgkl" path="res://scripts/items/weapon_pickup.gd" id="10_pickup"]
-[ext_resource type="Resource" path="res://scripts/resources/weapons/training_greatsword.tres" id="11_greatsword"]
-[ext_resource type="Resource" path="res://scripts/resources/weapons/training_hammer.tres" id="12_hammer"]
+[ext_resource type="Resource" uid="uid://bc7olf67v3v54" path="res://scripts/resources/weapons/training_greatsword.tres" id="11_greatsword"]
+[ext_resource type="Resource" uid="uid://dwwgfkhfq14ht" path="res://scripts/resources/weapons/training_hammer.tres" id="12_hammer"]
 [ext_resource type="Script" uid="uid://b6v1l5656vegb" path="res://scripts/items/skill_pickup.gd" id="13_skillpickup"]
 [ext_resource type="Resource" uid="uid://cwh5qrh6lyskl" path="res://scripts/resources/skills/cleansing_tide.tres" id="14_cleanse"]
 [ext_resource type="Resource" path="res://scripts/resources/skills/rending_edge.tres" id="15_rending"]
@@ -52,7 +52,7 @@ polygon = PackedVector2Array(-30, -5, 30, -5, 30, 5, -30, 5)
 position = Vector2(-125, 90)
 collision_mask = 5
 weapon = ExtResource("3_vpfk0")
-secondary_weapon = ExtResource("3_4vrqs")
+secondary_weapon = ExtResource("3_mpvex")
 skill_1 = ExtResource("4_u8yuk")
 skill_2 = ExtResource("6_skill1")
 

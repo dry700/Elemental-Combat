@@ -3,6 +3,7 @@ extends Resource
 ## Describes one weapon's combat stats and weight archetype (Appendix A.4).
 
 enum Weight { LIGHT, MEDIUM, HEAVY }
+enum AttackStyle { SWING, THRUST }
 
 @export var weapon_name: String = "Training Dagger"
 @export var weapon_texture: Texture2D  ## Full swap per A.4 — set per .tres, e.g. hoa_dagger.png.
@@ -25,12 +26,6 @@ enum Weight { LIGHT, MEDIUM, HEAVY }
 @export var reach: float = 7.0         ## Local x-offset of the hitbox from the wielder's centre.
 @export var hitbox_radius: float = 5.0 ## Size of the hit area itself.
 
-## Dead Cells-style combo string: pressing attack again — mid-swing, or
-## in the short grace window right after — chains into the next hit
-## instead of resetting. 1 means "no combo," a single swing every time;
-## appropriate for a slow, high-impact heavy weapon (A.4: "Slow,
-## high-impact" / "Slow, crowd control") rather than a rapid light one.
-@export var combo_length: int = 1
 ## Grace period after a swing ends during which another attack press
 ## still continues the combo instead of restarting at hit 1.
 @export var combo_window: float = 0.3
@@ -38,6 +33,18 @@ enum Weight { LIGHT, MEDIUM, HEAVY }
 ## rewards actually following a combo through rather than only ever
 ## landing hit 1 on cooldown. 1.0 = no scaling.
 @export var combo_damage_step_multiplier: float = 1.0
+
+
+
+## Each entry is one hit in the combo string. Array size IS the combo
+## length — the old standalone combo_length field is gone specifically
+## because it could silently drift out of sync with an array of a
+## different size; there's now exactly one number to look at, not two
+## that have to agree. The single old attack_style field is gone for
+## the same reason, one level up: every weapon now defines its combo
+## shape explicitly, even single-hit ones (see training_hammer.tres for
+## the "just one entry" case).
+@export var combo_steps: Array[ComboStepData] = [ComboStepData.new()]
 
 ## Different-element rune only: which of the weapon's two elements the
 ## NEXT swing applies. Runtime-only, not exported/persisted — starts

@@ -54,6 +54,18 @@ func _on_area_entered(area: Area2D) -> void:
 	hurtbox.take_hit(hit_data)
 
 	_spawn_hit_spark(hurtbox.global_position)
+	_spawn_hit_particles(hurtbox.global_position, direction)
+
+
+func _spawn_hit_particles(at_position: Vector2, away_direction: Vector2) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var particles := HitParticles.new()
+	particles.global_position = at_position
+	particles.away_direction = away_direction
+	particles.element = element
+	scene_root.add_child(particles)
 
 
 func _spawn_hit_spark(at_position: Vector2) -> void:
@@ -62,4 +74,5 @@ func _spawn_hit_spark(at_position: Vector2) -> void:
 		return
 	var spark := HitSpark.new()
 	spark.global_position = at_position
+	spark.element = element
 	scene_root.add_child(spark)

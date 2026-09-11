@@ -1,15 +1,24 @@
 [gd_resource type="Resource" script_class="WeaponStats" format=3 uid="uid://bc7olf67v3v54"]
 
 [ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://0fjribao1my8" path="res://scripts/resources/weapons/combo_step_data.gd" id="1_k2uaw"]
+[ext_resource type="Texture2D" uid="uid://c04jpryigd2ue" path="res://assets/sprites/weapons/kim_greatsword.png" id="3_71x5h"]
+
+[sub_resource type="Resource" id="Resource_mgvey"]
+script = ExtResource("1_k2uaw")
+swing_rotation_start_deg = -100.0
+metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [resource]
 script = ExtResource("1")
 weapon_name = "Training Greatsword"
+weapon_texture = ExtResource("3_71x5h")
 weight = 2
 damage = 16.0
 attack_duration = 0.45
-active_window = Vector2(0.18, 0.3)
+active_window = Vector2(0.17, 0.22)
 innate_element = &"kim"
 lunge_speed = 45.0
 reach = 11.0
 hitbox_radius = 7.0
+combo_steps = Array[Object]([SubResource("Resource_mgvey")])

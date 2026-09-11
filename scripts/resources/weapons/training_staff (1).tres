@@ -1,16 +1,30 @@
 [gd_resource type="Resource" script_class="WeaponStats" format=3 uid="uid://c0n32gg17itpl"]
 
 [ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1_62swo"]
+[ext_resource type="Script" uid="uid://0fjribao1my8" path="res://scripts/resources/weapons/combo_step_data.gd" id="1_xdkfi"]
+[ext_resource type="Texture2D" uid="uid://cxh25mr1hwg3v" path="res://assets/sprites/weapons/moc_staff.png" id="3_geyga"]
+
+[sub_resource type="Resource" id="Resource_mfidv"]
+script = ExtResource("1_xdkfi")
+metadata/_custom_type_script = "uid://0fjribao1my8"
+
+[sub_resource type="Resource" id="Resource_625cj"]
+script = ExtResource("1_xdkfi")
+swing_rotation_start_deg = 70.0
+swing_rotation_end_deg = -70.0
+metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [resource]
 script = ExtResource("1_62swo")
+weapon_name = "Training Staff"
+weapon_texture = ExtResource("3_geyga")
 weight = 1
 attack_duration = 0.3
-active_window = Vector2(0.1, 0.2)
+active_window = Vector2(0.07, 0.12)
 innate_element = &"moc"
 lunge_speed = 120.0
 reach = 28.0
 hitbox_radius = 11.0
-combo_length = 2
 combo_window = 0.32
 combo_damage_step_multiplier = 1.1
+combo_steps = Array[Object]([SubResource("Resource_mfidv"), SubResource("Resource_625cj")])
