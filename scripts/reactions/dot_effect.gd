@@ -6,21 +6,29 @@ extends RefCounted
 ## how ElementalStatus and Charge already work elsewhere in this project.
 
 signal expired
+signal applied(source_element: StringName)
 
 var damage_per_tick: float = 0.0
 var tick_interval: float = 1.0
 var active: bool = false
+var source_element: StringName = Elements.NONE
 
 var _remaining_duration: float = 0.0
 var _time_since_last_tick: float = 0.0
 
 
-func apply(p_damage_per_tick: float, p_tick_interval: float, p_duration: float) -> void:
+## p_source_element is optional and defaults to NONE — every existing
+## 3-argument call site (tests, debug_apply_test_effects) keeps working
+## unchanged; only call sites that care about showing a DoT-source icon
+## need to pass it.
+func apply(p_damage_per_tick: float, p_tick_interval: float, p_duration: float, p_source_element: StringName = Elements.NONE) -> void:
 	damage_per_tick = p_damage_per_tick
 	tick_interval = p_tick_interval
 	_remaining_duration = p_duration
 	_time_since_last_tick = 0.0
+	source_element = p_source_element
 	active = true
+	applied.emit(source_element)
 
 
 ## Returns the damage to apply this frame — 0.0 most frames, damage_per_tick
@@ -52,3 +60,4 @@ func get_remaining_duration() -> float:
 
 func clear() -> void:
 	active = false
+	source_element = Elements.NONE

@@ -48,6 +48,7 @@ func test_overgrowth_roots_dots_and_tags_self():
 	target.handle_hit(_hit(Elements.THUY, 1))
 	assert_true(target.disable_effect.is_active(), "rooted")
 	assert_true(target.dot_effect.active)
+	assert_eq(target.dot_effect.source_element, Elements.MOC, "root damage should read as plant-sourced, not fire")
 	assert_true(target.is_in_group(ElementalCombatant.OVERGROWTH_GROUP))
 
 func test_overgrowth_spreads_to_a_nearby_combatant():
@@ -122,6 +123,7 @@ func test_molten_full_clear_applies_base_dot():
 	target.handle_hit(_hit(Elements.HOA, 1))
 	assert_false(target.status.has_status())
 	assert_almost_eq(target.dot_effect.damage_per_tick, 3.0, 0.01)
+	assert_eq(target.dot_effect.source_element, Elements.HOA, "burn should show a fire glyph even after the Kim status is cleared")
 
 func test_molten_thua_applies_stronger_dot():
 	target.status.apply(Elements.KIM, 1)
@@ -152,7 +154,7 @@ func test_root_break_burst_staggers_a_nearby_combatant_too():
 	var nearby := ElementalCombatant.new()
 	nearby.show_debug_readout = false
 	add_child_autofree(nearby)
-	nearby.global_position = target.global_position + Vector2(60, 0)  # inside BURST_RADIUS
+	nearby.global_position = target.global_position + Vector2(15, 0)  # inside BURST_RADIUS
 
 	target.status.apply(Elements.THO, 1)
 	target.handle_hit(_hit(Elements.MOC, 1))
@@ -182,7 +184,7 @@ func test_sever_burst_shreds_a_nearby_combatant_too():
 	nearby.show_debug_readout = false
 	add_child_autofree(nearby)
 	nearby.armor = 10.0
-	nearby.global_position = target.global_position + Vector2(60, 0)  # inside BURST_RADIUS
+	nearby.global_position = target.global_position + Vector2(15, 0)  # inside BURST_RADIUS
 
 	target.armor = 10.0
 	target.status.apply(Elements.MOC, 1)

@@ -36,4 +36,4 @@ func test_no_fallback_assigned_does_not_crash():
 	var visual := SpriteVisual.new()
 	visual.entity_id = "player"
 	add_child_autofree(visual)
-	assert_true(true, "should warn, not error")
+	assert_push_error("has no fallback_polygon")

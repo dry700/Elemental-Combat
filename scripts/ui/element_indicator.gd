@@ -15,6 +15,8 @@ extends Node2D
 ##   status.status_applied.connect(func(e, _c): indicator.set_element(e))
 ##   status.status_cleared.connect(func(_e): indicator.set_element(Elements.NONE))
 
+const GLYPH_DIR: String = "res://assets/sprites/vfx/glyphs/"  # was already here; DotIndicator now also reads this directly rather than duplicating the path.
+
 const HALF_SIZE: float = 3.0
 const LINE_WIDTH: float = 0.8
 const BG_RADIUS: float = 4.5

@@ -100,6 +100,7 @@ var slow_effect := SlowEffect.new()
 var disable_effect := DisableEffect.new()
 
 var _element_indicator: ElementIndicator
+var _dot_indicator: DotIndicator
 var _debug_label: Label
 
 
@@ -111,6 +112,12 @@ func _ready() -> void:
 	status.status_applied.connect(func(element: StringName, _charge: int) -> void: _element_indicator.set_element(element))
 	status.status_cleared.connect(func(_element: StringName) -> void: _element_indicator.set_element(Elements.NONE))
 	disable_effect.expired.connect(func() -> void: disabled_expired.emit())
+
+	_dot_indicator = DotIndicator.new()
+	_dot_indicator.position = indicator_offset + Vector2(10, -6)
+	add_child(_dot_indicator)
+	dot_effect.applied.connect(func(source: StringName) -> void: _dot_indicator.set_source_element(source))
+	dot_effect.expired.connect(func() -> void: _dot_indicator.set_source_element(Elements.NONE))
 
 	if show_debug_readout:
 		_debug_label = Label.new()
@@ -315,7 +322,7 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# did, not just takes a lump of damage. Attacker excluded
 				# from the chain as a bystander, same caveat as Overgrowth.
 				status.apply(generated, hit_data.charge)
-				dot_effect.apply(3.5 if sinh_tier2 else 2.5, 1.0, 4.5 if sinh_tier2 else 3.5)
+				dot_effect.apply(3.5 if sinh_tier2 else 2.5, 1.0, 4.5 if sinh_tier2 else 3.5, Elements.HOA)
 				_propagate_wildfire(sinh_tier2, generated, hit_data.charge, hit_data.source)
 			elif Elements.pair_is(result.reaction_pair, Elements.HOA, Elements.THO):
 				# Cinder Bloom: "AoE burn; scorched terrain spreads Earth
@@ -350,9 +357,9 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 			if Elements.pair_is(result.reaction_pair, Elements.HOA, Elements.KIM):
 				# Molten: removes metal armor (status.clear() above) + DoT.
 				if thua:
-					dot_effect.apply(5.0, 1.0, 6.0)
+					dot_effect.apply(5.0, 1.0, 6.0, Elements.HOA)
 				else:
-					dot_effect.apply(3.0, 1.0, 4.0)
+					dot_effect.apply(3.0, 1.0, 4.0, Elements.HOA)
 			elif Elements.pair_is(result.reaction_pair, Elements.THO, Elements.THUY):
 				# Silt: slows movement. Telegraph-obscure deferred (A.7 —
 				# no telegraph system exists yet).
@@ -424,7 +431,7 @@ func _apply_overgrowth_aoe(root_duration: float, base_root: float, dot_dps: floa
 			continue
 		if global_position.distance_to(other.global_position) <= OVERGROWTH_RADIUS:
 			other.disable_effect.apply(root_duration, base_root)
-			other.dot_effect.apply(dot_dps, 0.5, root_duration)
+			other.dot_effect.apply(dot_dps, 0.5, root_duration, Elements.MOC)
 			other.add_to_group(OVERGROWTH_GROUP)
 			other.status.apply(generated_element, charge)
 
@@ -452,7 +459,7 @@ func _propagate_wildfire(tier2: bool, generated_element: StringName, charge: int
 			other.remove_from_group(OVERGROWTH_GROUP)
 			other.status.apply(generated_element, charge)
 			other.bonus_damage_dealt.emit(bonus_damage)
-			other.dot_effect.apply(3.5 if tier2 else 2.5, 1.0, 4.5 if tier2 else 3.5)
+			other.dot_effect.apply(3.5 if tier2 else 2.5, 1.0, 4.5 if tier2 else 3.5, Elements.HOA)
 
 
 ## Cinder Bloom's immediate half — an AoE burn to everyone currently
@@ -470,7 +477,7 @@ func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 		if other == null or other == bystander:
 			continue
 		if global_position.distance_to(other.global_position) <= CINDER_BLOOM_BURN_RADIUS:
-			other.dot_effect.apply(burn_dps, 1.0, 3.0)
+			other.dot_effect.apply(burn_dps, 1.0, 3.0, Elements.HOA)
 
 ## A.7 Burst: "an instant radius pulse with no duration or spawned
 ## object lifetime to manage" — Sever's armor shred and Root Break's
@@ -478,7 +485,7 @@ func _apply_cinder_bloom_burn(tier2: bool, attacker: Node) -> void:
 ## smaller than Overgrowth/Cinder Bloom's own AoE radii — a "pulse"
 ## should read as tighter and more immediate than a lingering AoE, and
 ## Khắc reactions are meant to read as disruption, not a big area clear.
-const BURST_RADIUS: float = 50.0
+const BURST_RADIUS: float = 25.0
 
 
 ## Sever's Burst: shreds armor on everyone caught in the pulse, not just

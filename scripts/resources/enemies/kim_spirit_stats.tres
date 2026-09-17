@@ -8,6 +8,7 @@ aggro_range = 80.0
 attack_range = 15.0
 chase_speed = 0.0
 damage = 6.0
+max_health = 100.0
 knockback_strength = 90.0
 attack_cooldown = 1.4
 element = &"kim"
