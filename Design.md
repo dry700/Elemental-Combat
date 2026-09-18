@@ -99,6 +99,41 @@ Every enemy body (`TestDummy`/`PatrolDummy`/`Boss`) repeats this exact
 `_on_hurtbox_hit` shape. `EnemyCombatAI` drives its own internal `Hitbox`
 the same way, through its own `TELEGRAPH → ACTIVE → COOLDOWN` states.
 
+```gdscript
+const DEATH_TINT: Color = Color(0.3, 0.3, 0.3)  ## Same value as every enemy's own DEATH_TINT.
+const DEATH_FADE_DELAY: float = 0.6
+
+func _die() -> void:
+    _is_dead = true
+    hurtbox.invulnerable = true
+    visuals.modulate = DEATH_TINT
+    await get_tree().create_timer(DEATH_FADE_DELAY).timeout
+    died.emit()
+    print("Player died")
+```
+
+`died` now fires **after** the delay, not immediately — `_is_dead` still
+flips synchronously (so `_apply_damage()`'s early-return guard and every
+other death-gated check still work exactly as before), only the signal
+that `RunManager` listens for is deliberately deferred. This is what
+actually makes the tint visible: `RunManager._on_player_died()` doesn't
+even hear about the death, let alone transition scenes, until the tint's
+already been on screen for `DEATH_FADE_DELAY`.
+
+**Required test fallout — two tests currently assert `died` synchronously,
+right after `_apply_damage()` returns, and will fail until updated to
+wait for it:**
+
+`test_lethal_damage_triggers_death()` and `test_died_signal_fires_only_once()`
+in `test_player_death.gd` need `await wait_for_signal(player, "died", 1.0)`
+inserted before their `assert_signal_emitted`/`assert_signal_emit_count`
+calls — GUT supports awaiting inside test functions the same way any
+other function can. The other three tests in that file
+(`test_damage_below_max_health_does_not_die`,
+`test_further_damage_after_death_does_not_reduce_health_further`,
+`test_current_health_never_goes_negative`) only check `_is_dead`/health
+values, both still synchronous — **unaffected**.
+
 ### 3.1 Armor Mitigation
 
 `ElementalCombatant.mitigate_damage(raw_damage: float) -> float`:
@@ -140,6 +175,124 @@ being lethal.** Fix: both files' `before_each()` should set
 those specific assertions — they're testing death/phase-transition
 *logic*, not mitigation math, so neutralizing armor there is the correct
 isolation, not a workaround.
+
+### 3.2 Control Resistance
+
+Rolling diminishing-returns resistance against control effects
+(`DisableEffect` root/stagger/stun/graze **and** `SlowEffect`), tracked
+by one shared counter per target — a Disable and a Slow both count
+against the same track, and immunity (once reached) blocks both alike.
+This exists specifically to close a gap a per-reaction ICD can't:
+`DisableEffect` is refresh-only, so spamming *one* reaction already
+can't stack duration — but nothing stops chaining *different* reactions
+(Root Break's Burst → Vine's root → Douse's stun...) back-to-back,
+since none of them share an ICD channel with each other. This system
+caps *total* control uptime regardless of source.
+
+**New component**, `scripts/reactions/cc_resistance.gd`:
+
+```gdscript
+class_name CCResistance
+extends RefCounted
+
+var free_hits: int = 999          # effectively unlimited by default —
+var window_seconds: float = 8.0   # Player/Normal/Spirit unaffected unless configured
+
+var _recent_count: int = 0
+var _window_timer: float = 0.0
+
+func configure(p_free_hits: int, p_window_seconds: float) -> void:
+    free_hits = p_free_hits
+    window_seconds = p_window_seconds
+
+func tick(delta: float) -> void:
+    if _recent_count <= 0:
+        return
+    _window_timer -= delta
+    if _window_timer <= 0.0:
+        _recent_count = 0
+
+## Called once per control application ATTEMPT, before the underlying
+## effect is applied. 0.0 means fully immune — caller skips the apply()
+## entirely, not even the floor duration.
+func consume_and_get_multiplier() -> float:
+    var multiplier := 1.0 if _recent_count < free_hits else (0.5 if _recent_count == free_hits else 0.0)
+    _recent_count += 1
+    _window_timer = window_seconds
+    return multiplier
+```
+
+**`ElementalCombatant` gets:** `var cc_resistance := CCResistance.new()`,
+ticked in `tick(delta)` alongside status/slow/disable. Two new
+chokepoint methods, replacing every direct `disable_effect.apply()` /
+`slow_effect.apply()` call:
+
+```gdscript
+func apply_control(duration: float, floor_duration: float = 0.0) -> void:
+    var m := cc_resistance.consume_and_get_multiplier()
+    if m <= 0.0:
+        return
+    disable_effect.apply(duration * m, minf(floor_duration, duration * m))
+
+func apply_control_slow(speed_multiplier: float, duration: float) -> void:
+    var m := cc_resistance.consume_and_get_multiplier()
+    if m <= 0.0:
+        return
+    slow_effect.apply(speed_multiplier, duration * m)
+```
+
+**Call sites to redirect (7 total — same shape of edit as armor
+mitigation's four `_apply_damage()` sites):**
+`apply_graze()`, Overgrowth's `_apply_overgrowth_aoe`, Root Break's
+`_apply_root_break_burst`, `SteamCloud._apply_initial_stun` (Douse) →
+`apply_control(...)`. Condensation's and Silt's `slow_effect.apply(...)`
+calls, and Caltrops' (§4.8.10) → `apply_control_slow(...)`.
+`debug_apply_test_effects()` stays direct — a dev tool, deliberately
+bypasses resistance.
+
+**`EnemyStats` gains:**
+
+```gdscript
+enum Tier { NORMAL, ELITE }
+@export var tier: Tier = Tier.NORMAL
+@export var cc_free_hits: int = 999
+@export var cc_window_seconds: float = 8.0
+```
+
+`BossStats` inherits these automatically — no new fields needed there.
+Elite is **not a new class** — it's a new authoring convention on the
+same `EnemyStats` shape Normal/Spirit already share (their own
+distinction is likewise just "does `element` get set," never a
+separate class). An Elite is just an `EnemyStats` `.tres` with `tier`
+set and tighter `cc_free_hits`, same way `kim_spirit_stats.tres` differs
+from `neutral_brawler_stats.tres` purely by authored numbers.
+
+**Proposed numbers** (placeholder, tune in Sprint 3 like everything
+else here):
+
+| Tier | `cc_free_hits` | `cc_window_seconds` | Curve |
+|---|---|---|---|
+| Normal / Spirit (unset) | 999 | 8.0 | Never triggers — fully comboable, unchanged from today |
+| Elite | 5 | 8.0 | Hits 1–5 full duration, hit 6 at 50%, hit 7+ immune |
+| Boss | 3 | 8.0 | Hits 1–3 full duration, hit 4 at 50%, hit 5+ immune |
+
+**Wiring:** `TestDummy`/`PatrolDummy`/`Boss`'s existing
+`if enemy_stats != null:` block gets one added line each —
+`elemental.cc_resistance.configure(enemy_stats.cc_free_hits, enemy_stats.cc_window_seconds)`
+(Boss: `boss_stats.` instead).
+
+**No existing test fallout expected** — unlike armor mitigation, every
+default (`999` free hits) preserves today's behavior exactly, and no
+current test configures a tighter profile. New behavior needs its own
+new test file (`test_cc_resistance.gd`, per §12's convention) rather
+than touching existing ones.
+
+**Deferred, not resolved:** Elite gets no HUD/visual distinction yet
+(no name tag, no tint) — purely a stats-and-resistance tier for now.
+Whether Disable and Slow *should* share one counter vs. two independent
+tracks is the interpretation taken here, not a settled call — revisit
+if resisting a stagger shouldn't also cost resistance against a later
+slow, or vice versa.
 ---
 
 ## 4. Elemental Reaction System
@@ -610,7 +763,6 @@ Every fragment that doesn't connect with an enemy during its 0.8s
 flight seeds one of these — Ore Surge against a lone target now
 scatters a ring of hazards instead of just wasting the rest of the
 volley.
-
 ---
 
 ## 5. Enemies & Bosses
@@ -642,7 +794,6 @@ random (no immediate repeat) + `BOSS_ROOM_SCENE_PATH` always last, never
 part of the random pool. Autosaves after every room transition via
 `SaveManager`, deliberately **not** mid-room precise (enemies always
 respawn fresh — see `run_manager.gd`'s own header for the reasoning).
-
 ---
 
 ## 7. Save System
@@ -760,3 +911,618 @@ Update this file when: a new reaction/system lands, an Appendix A number
 changes, or a §11 tech-debt item gets fixed (move it to a "Resolved"
 note, don't just delete the row — keeps the report's iteration narrative
 honest).
+
+## 14. First-Time Tutorial
+
+Plays once per save, ever — not per run. Teaches only the three
+requested verbs (movement, combat, one guaranteed reaction) and
+deliberately stops there: no Charge, no Tier, no ICD, no Break-Free, no
+Cheng/Thừa/Wu naming. Those stay entirely discoverable through play,
+same spirit A.6 always intended for elemental spirits generally, just
+made literal for the actual first few minutes.
+
+### 14.1 Persistence
+
+`SaveManager._default_data()` gains `"tutorial_completed": false`.
+New methods, same convention as `record_weapon_unlock`:
+
+```gdscript
+func has_completed_tutorial() -> bool:
+    return _data.get("tutorial_completed", false)
+
+func mark_tutorial_completed() -> void:
+    if _data.get("tutorial_completed", false):
+        return
+    _data["tutorial_completed"] = true
+    _save_to_disk()
+```
+
+### 14.2 The Tutorial Room
+
+New scene `scenes/world/tutorial_room.tscn` + script
+`scripts/world/tutorial_room.gd`. Self-contained — own `Ground`, own
+`Player` instance (weapon explicitly set to `training_dagger.tres`,
+same pattern `test_arena.tscn`/`procedural_run.tscn` already use), two
+`TestDummy` instances, and a `RoomExit` reused directly, locked until
+all three stages complete.
+
+```gdscript
+enum Stage { MOVEMENT, COMBAT, REACTION, DONE }
+var _stage: Stage = Stage.MOVEMENT
+var _has_moved := false
+var _has_jumped := false
+var _has_dodged := false
+```
+
+- **MOVEMENT:** poll each frame — `Input.get_axis("move_left","move_right") != 0.0`
+  sets `_has_moved`; `Input.is_action_just_pressed("jump")` sets
+  `_has_jumped`; `Input.is_action_just_pressed("dodge")` sets
+  `_has_dodged`. All three true → advance. Prompt:
+  `"A/D to Move  ·  Space to Jump  ·  Shift to Dodge"` — matches Sprint
+  1's own core-feel goals (GUIDE.md §3) exactly: movement, jump, and
+  dodge are the three things that Sprint was built to make feel right,
+  so the tutorial teaches precisely that set, nothing more or less.
+- No skip path, by design — deliberately omitted, not deferred.
+  `_has_jumped`. Both true → advance. Prompt: `"A/D to Move  ·  Space to Jump"`.
+- **COMBAT:** an elementless `TestDummy` (`starting_element = &"none"`)
+  is active; `hurtbox.hit_received` firing once on it advances. Prompt:
+  `"Left Click to Attack"`.
+- **REACTION:** a second `TestDummy` at its literal default config
+  (Kim, Charge 1) becomes active; its `elemental.status.status_cleared`
+  firing once advances. Prompt: `"Elements react when they meet — try it"`
+  — deliberately vague, names no mechanic.
+- **DONE:** `RoomExit.locked = false`. Walking through it calls
+  `SaveManager.mark_tutorial_completed()`, then
+  `get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")`.
+
+**This is the first actual scene-tree-level scene change anywhere in
+the project.** Every existing transition (`RunManager` between rooms)
+swaps children *within* one persistent scene — this is the first place
+`change_scene_to_file` gets called at all. Worth testing in isolation
+before assuming it behaves like the room-swap pattern already does.
+
+Prompts render as plain `Label` nodes authored directly in the `.tscn`
+(not code-built like `Hud`) — this scene only ever exists once, code-
+building it the way `Hud` does for reusability-across-every-scene
+would be solving a problem this doesn't have.
+
+### 14.3 Deferred entry-point wiring
+
+`project.godot`'s `run/main_scene` stays `test_arena.tscn` for now —
+that's the dev/playtesting default (README's own framing), and this
+tutorial is built and testable in isolation without touching it.
+Wiring the *real* boot sequence (fresh save → Tutorial →
+`procedural_run.tscn`; returning save → straight to a run, or a main
+menu) is explicitly tied to the still-open main-menu decision flagged
+earlier in this document — solving one without the other would mean
+redoing this wiring twice. Revisit both together.
+
+## 15. Loadout Select
+
+Two fully independent selectors, one per weapon slot — not the
+existing `WeaponPickup`/`Hud` overlay's "choose which slot" flow, which
+solves a different problem (you found one new thing, put it somewhere).
+This solves "pick both slots before the run even starts."
+
+Shown before every **new** run, skipped entirely when resuming
+(`SaveManager.has_in_progress_run()` — a resumed run's weapons come
+back via `Player.apply_save_state()` exactly as they do today; letting
+the player re-pick mid-resume would contradict what "resume" means).
+Tied to the same deferred entry-point/main-menu question as §14.3 — the
+thing that decides "show Tutorial or not" is the same thing that should
+decide "show Loadout Select or not."
+
+### 15.1 Pool
+
+```gdscript
+const STARTING_WEAPON_PATHS: Array[String] = [
+    "res://scripts/resources/weapons/training_dagger.tres",
+    "res://scripts/resources/weapons/training_spear.tres",
+    "res://scripts/resources/weapons/training_staff.tres",
+    "res://scripts/resources/weapons/training_greatsword.tres",
+    "res://scripts/resources/weapons/training_hammer.tres",
+]
+```
+
+```gdscript
+const STARTING_SKILL_PATHS: Array[String] = [
+    "res://scripts/resources/skills/ignite_dart.tres",
+    "res://scripts/resources/skills/overgrowth_snare.tres",
+    "res://scripts/resources/skills/cleansing_tide.tres",
+    "res://scripts/resources/skills/rending_edge.tres",
+    "res://scripts/resources/skills/stoneguard.tres",
+]
+```
+
+Same pool-building shape as weapons: starting five +
+`SaveManager.get_unlocked_skill_paths()`, deduped.
+
+Both slots draw from the **identical** pool (starting five +
+`SaveManager.get_unlocked_weapon_paths()`, deduped) — chosen
+independently per slot, matching the diagram exactly.
+
+### 15.2 New scene
+
+`scenes/ui/loadout_select.tscn` + `scripts/ui/loadout_select.gd`, root
+`Control`. Authored `.tscn` (not code-built like `Hud`) — same
+reasoning as Tutorial Room: this exists once, isn't reused across every
+scene, doesn't need `Hud`'s reusability shape. Four `VBoxContainer` columns now, not two — Weapon 1, Weapon 2,
+Skill 1, Skill 2 — each populated the same way (one clickable row per
+pool entry). **Validation differs by pair, not identical across all
+four:** the weapon columns impose no cross-check at all (duplicate
+picks allowed, confirmed harmless — no shared state between
+`weapon`/`secondary_weapon`). The skill columns **do** cross-check —
+"Start Run" stays disabled if `skill_1`'s pick == `skill_2`'s pick,
+since `Player._skill_cooldowns` is keyed by the `SkillData` resource
+itself, not by slot: two identical skills would silently share one
+cooldown, collapsing Q and E into one button instead of two real
+choices. A short inline message ("pick two different skills") shows
+when this blocks confirmation, rather than silently disabling with no
+explanation. A "Start Run"
+button, disabled until both columns have a selection. The weapon columns now cross-check too, same rule as skills but simpler
+reasoning: "Start Run" stays disabled if Weapon 1's pick == Weapon 2's
+pick (compared by `resource_path`, matching how `SaveManager` already
+tracks weapons/skills throughout — not object identity, since Godot
+caches loaded resources and two `load()` calls to the same path can
+return the same instance). Same inline-message pattern as the skill
+check.
+
+### 15.3 Hand-off — reuses `RunManager`, no new autoload
+
+```gdscript
+# RunManager — four pending fields now, not two
+var pending_weapon_path: String = ""
+var pending_secondary_weapon_path: String = ""
+var pending_skill_1_path: String = ""
+var pending_skill_2_path: String = ""
+
+func consume_pending_loadout(player: Player) -> void:
+    if pending_weapon_path != "":
+        var w := load(pending_weapon_path) as WeaponStats
+        if w != null:
+            player.weapon = w
+    if pending_secondary_weapon_path != "":
+        var w2 := load(pending_secondary_weapon_path) as WeaponStats
+        if w2 != null:
+            player.secondary_weapon = w2
+    if pending_skill_1_path != "":
+        var s1 := load(pending_skill_1_path) as SkillData
+        if s1 != null:
+            player.skill_1 = s1
+    if pending_skill_2_path != "":
+        var s2 := load(pending_skill_2_path) as SkillData
+        if s2 != null:
+            player.skill_2 = s2
+    pending_weapon_path = ""
+    pending_secondary_weapon_path = ""
+    pending_skill_1_path = ""
+    pending_skill_2_path = ""
+```
+
+`procedural_run.gd._ready()` is unchanged from the earlier draft — same
+single `RunManager.consume_pending_loadout(player)` call before
+`start_run()` now hands off all four, not two. Same resume-safety
+reasoning holds: a resumed run's later `apply_save_state()` still wins
+over anything pending, unchanged.
+Order matters: calling this *before* `start_run()` means a resumed
+run's later `apply_save_state()` call correctly overwrites it if both
+paths happen to be set — resume always wins, loadout choice only ever
+applies to a genuinely fresh run.
+
+Deliberately **not persisted to `SaveManager`** — this is in-memory
+hand-off between two scenes in the same session, not save data. If the
+player quits between selecting and the run actually starting, losing
+that specific pending choice is fine; they just pick again next launch.
+### 15.4 Duplicate-weapon rule, extended to in-run pickups
+
+`Player` gets the authoritative check — the guard that actually
+prevents a duplicate, everything else below is UX on top of it:
+
+```gdscript
+## Compared by resource_path (matches SaveManager's tracking
+## convention throughout, not object identity). Empty resource_path —
+## a runtime WeaponStats.new() fallback/debug instance — is never
+## treated as a duplicate; it can't be meaningfully compared.
+func would_duplicate_weapon(is_primary: bool, candidate: WeaponStats) -> bool:
+    if candidate == null or candidate.resource_path == "":
+        return false
+    var other := secondary_weapon if is_primary else weapon
+    return other != null and other.resource_path == candidate.resource_path
+```
+
+`Hud._confirm_overlay_selection()` gets one added guard for
+weapon-kind overlays: if `_player.would_duplicate_weapon(_overlay_selected_primary, pickup.weapon)`,
+don't confirm — show the same inline "(duplicate)" message pattern
+already used for the skill check (§15.2), leave the overlay open.
+`_update_overlay_visuals()` additionally grays out whichever slot
+option would trigger this, so the block is visible before the player
+even tries to confirm, not just after.
+
+Not retroactively enforced — an existing save from before this rule
+existed could still hold two identical weapons; the rule only stops a
+*new* duplicate from being created going forward, it doesn't auto-fix
+one that's already there.
+## 16. Runes
+
+New pickup, `scripts/items/rune_pickup.gd`,
+`class_name RunePickup extends Area2D` — mirrors `WeaponPickup`/
+`SkillPickup` exactly: proximity-only (`_player_in_range`), all input
+via `Hud`'s existing overlay, no new input action. One field:
+`@export var rune_element: StringName = Elements.NONE`.
+
+**`Hud`'s overlay gets a third kind**, not just weapon/skill —
+`_overlay_kind: enum { WEAPON, SKILL, RUNE }` replacing the current
+`_overlay_is_weapon: bool`. RUNE reuses the exact same "slot 1 / slot 2"
+shape as WEAPON (runes only ever target weapon slots, never skills,
+matching A.4), just confirms into `apply_rune()` instead of
+`swap_weapon()`.
+
+**Application — `Player.apply_rune()`:**
+
+```gdscript
+func apply_rune(is_primary: bool, new_rune_element: StringName) -> void:
+    var target := weapon if is_primary else secondary_weapon
+    if target == null:
+        return
+    var runed := target.duplicate() as WeaponStats
+    runed.rune_element = new_rune_element
+    if is_primary:
+        weapon = runed
+        # _weapon_base_path (below) is deliberately UNCHANGED — same
+        # base weapon, just now runed.
+    else:
+        secondary_weapon = runed
+```
+
+**Save/resume fix — required alongside this, not optional.** `Player`
+gains two new tracked fields, `_weapon_base_path` /
+`_secondary_weapon_base_path`, set whenever a *real* weapon (non-empty
+resource_path) is assigned via `swap_weapon()` or
+`consume_pending_loadout()` — **never** touched by `apply_rune()`,
+since the base weapon type doesn't change, only its rune does.
+
+`to_save_state()` saves `_weapon_base_path` (not `weapon.resource_path`
+directly anymore) plus a new `weapon_rune_element` field
+(`weapon.rune_element` — this value duplicate()s correctly even though
+the path doesn't). `apply_save_state()`'s `_load_weapon_path()` loads
+the base asset by path as before, then re-applies the saved rune only
+if it differs from what that asset already bakes in:
+
+```gdscript
+func _load_weapon_path(path: String, rune_element: StringName, is_primary: bool) -> void:
+    if path == "":
+        return
+    var loaded := load(path) as WeaponStats
+    if loaded == null:
+        push_warning("Player.apply_save_state: could not load weapon at %s" % path)
+        return
+    if rune_element != &"none" and rune_element != loaded.rune_element:
+        loaded = loaded.duplicate() as WeaponStats
+        loaded.rune_element = rune_element
+    if is_primary:
+        weapon = loaded
+        _weapon_base_path = path
+    else:
+        secondary_weapon = loaded
+        _secondary_weapon_base_path = path
+```
+
+`consume_pending_loadout()` (§15.3) needs the matching update — setting
+`_weapon_base_path`/`_secondary_weapon_base_path` alongside
+`player.weapon`/`player.secondary_weapon`, not just the weapon fields
+alone, or a loadout-selected weapon would itself fail to survive a
+resume.
+
+**Visual — reuses the A.1 glyph language, not a slot number.** Unlike
+`WeaponPickup`/`SkillPickup` (square-with-"1"/"2", circle-with-"Q"/"E"
+— their identity is *which slot*), a rune's identity is *which
+element*. `RunePickup._draw()` renders the same pattern glyph
+`ElementIndicator` already draws for status icons (diamond/spiral/
+wave/zigzag/dot-grid), tinted by the same `ElementIndicator.ELEMENT_COLOR`
+map — directly reusing the accessibility pattern language A.1
+established, rather than inventing a fourth pickup shape/color scheme.
+"Press F" prompt stays identical to the other two, for consistency.
+
+**Default slot targeting, mirroring `_default_target_is_primary`'s
+exact shape:** prefers whichever weapon slot currently has **no**
+rune (`rune_element == Elements.NONE`), falls back to whichever slot
+has a *different* element than the one being picked up, falls back to
+the pickup's own preferred slot only once both are already occupied by
+the same element. Smarter than weapons' plain empty-slot check, since
+"already runed" is a meaningfully different state than "empty" here.
+
+**Resolved:** overwriting an existing rune **does** leave the old one
+behind as a new `RunePickup` at the same position — same reasoning
+`WeaponPickup` already states outright ("a swap is always reversible,
+never a one-way trade the player didn't mean to make"). Reuses the
+identical `_spawn_dropped`-shaped helper, just for runes instead of
+weapons — cheap, since the pattern already exists twice in this
+codebase (`WeaponPickup`, `SkillPickup`) and this is a third use of the
+same shape, not a new one.
+### 16.1 Acquisition
+
+**Elemental spirits (`TestDummy`/`PatrolDummy`/`Boss` with
+`enemy_stats.element != Elements.NONE`)** drop exactly one `RunePickup`
+on death — the drop itself is guaranteed, only the *element* is
+weighted:
+
+```gdscript
+# static on RunePickup — centralizes the weighting so TestDummy/
+# PatrolDummy/Boss's three separate _die() methods (no shared base
+# class, same reason every other enemy hook in this project is
+# duplicated three times) don't each reimplement it.
+const SPIRIT_OWN_ELEMENT_WEIGHT: float = 0.6  # 60% own element, 10% each of the other 4
+
+static func roll_spirit_element(own_element: StringName) -> StringName:
+    if randf() < SPIRIT_OWN_ELEMENT_WEIGHT:
+        return own_element
+    var others := Elements.ALL.duplicate()
+    others.erase(own_element)
+    return others[randi() % others.size()]
+```
+
+`_die()` in `TestDummy`/`PatrolDummy` (and `Boss`, see below), same
+"same edit shape, three call sites" pattern as Qi's `_die()` hook
+(§4.8.1) and armor mitigation's `_apply_damage()` (§3.1):
+
+```gdscript
+if enemy_stats != null and enemy_stats.element != Elements.NONE:
+    var rune := RunePickup.new()
+    rune.rune_element = RunePickup.roll_spirit_element(enemy_stats.element)
+    rune.global_position = global_position
+    get_tree().current_scene.add_child(rune)
+```
+
+**Room clear (`RoomController._check_cleared()`)** additionally spawns
+one baseline `RunePickup` near the `Exit`, element chosen **uniformly**
+across all 5 (not weighted — this is the non-themed baseline, its whole
+point is covering all-Normal rooms that have no spirit to drop
+anything):
+
+```gdscript
+var baseline := RunePickup.new()
+baseline.rune_element = Elements.ALL[randi() % Elements.ALL.size()]
+baseline.global_position = exit.global_position + Vector2(-15, 0)
+get_parent().add_child(baseline)
+```
+
+A room with an elemental spirit in it now yields **two** runes total
+(the spirit's weighted drop + the room's baseline) — deliberately
+generous, matches the "themed bonus on top of a guaranteed floor"
+framing this combo was chosen for.
+
+**Interpretation taken, not explicitly stated by you:** the spirit's
+drop chance itself is 100% — only which element rolls is weighted.
+Flagging in case you actually meant "chance to drop *at all*" is also
+supposed to be less than certain.
+
+**Still open:**
+**Boss drop — resolved.** One rune, dropped once, after death — not
+per-phase, not two separate drops. A distinct roll shape from spirits'
+5-way weighting: confined to just the boss's own two elements, 50/50,
+since a boss only ever embodies two (A.6), never the other three.
+
+```gdscript
+# RunePickup — new static method alongside roll_spirit_element
+static func roll_boss_element(phase_1_element: StringName, phase_2_element: StringName) -> StringName:
+    return phase_1_element if randf() < 0.5 else phase_2_element
+```
+
+`Boss._die()`, guarded for the two degenerate cases (no element at all
+→ no drop; single-element boss with no `phase_2_element` → always that
+one, never a coin-flip against nothing):
+
+```gdscript
+func _die() -> void:
+    _is_dead = true
+    hurtbox.invulnerable = true
+    visual.set_tint(DEATH_TINT)
+    damage_label.text = "X"
+    if boss_stats.element != Elements.NONE:
+        var rune := RunePickup.new()
+        rune.rune_element = (RunePickup.roll_boss_element(boss_stats.element, boss_stats.phase_2_element)
+            if boss_stats.phase_2_element != Elements.NONE else boss_stats.element)
+        rune.global_position = global_position
+        get_tree().current_scene.add_child(rune)
+    await get_tree().create_timer(DEATH_FADE_DELAY).timeout
+    queue_free()
+```
+
+A boss room still separately triggers the room-clear baseline drop
+(§16.1) on top of this — a boss kill can yield **two** runes total (its
+own two-element roll + the room's uniform baseline), consistent with
+the "themed bonus on top of a guaranteed floor" reasoning already
+established for ordinary spirit rooms.
+
+**Resolved:** overwriting an existing rune **does** leave the old one
+behind as a new `RunePickup` at the same position — same reasoning
+`WeaponPickup` already states outright ("a swap is always reversible,
+never a one-way trade the player didn't mean to make"). Reuses the
+identical `_spawn_dropped`-shaped helper, just for runes instead of
+weapons — cheap, since the pattern already exists twice in this
+codebase (`WeaponPickup`, `SkillPickup`) and this is a third use of the
+same shape, not a new one.
+
+  ### 16.2 Skill Runes (architecture decided, content deferred)
+
+Skills will get their own independent rune slot eventually — a new
+`SkillData.rune_element` field, a separate `Player.apply_skill_rune()`
+application flow (mirroring §16's weapon version, own save/resume
+fields), and their own `Hud` overlay target alongside `WEAPON`/`SKILL`/
+`RUNE`. **Locked in as the eventual shape; the actual minor-attribute
+table (what a rune on a skill does) is explicitly deferred** — same
+"logged as scoped-out future work, not implemented" treatment A.2
+already gives its own deferred cross-cycle reactions. Do not build the
+slot without the table, or vice versa — they're one feature, just not
+this pass.
+
+## 17. Death/Run-Summary Screen
+
+Minimal scope — shows exactly what `SaveManager.run_history` already
+tracks (outcome, rooms cleared, duration), nothing that needs new
+instrumentation anywhere else. New scene, `scenes/ui/run_summary.tscn`
++ `scripts/ui/run_summary.gd` — same one-time-authored-`.tscn` reasoning
+as Tutorial/Loadout Select.
+
+**Hand-off, same `RunManager`-fields pattern as §15.3, fourth use now:**
+
+```gdscript
+# RunManager
+var _last_run_outcome: String = ""
+var _last_run_rooms_cleared: int = 0
+var _last_run_duration_sec: float = 0.0
+
+func _finish_run(outcome: String, rooms_cleared: int) -> void:
+    _run_active = false
+    set_process(false)
+    SaveManager.record_run_result(outcome, rooms_cleared, _elapsed_sec)
+    SaveManager.clear_in_progress_run()
+    _last_run_outcome = outcome
+    _last_run_rooms_cleared = rooms_cleared
+    _last_run_duration_sec = _elapsed_sec
+    get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
+```
+
+Not cleared after being read (unlike the pending-loadout fields in
+§15.3) — these represent "the most recent finished run," naturally
+overwritten by the next one, not a one-time-consume intent.
+
+**Screen itself:**
+
+```gdscript
+extends Control
+
+@onready var outcome_label: Label = $OutcomeLabel
+@onready var rooms_label: Label = $RoomsLabel
+@onready var duration_label: Label = $DurationLabel
+@onready var continue_button: Button = $ContinueButton
+
+func _ready() -> void:
+    var won := RunManager._last_run_outcome == "win"
+    outcome_label.text = "Run Complete!" if won else "You Died"
+    outcome_label.modulate = Color(0.4, 0.9, 0.45) if won else Color(0.85, 0.3, 0.3)
+    rooms_label.text = "Rooms Cleared: %d" % RunManager._last_run_rooms_cleared
+    duration_label.text = "Time: %s" % _format_duration(RunManager._last_run_duration_sec)
+    continue_button.pressed.connect(_on_continue_pressed)
+
+func _format_duration(seconds: float) -> String:
+    var total := int(seconds)
+    return "%d:%02d" % [total / 60, total % 60]
+
+func _on_continue_pressed() -> void:
+    get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
+```
+
+**Continue chains directly into Loadout Select** — doesn't need the
+still-deferred main-menu decision (§14.3) resolved to function. If a
+main menu ever gets built, it slots in before this whole chain starts,
+not instead of it. Fourth use of `change_scene_to_file` in the project
+now (Tutorial → Run, Loadout Select → Run, Player death → this screen,
+this screen → Loadout Select).
+
+**Richer stats (enemies killed, reactions triggered, Qi earned) explicitly
+deferred** — same treatment as skill runes (§16.2): logged as a known
+future expansion, not designed here, since none of that data is tracked
+anywhere in the codebase yet.
+
+## 18. Main Menu
+
+New scene, `scenes/ui/main_menu.tscn` + `scripts/ui/main_menu.gd` — same
+authored-`.tscn` convention as Tutorial/Loadout Select/Run Summary.
+**Becomes `project.godot`'s actual entry point** (see §18.3) — the
+resolution every deferred entry-point note since §14.3 has been
+pointing toward.
+
+### 18.1 Routing
+
+One primary button, not two — text and action both decided by
+`SaveManager.has_in_progress_run()`:
+
+```gdscript
+func _refresh_ui() -> void:
+    var has_resume := SaveManager.has_in_progress_run()
+    primary_button.text = "Continue" if has_resume else "New Run"
+    abandon_button.visible = has_resume  # only exists when there's something to abandon
+
+func _on_primary_button_pressed() -> void:
+    if SaveManager.has_in_progress_run():
+        get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
+    else:
+        _start_new_run()
+
+func _start_new_run() -> void:
+    if not SaveManager.has_completed_tutorial():
+        get_tree().change_scene_to_file("res://scenes/world/tutorial_room.tscn")
+    else:
+        get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
+```
+
+`_start_new_run()` is shared with the abandon flow below rather than
+duplicated — "start fresh" means the same thing whether you got there
+by having no run at all, or by just discarding one.
+
+### 18.2 Abandon, with confirmation
+
+Uses Godot's built-in `ConfirmationDialog` node directly rather than a
+hand-rolled panel — first use of it in the project, but it's exactly
+what it's for.
+
+```gdscript
+@onready var abandon_confirm: ConfirmationDialog = $AbandonConfirmDialog
+
+func _ready() -> void:
+    abandon_confirm.dialog_text = "Abandon your current run? This cannot be undone."
+    abandon_confirm.confirmed.connect(_on_abandon_confirmed)
+    abandon_button.pressed.connect(func(): abandon_confirm.popup_centered())
+    _refresh_history_summary()
+    _refresh_ui()
+
+func _on_abandon_confirmed() -> void:
+    SaveManager.clear_in_progress_run()
+    _start_new_run()
+```
+
+**Deliberately never calls `record_run_result()`** — abandoning is
+neither a win nor a loss, and shouldn't count as either in the history
+glance below. An abandoned run simply vanishes, same as if the save
+file had been deleted manually (README's existing testing escape
+hatch), just reachable without leaving the game.
+
+### 18.3 Run History Glance
+
+Aggregates data `SaveManager.run_history` already tracks — no new
+instrumentation, unlike the run-summary screen's deferred richer stats
+(§17). Different scope tier entirely; this one's nearly free:
+
+```gdscript
+func _refresh_history_summary() -> void:
+    var history := SaveManager.get_run_history()
+    if history.is_empty():
+        history_label.text = "No runs yet"
+        return
+    var wins := 0
+    var best_rooms := 0
+    for entry in history:
+        if entry.get("outcome") == "win":
+            wins += 1
+        best_rooms = maxi(best_rooms, int(entry.get("rooms_cleared", 0)))
+    history_label.text = "Total Runs: %d   ·   Wins: %d   ·   Best: %d rooms" % [history.size(), wins, best_rooms]
+```
+
+`MAX_RUN_HISTORY_ENTRIES` (50, `save_manager.gd`) caps how far back this
+can see — "Total Runs" reads as "total of the most recent 50," not a
+lifetime count, past that point. Not worth a fix; a fresh save won't
+hit this for a very long time.
+
+### 18.4 Entry point change
+project.godot, [application] section
+run/main_scene="res://scenes/world/test_arena.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
+
+`test_arena.tscn` still exists and is still directly runnable in the
+editor for dev/playtesting — this only changes what a shipped build
+actually boots into, per README's own framing of that scene as the
+dev default. The full chain is now genuinely closed end-to-end: Main
+Menu → (Tutorial, first time only) → Loadout Select → Run →
+Death/Summary → Loadout Select → ... → Main Menu (via Quit, or by
+finishing/abandoning back to it).
