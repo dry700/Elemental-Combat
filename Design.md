@@ -1526,3 +1526,46 @@ dev default. The full chain is now genuinely closed end-to-end: Main
 Menu → (Tutorial, first time only) → Loadout Select → Run →
 Death/Summary → Loadout Select → ... → Main Menu (via Quit, or by
 finishing/abandoning back to it).
+
+## 19. Room Authoring & Selection
+
+### 19.1 Room Template Checklist
+
+Every new normal room `.tscn` needs, matching `room_a/b/c`'s existing
+shared shape exactly:
+
+- Root `Node2D`, `RoomController` script attached, `exit` NodePath set
+  (or left for `RoomController._ready()`'s own `find_child("Exit")`
+  fallback to recover it).
+- `Ground` (`StaticBody2D`), width 350–450px — the range every existing
+  room already falls in; nothing enforces this, it's a convention to
+  hold to for pacing consistency, not a hard constraint.
+- Exactly one `PlayerSpawn` marker, in the `"player_spawn"` group.
+- 1+ `EnemySpawnPoint` nodes, each with `enemy_scene` +
+  `enemy_stats` set (`starting_element`/`starting_charge` only if the
+  enemy should start already carrying a status — most shouldn't).
+- One `Exit` (`RoomExit` script), `locked = true` by default —
+  `RoomController._ready()` unlocks it automatically if the room has
+  no spawn points, otherwise `RoomController` handles unlocking on
+  clear.
+
+Nothing here is new architecture — this section exists purely so the
+next room built follows the pattern without re-deriving it from reading
+three existing `.tscn` files side by side.
+
+### 19.2 Selection & Scope (current pass)
+
+- **`ROOMS_PER_RUN` stays 3.** No change to run length/pacing — this
+  pass is about pool variety, not run structure (that's a separate,
+  already-deferred topic).
+- **Selection algorithm unchanged.** Uniform random + no-immediate-
+  repeat-within-a-run already scales correctly as the pool grows — no
+  code change needed, just longer `ROOM_SCENE_PATHS`. Cross-run memory
+  (avoiding the same set showing up in back-to-back runs) stays an
+  explicit future-work item, same treatment as skill runes (§16.2) and
+  the run-summary screen's richer stats (§17) — logged, not built.
+- **Target pool: 6 total** (double the current 3) — the smallest
+  reasonable step, matching "for now" rather than committing to a
+  bigger content target while solo pixel-art production is still the
+  binding constraint (R05). Revisit once 6 exist and it's clear whether
+  that's actually enough variety in practice.
