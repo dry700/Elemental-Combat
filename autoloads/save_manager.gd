@@ -44,6 +44,7 @@ func _default_data() -> Dictionary:
 		"unlocked_skills": [],
 		"run_history": [],
 		"in_progress_run": null,
+		"tutorial_completed": false,
 	}
 
 
@@ -108,6 +109,17 @@ func get_unlocked_weapon_paths() -> Array:
 
 func get_unlocked_skill_paths() -> Array:
 	return _data["unlocked_skills"].duplicate()
+
+
+func has_completed_tutorial() -> bool:
+	return bool(_data.get("tutorial_completed", false))
+
+
+func mark_tutorial_completed() -> void:
+	if has_completed_tutorial():
+		return
+	_data["tutorial_completed"] = true
+	_save_to_disk()
 
 
 ## --- Run history ---

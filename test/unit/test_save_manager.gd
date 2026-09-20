@@ -23,6 +23,16 @@ func test_default_data_starts_empty():
 	assert_eq(SaveManager.get_unlocked_weapon_paths(), [])
 	assert_eq(SaveManager.get_run_history(), [])
 	assert_false(SaveManager.has_in_progress_run())
+	assert_false(SaveManager.has_completed_tutorial())
+
+func test_tutorial_completion_persists_and_is_idempotent():
+	assert_false(SaveManager.has_completed_tutorial())
+	SaveManager.mark_tutorial_completed()
+	SaveManager.mark_tutorial_completed()
+	assert_true(SaveManager.has_completed_tutorial())
+	SaveManager._data = SaveManager._default_data()
+	SaveManager._load_from_disk()
+	assert_true(SaveManager.has_completed_tutorial())
 
 func test_record_weapon_unlock_adds_a_new_path():
 	SaveManager.record_weapon_unlock("res://fake_weapon.tres")
