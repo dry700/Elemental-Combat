@@ -53,6 +53,7 @@ func _ready() -> void:
 	elemental.armor = boss_stats.armor if "armor" in boss_stats else 10.0
 	elemental.innate_element = boss_stats.element  ## Phase 1 starts as boss_stats.element, same field EnemyStats already uses.
 	add_child(elemental)
+	elemental.cc_resistance.configure(boss_stats.cc_free_hits, boss_stats.cc_window_seconds)
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
 	elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge if "innate_charge" in boss_stats else 1)
 

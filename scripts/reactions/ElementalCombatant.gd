@@ -99,6 +99,7 @@ var dot_effect := DotEffect.new()
 var slow_effect := SlowEffect.new()
 var disable_effect := DisableEffect.new()
 var armor_buff := ArmorBuffEffect.new()
+var cc_resistance = preload("res://scripts/reactions/cc_resistance.gd").new()
 
 var _element_indicator: ElementIndicator
 var _dot_indicator: DotIndicator
@@ -140,6 +141,7 @@ func tick(delta: float) -> float:
 	slow_effect.tick(delta)
 	disable_effect.tick(delta)
 	armor_buff.tick(delta)
+	cc_resistance.tick(delta)
 	_tick_icd(delta)
 	var dot_damage := dot_effect.tick(delta)
 	if show_debug_readout:
@@ -205,7 +207,21 @@ const GRAZE_DURATION: float = 0.25
 
 
 func apply_graze() -> void:
-	disable_effect.apply(GRAZE_DURATION, GRAZE_DURATION)
+	apply_control(GRAZE_DURATION, GRAZE_DURATION)
+
+
+func apply_control(duration: float, floor_duration: float = 0.0) -> void:
+	var multiplier := cc_resistance.consume_and_get_multiplier()
+	if multiplier <= 0.0:
+		return
+	disable_effect.apply(duration * multiplier, minf(floor_duration, duration * multiplier))
+
+
+func apply_control_slow(speed_multiplier: float, duration: float) -> void:
+	var multiplier := cc_resistance.consume_and_get_multiplier()
+	if multiplier <= 0.0:
+		return
+	slow_effect.apply(speed_multiplier, duration * multiplier)
 
 
 ## Resolves an attacker Node to its ElementalCombatant for splash-exclusion
@@ -300,7 +316,7 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# 5s decay (A.2). Tier 2 scales both numbers, same effect
 				# only — Sinh only ever has two tiers, no Thừa/Vũ equivalent.
 				status.apply(generated, hit_data.charge, ElementalStatus.DECAY_SECONDS * (1.6 if sinh_tier2 else 1.3))
-				slow_effect.apply(0.5 if sinh_tier2 else 0.7, 3.5 if sinh_tier2 else 2.5)
+				apply_control_slow(0.5 if sinh_tier2 else 0.7, 3.5 if sinh_tier2 else 2.5)
 			elif Elements.pair_is(result.reaction_pair, Elements.THUY, Elements.MOC):
 				# Overgrowth: roots ENEMIES (plural, A.2's own wording) in
 				# place around wherever this triggered, with a DoT for as
@@ -370,7 +386,7 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 			elif Elements.pair_is(result.reaction_pair, Elements.THO, Elements.THUY):
 				# Silt: slows movement. Telegraph-obscure deferred (A.7 —
 				# no telegraph system exists yet).
-				slow_effect.apply(0.4 if thua else 0.6, 5.0 if thua else 3.5)
+				apply_control_slow(0.4 if thua else 0.6, 5.0 if thua else 3.5)
 			elif Elements.pair_is(result.reaction_pair, Elements.MOC, Elements.THO):
 				# Root Break: removes earth shield (status.clear() above),
 				# then staggers — floor always the base duration, since
@@ -437,7 +453,7 @@ func _apply_overgrowth_aoe(root_duration: float, base_root: float, dot_dps: floa
 		if other == null or other == bystander:
 			continue
 		if global_position.distance_to(other.global_position) <= OVERGROWTH_RADIUS:
-			other.disable_effect.apply(root_duration, base_root)
+			other.apply_control(root_duration, base_root)
 			other.dot_effect.apply(dot_dps, 0.5, root_duration, Elements.MOC)
 			other.add_to_group(OVERGROWTH_GROUP)
 			other.status.apply(generated_element, charge)
@@ -522,7 +538,7 @@ func _apply_root_break_burst(stagger_duration: float, base_stagger: float, attac
 		if other == null or other == bystander:
 			continue
 		if global_position.distance_to(other.global_position) <= BURST_RADIUS:
-			other.disable_effect.apply(stagger_duration, base_stagger)
+			other.apply_control(stagger_duration, base_stagger)
 
 ## Spawns an A.7 Zone at this combatant's current position — the
 ## "scorched terrain" (Cinder Bloom) / scattered debris (Ore Surge's own

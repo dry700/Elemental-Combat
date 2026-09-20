@@ -11,6 +11,12 @@ extends Resource
 ## enemy class needed. Bosses (up to two elements, phase-based) are an
 ## explicit Sprint 3 stretch goal per A.6 and aren't covered here.
 
+enum Tier { NORMAL, ELITE }
+
+@export var tier: Tier = Tier.NORMAL
+@export var cc_free_hits: int = 999
+@export var cc_window_seconds: float = 8.0
+
 @export var aggro_range: float = 90.0   ## Player within this: enemy notices and engages.
 @export var attack_range: float = 13.0   ## Player within this (and aggroed): attacks instead of chasing.
 @export var chase_speed: float = 35.0    ## Ignored by stationary enemies (can_chase = false) — see EnemyCombatAI.

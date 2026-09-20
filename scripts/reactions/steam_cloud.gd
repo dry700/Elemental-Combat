@@ -100,7 +100,7 @@ func _apply_initial_stun() -> void:
 		if combatant == null or combatant == excluded_combatant:
 			continue
 		if global_position.distance_to(combatant.global_position) <= radius:
-			combatant.disable_effect.apply(stun_duration, stun_duration)
+			combatant.apply_control(stun_duration, stun_duration)
 
 
 func _draw() -> void:

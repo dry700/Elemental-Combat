@@ -47,10 +47,12 @@ func _ready() -> void:
 	elemental.armor = starting_armor
 	elemental.innate_element = starting_element
 	add_child(elemental)
+	elemental.cc_resistance.configure(999, 8.0)
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
 	elemental.apply_starting_status(starting_element, starting_charge)
 
 	if enemy_stats != null:
+		elemental.cc_resistance.configure(enemy_stats.cc_free_hits, enemy_stats.cc_window_seconds)
 		_current_health = enemy_stats.max_health
 		add_to_group("enemies")
 		combat_ai = EnemyCombatAI.new()
