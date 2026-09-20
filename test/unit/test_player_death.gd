@@ -11,21 +11,24 @@ func before_each():
 	var player_scene: PackedScene = load(PLAYER_SCENE_PATH)
 	player = player_scene.instantiate()
 	add_child_autofree(player)
+	player.elemental.armor = 0.0
 
 func test_damage_below_max_health_does_not_die():
 	player._apply_damage(player.max_health * 0.5)
 	assert_false(player._is_dead)
 
-func test_lethal_damage_triggers_death():
+func test_lethal_damage_triggers_death() -> void:
 	watch_signals(player)
 	player._apply_damage(player.max_health)
 	assert_true(player._is_dead)
+	await wait_for_signal(player.died, 1.0)
 	assert_signal_emitted(player, "died")
 
-func test_died_signal_fires_only_once():
+func test_died_signal_fires_only_once() -> void:
 	watch_signals(player)
 	player._apply_damage(player.max_health)
 	player._apply_damage(10.0)
+	await wait_for_signal(player.died, 1.0)
 	assert_signal_emit_count(player, "died", 1)
 
 func test_further_damage_after_death_does_not_reduce_health_further():

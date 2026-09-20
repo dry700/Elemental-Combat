@@ -658,7 +658,7 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 func _apply_damage(amount: float) -> void:
 	if _is_dead:
 		return
-	current_health = maxf(current_health - amount, 0.0)
+	current_health = maxf(current_health - elemental.mitigate_damage(amount), 0.0)
 	if current_health <= 0.0:
 		_die()
 
@@ -666,6 +666,8 @@ func _apply_damage(amount: float) -> void:
 func _die() -> void:
 	_is_dead = true
 	hurtbox.invulnerable = true  ## No further hits register — same convention as every enemy's own _die().
+	visuals.modulate = Color(0.35, 0.35, 0.35)
+	await get_tree().create_timer(0.6).timeout
 	died.emit()
 	print("Player died")
 

@@ -98,6 +98,7 @@ var status := ElementalStatus.new()
 var dot_effect := DotEffect.new()
 var slow_effect := SlowEffect.new()
 var disable_effect := DisableEffect.new()
+var armor_buff := ArmorBuffEffect.new()
 
 var _element_indicator: ElementIndicator
 var _dot_indicator: DotIndicator
@@ -138,6 +139,7 @@ func tick(delta: float) -> float:
 	status.tick(delta)
 	slow_effect.tick(delta)
 	disable_effect.tick(delta)
+	armor_buff.tick(delta)
 	_tick_icd(delta)
 	var dot_damage := dot_effect.tick(delta)
 	if show_debug_readout:
@@ -178,6 +180,11 @@ func is_slowed() -> bool:
 
 func get_speed_multiplier() -> float:
 	return slow_effect.get_speed_multiplier()
+
+
+func mitigate_damage(raw_damage: float) -> float:
+	var effective_armor := armor + armor_buff.get_bonus_armor()
+	return raw_damage * (100.0 / (100.0 + effective_armor))
 
 
 ## For an owner's starting/default status (e.g. TestDummy's Kim start).

@@ -63,7 +63,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _is_dead:
 		return
-	var _dot_damage := elemental.tick(delta)
+	var dot_damage := elemental.tick(delta)
+	if dot_damage > 0.0:
+		_apply_damage(dot_damage)
 
 	if not _is_flashing:
 		visual.set_tint(_resting_color())
@@ -133,11 +135,12 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 
 
 func _apply_damage(amount: float) -> void:
-	_total_damage_taken += amount
+	var mitigated := elemental.mitigate_damage(amount)
+	_total_damage_taken += mitigated
 	damage_label.text = str(int(_total_damage_taken))
 	_flash()
 	if enemy_stats != null and not _is_dead:
-		_current_health -= amount
+		_current_health -= mitigated
 		if _current_health <= 0.0:
 			_die()
 

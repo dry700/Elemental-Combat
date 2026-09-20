@@ -104,12 +104,12 @@ const DEATH_TINT: Color = Color(0.3, 0.3, 0.3)  ## Same value as every enemy's o
 const DEATH_FADE_DELAY: float = 0.6
 
 func _die() -> void:
-    _is_dead = true
-    hurtbox.invulnerable = true
-    visuals.modulate = DEATH_TINT
-    await get_tree().create_timer(DEATH_FADE_DELAY).timeout
-    died.emit()
-    print("Player died")
+	_is_dead = true
+	hurtbox.invulnerable = true
+	visuals.modulate = DEATH_TINT
+	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
+	died.emit()
+	print("Player died")
 ```
 
 `died` now fires **after** the delay, not immediately — `_is_dead` still
@@ -202,24 +202,24 @@ var _recent_count: int = 0
 var _window_timer: float = 0.0
 
 func configure(p_free_hits: int, p_window_seconds: float) -> void:
-    free_hits = p_free_hits
-    window_seconds = p_window_seconds
+	free_hits = p_free_hits
+	window_seconds = p_window_seconds
 
 func tick(delta: float) -> void:
-    if _recent_count <= 0:
-        return
-    _window_timer -= delta
-    if _window_timer <= 0.0:
-        _recent_count = 0
+	if _recent_count <= 0:
+		return
+	_window_timer -= delta
+	if _window_timer <= 0.0:
+		_recent_count = 0
 
 ## Called once per control application ATTEMPT, before the underlying
 ## effect is applied. 0.0 means fully immune — caller skips the apply()
 ## entirely, not even the floor duration.
 func consume_and_get_multiplier() -> float:
-    var multiplier := 1.0 if _recent_count < free_hits else (0.5 if _recent_count == free_hits else 0.0)
-    _recent_count += 1
-    _window_timer = window_seconds
-    return multiplier
+	var multiplier := 1.0 if _recent_count < free_hits else (0.5 if _recent_count == free_hits else 0.0)
+	_recent_count += 1
+	_window_timer = window_seconds
+	return multiplier
 ```
 
 **`ElementalCombatant` gets:** `var cc_resistance := CCResistance.new()`,
@@ -229,16 +229,16 @@ chokepoint methods, replacing every direct `disable_effect.apply()` /
 
 ```gdscript
 func apply_control(duration: float, floor_duration: float = 0.0) -> void:
-    var m := cc_resistance.consume_and_get_multiplier()
-    if m <= 0.0:
-        return
-    disable_effect.apply(duration * m, minf(floor_duration, duration * m))
+	var m := cc_resistance.consume_and_get_multiplier()
+	if m <= 0.0:
+		return
+	disable_effect.apply(duration * m, minf(floor_duration, duration * m))
 
 func apply_control_slow(speed_multiplier: float, duration: float) -> void:
-    var m := cc_resistance.consume_and_get_multiplier()
-    if m <= 0.0:
-        return
-    slow_effect.apply(speed_multiplier, duration * m)
+	var m := cc_resistance.consume_and_get_multiplier()
+	if m <= 0.0:
+		return
+	slow_effect.apply(speed_multiplier, duration * m)
 ```
 
 **Call sites to redirect (7 total — same shape of edit as armor
@@ -928,12 +928,12 @@ New methods, same convention as `record_weapon_unlock`:
 
 ```gdscript
 func has_completed_tutorial() -> bool:
-    return _data.get("tutorial_completed", false)
+	return _data.get("tutorial_completed", false)
 
 func mark_tutorial_completed() -> void:
-    if _data.get("tutorial_completed", false):
+	if _data.get("tutorial_completed", false):
         return
-    _data["tutorial_completed"] = true
+	_data["tutorial_completed"] = true
     _save_to_disk()
 ```
 
@@ -1016,21 +1016,21 @@ decide "show Loadout Select or not."
 
 ```gdscript
 const STARTING_WEAPON_PATHS: Array[String] = [
-    "res://scripts/resources/weapons/training_dagger.tres",
-    "res://scripts/resources/weapons/training_spear.tres",
-    "res://scripts/resources/weapons/training_staff.tres",
-    "res://scripts/resources/weapons/training_greatsword.tres",
-    "res://scripts/resources/weapons/training_hammer.tres",
+	"res://scripts/resources/weapons/training_dagger.tres",
+	"res://scripts/resources/weapons/training_spear.tres",
+	"res://scripts/resources/weapons/training_staff.tres",
+	"res://scripts/resources/weapons/training_greatsword.tres",
+	"res://scripts/resources/weapons/training_hammer.tres",
 ]
 ```
 
 ```gdscript
 const STARTING_SKILL_PATHS: Array[String] = [
-    "res://scripts/resources/skills/ignite_dart.tres",
-    "res://scripts/resources/skills/overgrowth_snare.tres",
-    "res://scripts/resources/skills/cleansing_tide.tres",
-    "res://scripts/resources/skills/rending_edge.tres",
-    "res://scripts/resources/skills/stoneguard.tres",
+	"res://scripts/resources/skills/ignite_dart.tres",
+	"res://scripts/resources/skills/overgrowth_snare.tres",
+	"res://scripts/resources/skills/cleansing_tide.tres",
+	"res://scripts/resources/skills/rending_edge.tres",
+	"res://scripts/resources/skills/stoneguard.tres",
 ]
 ```
 
@@ -1077,26 +1077,26 @@ var pending_skill_1_path: String = ""
 var pending_skill_2_path: String = ""
 
 func consume_pending_loadout(player: Player) -> void:
-    if pending_weapon_path != "":
+	if pending_weapon_path != "":
         var w := load(pending_weapon_path) as WeaponStats
         if w != null:
             player.weapon = w
-    if pending_secondary_weapon_path != "":
+	if pending_secondary_weapon_path != "":
         var w2 := load(pending_secondary_weapon_path) as WeaponStats
         if w2 != null:
             player.secondary_weapon = w2
-    if pending_skill_1_path != "":
+	if pending_skill_1_path != "":
         var s1 := load(pending_skill_1_path) as SkillData
         if s1 != null:
             player.skill_1 = s1
-    if pending_skill_2_path != "":
+	if pending_skill_2_path != "":
         var s2 := load(pending_skill_2_path) as SkillData
         if s2 != null:
             player.skill_2 = s2
-    pending_weapon_path = ""
-    pending_secondary_weapon_path = ""
-    pending_skill_1_path = ""
-    pending_skill_2_path = ""
+	pending_weapon_path = ""
+	pending_secondary_weapon_path = ""
+	pending_skill_1_path = ""
+	pending_skill_2_path = ""
 ```
 
 `procedural_run.gd._ready()` is unchanged from the earlier draft — same
@@ -1124,7 +1124,7 @@ prevents a duplicate, everything else below is UX on top of it:
 ## a runtime WeaponStats.new() fallback/debug instance — is never
 ## treated as a duplicate; it can't be meaningfully compared.
 func would_duplicate_weapon(is_primary: bool, candidate: WeaponStats) -> bool:
-    if candidate == null or candidate.resource_path == "":
+	if candidate == null or candidate.resource_path == "":
         return false
     var other := secondary_weapon if is_primary else weapon
     return other != null and other.resource_path == candidate.resource_path
@@ -1190,13 +1190,13 @@ if it differs from what that asset already bakes in:
 
 ```gdscript
 func _load_weapon_path(path: String, rune_element: StringName, is_primary: bool) -> void:
-    if path == "":
+	if path == "":
         return
     var loaded := load(path) as WeaponStats
     if loaded == null:
-        push_warning("Player.apply_save_state: could not load weapon at %s" % path)
+		push_warning("Player.apply_save_state: could not load weapon at %s" % path)
         return
-    if rune_element != &"none" and rune_element != loaded.rune_element:
+	if rune_element != &"none" and rune_element != loaded.rune_element:
         loaded = loaded.duplicate() as WeaponStats
         loaded.rune_element = rune_element
     if is_primary:
@@ -1305,7 +1305,7 @@ since a boss only ever embodies two (A.6), never the other three.
 ```gdscript
 # RunePickup — new static method alongside roll_spirit_element
 static func roll_boss_element(phase_1_element: StringName, phase_2_element: StringName) -> StringName:
-    return phase_1_element if randf() < 0.5 else phase_2_element
+	return phase_1_element if randf() < 0.5 else phase_2_element
 ```
 
 `Boss._die()`, guarded for the two degenerate cases (no element at all
@@ -1314,18 +1314,18 @@ one, never a coin-flip against nothing):
 
 ```gdscript
 func _die() -> void:
-    _is_dead = true
-    hurtbox.invulnerable = true
-    visual.set_tint(DEATH_TINT)
-    damage_label.text = "X"
-    if boss_stats.element != Elements.NONE:
-        var rune := RunePickup.new()
-        rune.rune_element = (RunePickup.roll_boss_element(boss_stats.element, boss_stats.phase_2_element)
-            if boss_stats.phase_2_element != Elements.NONE else boss_stats.element)
-        rune.global_position = global_position
-        get_tree().current_scene.add_child(rune)
-    await get_tree().create_timer(DEATH_FADE_DELAY).timeout
-    queue_free()
+	_is_dead = true
+	hurtbox.invulnerable = true
+	visual.set_tint(DEATH_TINT)
+	damage_label.text = "X"
+	if boss_stats.element != Elements.NONE:
+		var rune := RunePickup.new()
+		rune.rune_element = (RunePickup.roll_boss_element(boss_stats.element, boss_stats.phase_2_element)
+			if boss_stats.phase_2_element != Elements.NONE else boss_stats.element)
+		rune.global_position = global_position
+		get_tree().current_scene.add_child(rune)
+	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
+	queue_free()
 ```
 
 A boss room still separately triggers the room-clear baseline drop
@@ -1380,7 +1380,7 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
     _last_run_outcome = outcome
     _last_run_rooms_cleared = rooms_cleared
     _last_run_duration_sec = _elapsed_sec
-    get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
 ```
 
 Not cleared after being read (unlike the pending-loadout fields in
@@ -1398,19 +1398,19 @@ extends Control
 @onready var continue_button: Button = $ContinueButton
 
 func _ready() -> void:
-    var won := RunManager._last_run_outcome == "win"
-    outcome_label.text = "Run Complete!" if won else "You Died"
+	var won := RunManager._last_run_outcome == "win"
+	outcome_label.text = "Run Complete!" if won else "You Died"
     outcome_label.modulate = Color(0.4, 0.9, 0.45) if won else Color(0.85, 0.3, 0.3)
-    rooms_label.text = "Rooms Cleared: %d" % RunManager._last_run_rooms_cleared
-    duration_label.text = "Time: %s" % _format_duration(RunManager._last_run_duration_sec)
+	rooms_label.text = "Rooms Cleared: %d" % RunManager._last_run_rooms_cleared
+	duration_label.text = "Time: %s" % _format_duration(RunManager._last_run_duration_sec)
     continue_button.pressed.connect(_on_continue_pressed)
 
 func _format_duration(seconds: float) -> String:
     var total := int(seconds)
-    return "%d:%02d" % [total / 60, total % 60]
+	return "%d:%02d" % [total / 60, total % 60]
 
 func _on_continue_pressed() -> void:
-    get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
 ```
 
 **Continue chains directly into Loadout Select** — doesn't need the
@@ -1441,20 +1441,20 @@ One primary button, not two — text and action both decided by
 ```gdscript
 func _refresh_ui() -> void:
     var has_resume := SaveManager.has_in_progress_run()
-    primary_button.text = "Continue" if has_resume else "New Run"
+	primary_button.text = "Continue" if has_resume else "New Run"
     abandon_button.visible = has_resume  # only exists when there's something to abandon
 
 func _on_primary_button_pressed() -> void:
     if SaveManager.has_in_progress_run():
-        get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
+		get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
     else:
         _start_new_run()
 
 func _start_new_run() -> void:
     if not SaveManager.has_completed_tutorial():
-        get_tree().change_scene_to_file("res://scenes/world/tutorial_room.tscn")
+		get_tree().change_scene_to_file("res://scenes/world/tutorial_room.tscn")
     else:
-        get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
+		get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
 ```
 
 `_start_new_run()` is shared with the abandon flow below rather than
@@ -1471,7 +1471,7 @@ what it's for.
 @onready var abandon_confirm: ConfirmationDialog = $AbandonConfirmDialog
 
 func _ready() -> void:
-    abandon_confirm.dialog_text = "Abandon your current run? This cannot be undone."
+	abandon_confirm.dialog_text = "Abandon your current run? This cannot be undone."
     abandon_confirm.confirmed.connect(_on_abandon_confirmed)
     abandon_button.pressed.connect(func(): abandon_confirm.popup_centered())
     _refresh_history_summary()
@@ -1498,15 +1498,15 @@ instrumentation, unlike the run-summary screen's deferred richer stats
 func _refresh_history_summary() -> void:
     var history := SaveManager.get_run_history()
     if history.is_empty():
-        history_label.text = "No runs yet"
+		history_label.text = "No runs yet"
         return
     var wins := 0
     var best_rooms := 0
     for entry in history:
-        if entry.get("outcome") == "win":
+		if entry.get("outcome") == "win":
             wins += 1
-        best_rooms = maxi(best_rooms, int(entry.get("rooms_cleared", 0)))
-    history_label.text = "Total Runs: %d   ·   Wins: %d   ·   Best: %d rooms" % [history.size(), wins, best_rooms]
+		best_rooms = maxi(best_rooms, int(entry.get("rooms_cleared", 0)))
+	history_label.text = "Total Runs: %d   ·   Wins: %d   ·   Best: %d rooms" % [history.size(), wins, best_rooms]
 ```
 
 `MAX_RUN_HISTORY_ENTRIES` (50, `save_manager.gd`) caps how far back this

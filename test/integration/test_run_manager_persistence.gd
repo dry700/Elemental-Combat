@@ -21,6 +21,7 @@ func before_each():
 	var player_scene: PackedScene = load("res://scenes/player/player.tscn")
 	player = player_scene.instantiate()
 	add_child_autofree(player)
+	player.elemental.armor = 0.0
 	# Reset RunManager's own state between tests — it's a persistent
 	# autoload, not a fresh instance per test.
 	RunManager._sequence = []
@@ -47,19 +48,21 @@ func test_finish_run_win_records_history_and_clears_save():
 	assert_eq(history[-1]["rooms_cleared"], 2)
 	assert_false(SaveManager.has_in_progress_run())
 
-func test_player_death_triggers_a_loss_record():
+func test_player_death_triggers_a_loss_record() -> void:
 	RunManager._sequence = ["res://a.tscn", "res://b.tscn", "res://c.tscn"]
 	RunManager._current_index = 1
 	player._apply_damage(player.max_health)  # lethal
+	await wait_for_signal(player.died, 1.0)
 	var history := SaveManager.get_run_history()
 	assert_eq(history[-1]["outcome"], "loss")
 	assert_eq(history[-1]["rooms_cleared"], 1)
 
-func test_death_after_run_already_finished_does_not_double_record():
+func test_death_after_run_already_finished_does_not_double_record() -> void:
 	RunManager._sequence = ["res://a.tscn"]
 	RunManager._finish_run("win", 1)  # _run_active is now false
 	var count_before := SaveManager.get_run_history().size()
 	player._apply_damage(player.max_health)
+	await wait_for_signal(player.died, 1.0)
 	assert_eq(SaveManager.get_run_history().size(), count_before, "a death after the run already ended must not add a second entry")
 
 func test_resume_from_save_restores_sequence_and_player_state():

@@ -14,6 +14,7 @@ func before_each():
 	boss = boss_scene.instantiate()
 	boss.boss_stats = load(BOSS_STATS_PATH)
 	add_child_autofree(boss)
+	boss.elemental.armor = 0.0
 
 func test_starts_in_phase_1_with_phase_1_element():
 	assert_eq(boss._current_phase, 1)
