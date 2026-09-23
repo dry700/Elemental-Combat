@@ -13,7 +13,29 @@
 - [ ] P8 — Main menu and startup scene update
 - [ ] P9 — Room pool expansion to six rooms
 - [ ] P10(a → f) — Qi / upgrade system
+
+### P10 design clarification
+
+- Reaction specializations are one-time rank purchases: Rank 1 and Rank 2
+	are the maximum for each named reaction.
+- Vitality (maximum HP) and Weapon Might (Damage) are repeatable purchases.
+	Each category tracks its own rank and increases its next Qi price after
+	every successful purchase.
+- Exact HP/Damage increments and escalating price curves are tuning work for
+	the playable upgrade menu; failed purchases must not change Qi or rank.
 - [ ] P11 — Close-out documentation and final verification
+
+## New progression decision
+
+- A run is an endless sequence of loops, each containing three normal
+	rooms followed by one boss; the first-time tutorial is excluded.
+- Boss defeat shows a short summary with a proceed/stop choice.
+- Proceeding starts the next loop with increased enemy/boss stats and one
+	newly unlocked move for that loop's enemies and boss.
+- The full loadout UI is pickup-driven for weapon/skill slot selection,
+	not shown automatically between loops.
+- Runtime implementation belongs in the relevant P5-P7 work and must be
+	verified before these rules are marked complete.
 
 ## Phase 4 summary
 

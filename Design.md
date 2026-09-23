@@ -22,10 +22,13 @@ changes needed there for the Final Report beyond good writing.
 - **Autoloads are script-only singletons**, registered in `project.godot`:
   `InputSetup`, `HitStop`, `VisionBlocker`, `SaveManager`, `RunManager`,
   `Hud`. None have a scene — built in `_ready()`/`_init()` in code.
-- **No tilemap, no world-state system, anywhere.** Rooms are whole
-  hand-authored `.tscn` templates (PCG "room-placement" category, not
-  BSP/cellular-automata). Terrain effects (Zone/Burst) are spawned trigger
-  objects, not level mutations. Don't introduce a tile-grid for anything.
+- **No world-state system.** Rooms are assembled from pre-built room
+  chunks by a room-building algorithm. Chunks use a tilemap system for
+  geometry and layout, with the project tileset supplied separately from
+  this architecture decision. The algorithm selects and places compatible
+  chunks into a complete room before play; this is PCG "room-placement",
+  not BSP/cellular-automata over an unbounded world grid. Terrain effects
+  (Zone/Burst) are spawned trigger objects, not level mutations.
 - **Refresh-only, never stacking.** `ElementalStatus`, `DotEffect`,
   `SlowEffect`, `DisableEffect` — every timed effect component follows
   this: a new `apply()` fully replaces the old one, it never adds on top.
@@ -68,7 +71,7 @@ changes needed there for the Final Report beyond good writing.
 | Enemy AI | `scenes/enemies/enemy_combat_ai.gd`, `scenes/enemies/enemy_stats.gd` | Aggro/telegraph/attack/cooldown state machine, shared by all enemy types |
 | Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss}.gd` | Health/death/flash, wires `ElementalCombatant` + `EnemyCombatAI` together |
 | Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
-| Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, `autoloads/run_manager.gd` | Room lifecycle, run sequencing, autosave hook |
+| Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, room lifecycle, run sequencing, autosave hook |
 | Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume — local JSON |
 | HUD | `autoloads/hud.gd` | HP/boss bar, equip slots, pickup selection overlay — entirely code-built, no `.tscn` |
 | Pickups | `scripts/items/{weapon_pickup,skill_pickup}.gd` | Proximity tracking only; all input now lives on `Hud` |
@@ -500,7 +503,25 @@ Against the ~90–130 Qi/run estimate (§4.8.1), that's roughly **two
 fully-mastered reactions per run**, or Rank-1-only breadth across four.
 Matches the same scarcity goal Weapon Might/Vitality were built around.
 
-**C. Vitality** — unchanged from the earlier draft (was Category D).
+**A. Weapon Might** and **C. Vitality** are repeatable stat upgrades. Each
+purchase increases the player's Damage or maximum HP respectively, and the
+next purchase costs more based on that category's current rank. Their ranks
+are per-run state and reset with Qi; they never touch `SaveManager`.
+
+The exact stat increment and price curve are tuning values to be selected
+with the first playable upgrade menu. The purchase contract is fixed:
+
+- a purchase is allowed only when the player has enough Qi;
+- the price is deducted immediately and the category rank increases by one;
+- the next price is computed from the increased rank, so repeated purchases
+  cannot retain the initial price;
+- insufficient Qi leaves both the rank and Qi unchanged.
+
+Reaction specializations are different: each named reaction can be selected
+once at Rank 1 and once at Rank 2, after which it is fully specialized and
+cannot be purchased again. The reaction rank costs remain 20 Qi and 45 Qi;
+the repeatable HP and Damage curves are independent of those one-time
+reaction purchases.
 
 #### 4.8.3 Getter API (revised)
 
@@ -789,11 +810,26 @@ implemented**, stays an explicit stretch goal.
 
 `RoomController` resolves `EnemySpawnPoint` children into real enemies on
 `_ready()`, polls the `"enemies"` group each frame, unlocks `RoomExit`
-once empty. `RunManager` (autoload) owns sequencing: `ROOMS_PER_RUN = 3`
-random (no immediate repeat) + `BOSS_ROOM_SCENE_PATH` always last, never
-part of the random pool. Autosaves after every room transition via
-`SaveManager`, deliberately **not** mid-room precise (enemies always
-respawn fresh — see `run_manager.gd`'s own header for the reasoning).
+once empty. `RunManager` (autoload) owns sequencing: each loop contains
+`ROOMS_PER_RUN = 3` random normal rooms (no immediate repeat) followed by
+`BOSS_ROOM_SCENE_PATH`, which is never part of the random pool. The first
+time tutorial room is outside this loop and is shown only until its save
+flag is completed.
+
+Defeating the boss completes the current loop and opens a short summary
+that asks whether the player wants to proceed. Proceeding starts another
+three-normal-room-plus-boss loop without returning to the tutorial. Each
+new loop increases the configured enemy and boss difficulty and unlocks
+one additional move for that loop's enemies and boss. The exact stat
+curves and move content are balance data, but the loop number is the
+authoritative difficulty/unlock input.
+
+The full loadout screen is not part of ordinary loop transitions. It is
+opened only when a run weapon or skill pickup requires the player to
+choose its destination slot; ordinary room transitions preserve the
+current loadout. Autosaves after every room transition via `SaveManager`,
+deliberately **not** mid-room precise (enemies always respawn fresh — see
+`run_manager.gd`'s own header for the reasoning).
 ---
 
 ## 7. Save System
@@ -998,6 +1034,13 @@ earlier in this document — solving one without the other would mean
 redoing this wiring twice. Revisit both together.
 
 ## 15. Loadout Select
+
+Loadout Select is a pickup-driven screen during an active run, not a
+mandatory screen before every loop. The first-time tutorial routes into
+the initial run without requiring a pre-run loadout selection, and a new
+loop after a boss summary keeps the existing loadout. When a weapon or
+skill pickup needs a slot decision, the pickup flow opens the loadout
+selection UI and returns to the current run after confirmation.
 
 Two fully independent selectors, one per weapon slot — not the
 existing `WeaponPickup`/`Hud` overlay's "choose which slot" flow, which
@@ -1356,13 +1399,20 @@ already gives its own deferred cross-cycle reactions. Do not build the
 slot without the table, or vice versa — they're one feature, just not
 this pass.
 
-## 17. Death/Run-Summary Screen
+## 17. Boss-Loop Summary and Death Summary
 
-Minimal scope — shows exactly what `SaveManager.run_history` already
-tracks (outcome, rooms cleared, duration), nothing that needs new
-instrumentation anywhere else. New scene, `scenes/ui/run_summary.tscn`
-+ `scripts/ui/run_summary.gd` — same one-time-authored-`.tscn` reasoning
-as Tutorial/Loadout Select.
+The summary is shown after every boss death and after player death. The
+boss variant is short, reports the completed loop and the next difficulty
+unlock, and asks whether the player wants to proceed. Confirming starts
+the next three-normal-room-plus-boss loop; declining ends the active run
+without showing the tutorial again. The death variant shows the run
+result and offers the normal post-run route.
+
+The screen reads the run/loop fields owned by `RunManager`; any new
+displayed statistic must be added to that contract and covered by a
+focused test. New scene, `scenes/ui/run_summary.tscn` +
+`scripts/ui/run_summary.gd` — same one-time-authored-`.tscn` reasoning as
+Tutorial/Loadout Select.
 
 **Hand-off, same `RunManager`-fields pattern as §15.3, fourth use now:**
 
@@ -1383,9 +1433,12 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
 ```
 
-Not cleared after being read (unlike the pending-loadout fields in
-§15.3) — these represent "the most recent finished run," naturally
-overwritten by the next one, not a one-time-consume intent.
+Boss-loop completion is a separate transition from final run completion:
+it records the completed loop, increments the loop/difficulty state, then
+routes to the summary's proceed/stop decision. The summary is not cleared
+after being read (unlike the pending-loadout fields in §15.3) — it
+represents the most recent completed loop or run and is naturally
+overwritten by the next one.
 
 **Screen itself:**
 
@@ -1410,15 +1463,13 @@ func _format_duration(seconds: float) -> String:
 	return "%d:%02d" % [total / 60, total % 60]
 
 func _on_continue_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
+  RunManager.start_next_loop()
 ```
 
-**Continue chains directly into Loadout Select** — doesn't need the
-still-deferred main-menu decision (§14.3) resolved to function. If a
-main menu ever gets built, it slots in before this whole chain starts,
-not instead of it. Fourth use of `change_scene_to_file` in the project
-now (Tutorial → Run, Loadout Select → Run, Player death → this screen,
-this screen → Loadout Select).
+**Continue chains directly into the next loop** and preserves the current
+loadout. The pickup-driven loadout flow is entered only when a weapon or
+skill pickup needs slot selection. The tutorial remains a one-time entry
+route and is never part of a later loop.
 
 **Richer stats (enemies killed, reactions triggered, Qi earned) explicitly
 deferred** — same treatment as skill runes (§16.2): logged as a known
@@ -1527,14 +1578,34 @@ Menu → (Tutorial, first time only) → Loadout Select → Run →
 Death/Summary → Loadout Select → ... → Main Menu (via Quit, or by
 finishing/abandoning back to it).
 
-## 19. Room Authoring & Selection
+## 19. Room Chunk Authoring & Generation
+
+Normal rooms are not authored as one indivisible layout. They are built
+from a library of pre-built chunks, such as entry, traversal, combat,
+reward, connector, and exit chunks. Each chunk carries tilemap layout data
+and its associated gameplay markers. A room-building algorithm selects
+compatible chunks, places their tilemap data into a complete room,
+validates the required spawn/exit contract, and then hands the generated
+room to `RoomController`.
+The algorithm must preserve a reachable player path from the room entry to
+the exit and must keep chunk boundaries compatible; the exact chunk schema,
+placement constraints, and random seed policy are implementation decisions
+for the room-generation phase. The tileset asset and tile definitions are
+intentionally deferred until they are provided.
+
+The boss room remains a dedicated authored encounter unless its own chunk
+composition is explicitly designed later. The first-time tutorial remains
+a dedicated authored scene and is not generated from normal-room chunks.
 
 ### 19.1 Room Template Checklist
 
-Every new normal room `.tscn` needs, matching `room_a/b/c`'s existing
+Every generated normal room must satisfy the same runtime contract as the
+existing `room_a/b/c` templates:
 shared shape exactly:
 
-- Root `Node2D`, `RoomController` script attached, `exit` NodePath set
+- Root `Node2D`, `RoomController` script attached, and a tilemap node using
+  the provided tileset for generated geometry.
+- `exit` NodePath set
   (or left for `RoomController._ready()`'s own `find_child("Exit")`
   fallback to recover it).
 - `Ground` (`StaticBody2D`), width 350–450px — the range every existing
@@ -1553,19 +1624,18 @@ Nothing here is new architecture — this section exists purely so the
 next room built follows the pattern without re-deriving it from reading
 three existing `.tscn` files side by side.
 
-### 19.2 Selection & Scope (current pass)
+### 19.2 Selection & Scope
 
-- **`ROOMS_PER_RUN` stays 3.** No change to run length/pacing — this
-  pass is about pool variety, not run structure (that's a separate,
-  already-deferred topic).
-- **Selection algorithm unchanged.** Uniform random + no-immediate-
-  repeat-within-a-run already scales correctly as the pool grows — no
-  code change needed, just longer `ROOM_SCENE_PATHS`. Cross-run memory
-  (avoiding the same set showing up in back-to-back runs) stays an
-  explicit future-work item, same treatment as skill runes (§16.2) and
-  the run-summary screen's richer stats (§17) — logged, not built.
-- **Target pool: 6 total** (double the current 3) — the smallest
-  reasonable step, matching "for now" rather than committing to a
-  bigger content target while solo pixel-art production is still the
-  binding constraint (R05). Revisit once 6 exist and it's clear whether
-  that's actually enough variety in practice.
+- **`ROOMS_PER_RUN` stays 3.** The loop pacing is unchanged: the builder
+  generates three normal rooms, then `RunManager` appends the dedicated
+  boss room.
+- **Chunk selection belongs to the room builder.** It replaces choosing
+  one complete normal-room scene from `ROOM_SCENE_PATHS`. The builder may
+  use uniform random selection and no immediate chunk repeats, but its
+  compatibility rules must run before a chunk is placed.
+- **The current `room_a/b/c` scenes remain compatibility fixtures** while
+  the chunk library and builder are developed. Once the builder is active,
+  `RunManager` should request three generated normal rooms rather than
+  treating those complete scenes as the long-term content model.
+- Cross-run memory and deterministic seed persistence remain future work
+  unless the save contract is expanded deliberately.
