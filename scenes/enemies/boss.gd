@@ -170,6 +170,11 @@ func _die() -> void:
 	hurtbox.invulnerable = true
 	visual.set_tint(DEATH_TINT)
 	damage_label.text = "X"
+	if boss_stats != null and boss_stats.element != Elements.NONE:
+		var rune := RunePickup.new()
+		rune.set_rune(RuneRoller.roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))
+		rune.global_position = global_position
+		get_tree().current_scene.add_child.call_deferred(rune)
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
 

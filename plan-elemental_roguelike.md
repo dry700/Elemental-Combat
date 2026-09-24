@@ -1,4 +1,6 @@
-# Elemental Roguelike plan
+# Elemental Roguelike Plan
+
+This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The current implementation boundary is P5a; later work must wait for the preceding verification gate.
 
 ## Current status
 
@@ -7,63 +9,83 @@
 - [x] P2 — Player death delay
 - [x] P3 — Control resistance and CC handling
 - [x] P4 — First-time tutorial flow
-- [ ] P5 — Rune pickups, persistence, and HUD overlays
-- [ ] P6 — Loadout selection and pending loadout consumption
+- [ ] P5a — Rune data, roller, and pickup foundation
+- [ ] P5b — Player slot runes and persistence
+- [ ] P5c — Pickup swap HUD, inputs, and Monogram theme
+- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
+- [ ] P6 — Loadout selection and pending-loadout consumption
 - [ ] P7 — Run summary and finish-run transitions
 - [ ] P8 — Main menu and startup scene update
-- [ ] P9 — Room pool expansion to six rooms
-- [ ] P10(a → f) — Qi / upgrade system
+- [ ] P9 — Room-pool expansion
+- [ ] P10 — Qi and upgrade system
+- [ ] P11 — Closeout documentation and final verification
 
-### P10 design clarification
+## P5 design contract
 
-- Reaction specializations are one-time rank purchases: Rank 1 and Rank 2
-	are the maximum for each named reaction.
-- Vitality (maximum HP) and Weapon Might (Damage) are repeatable purchases.
-	Each category tracks its own rank and increases its next Qi price after
-	every successful purchase.
-- Exact HP/Damage increments and escalating price curves are tuning work for
-	the playable upgrade menu; failed purchases must not change Qi or rank.
-- [ ] P11 — Close-out documentation and final verification
+- Runes are rolled at drop time, carry one or two modifiers, and are stored on Player slots rather than weapon Resources.
+- `RuneData`, `RuneModifierDef`, and `RuneRoller` own rune data, catalogue definitions, and deterministic roll behavior.
+- A single `RunePickup` supports weapon and skill targets. Weapon frames are square; skill frames are circular.
+- Weapon Resources are never duplicated. Save state keeps `weapon_path` and stores rune dictionaries separately.
+- Missing rune keys in older saves mean no rune. Unknown modifier ids warn and are skipped.
+- F equips only an empty valid slot. Tab opens the chooser. Overwrite is chooser-only and drops the replaced rune with its rolled data.
+- Hud owns all pickup chooser input. Pickup scripts only track proximity and expose prompt state.
+- Same-element rune Charge bonuses remain the only Charge change; modifiers act at the effect layer and never mutate raw Charge in the resolver.
+- Monogram is the project UI font, applied through the HUD theme and project default theme.
 
-## New progression decision
+## P5 execution order
 
-- A run is an endless sequence of loops, each containing three normal
-	rooms followed by one boss; the first-time tutorial is excluded.
-- Boss defeat shows a short summary with a proceed/stop choice.
-- Proceeding starts the next loop with increased enemy/boss stats and one
-	newly unlocked move for that loop's enemies and boss.
-- The full loadout UI is pickup-driven for weapon/skill slot selection,
-	not shown automatically between loops.
-- Runtime implementation belongs in the relevant P5-P7 work and must be
-	verified before these rules are marked complete.
+### P5a — Data and pickup foundation
 
-## Phase 4 summary
+- [x] Implement `RuneData` serialization and validation.
+- [x] Implement `RuneModifierDef` and `RuneRoller` filtering, distinct modifier selection, and empty-pool behavior.
+- [x] Implement `RunePickup` target framing, glyph, group, and proximity behavior.
+- [x] Roll full weapon runes for spirit, boss, and room-clear baseline drops.
+- [x] Add unit and integration coverage.
+- [ ] Observe the focused suite result before advancing to P5b.
 
-Status: complete and validated.
+### P5b — Player slots and persistence
 
-Completed work:
-- Added the tutorial room scene and controller with stage prompts and room exit gating.
-- Persisted the tutorial completion state via `SaveManager` with an idempotent write guard.
-- Hooked the tutorial exit to mark completion and redirect to the procedural run entry scene.
-- Verified the save-contract behavior and the core project suite after the tutorial flow landed.
+- [ ] Add primary and secondary weapon rune slots and the public rune APIs.
+- [ ] Carry runes through weapon swaps and dropped weapon pickups.
+- [ ] Resolve slot rune elements with authored weapon fallback for existing fixtures.
+- [ ] Save and restore rune dictionaries with missing-key and unknown-id tolerance.
+- [ ] Add overwrite pickup behavior and verify focused save/swap tests.
 
-Verification evidence:
-- Full suite: 191/191 tests passed.
-- Assertions: 359.
-- Static diagnostics: no errors reported.
+### P5c — HUD and input
 
-Blockers / notes:
-- No blockers remained during P4; the tutorial flow was implemented and validated without regressions.
-- The work is intentionally scoped to the first-time onboarding flow and the save flag only.
-- Current phase boundary is deliberate: the next concrete implementation item is P5 rune pickups.
+- [ ] Add Tab chooser and I inspect actions through `InputSetup`.
+- [ ] Keep F direct-equip behavior non-destructive.
+- [ ] Implement valid-slot hiding, no-op suppression, cards, badges, and plain DPS.
+- [ ] Implement the rune inspect pane and two-step Esc handling.
+- [ ] Import and apply Monogram through `hud_theme.tres` and project defaults.
+- [ ] Preserve existing tested Hud method names and signatures.
 
-## Exact next item
+### P5d — Charge and Vũ readability
 
-Implement P5 rune pickups and HUD persistence flow:
-- add the rune pickup and rune application path
-- update the player save/load pathing for rune-equipped weapons
-- validate the pickup flow before moving on to loadout selection
+- [ ] Add charge setter/signal and route Khắc partial reduction through it.
+- [ ] Render one to three Charge pips in `ElementIndicator`.
+- [ ] Add the reversed-hit signal and “Reversed!” popup.
+- [ ] Complete the Charge 3 playtest checkpoint and record any resulting decision.
 
-## Scope boundary
+## Progress and verification
 
-This roadmap intentionally excludes P5+ work from the current review window. The next phase starts after the P4 verification is recorded and the active scope is narrowed to the rune-pickup work only.
+- P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
+- P5a–P5d must each have a focused verification result before the next sub-phase begins.
+- Full-suite verification is required before P5 is marked complete.
+- Current review found P5a implementation and focused tests added across the rune resource, pickup, enemy, room, and test paths.
+- Static diagnostics report no errors in the P5a implementation or focused tests.
+- The absolute-path GUT command returned exit code 0 without output; the selective rune-test command did not return normally, so no test count or pass result is claimed.
+- Verification blocker: `godot` is not on PATH, and the discovered Godot executable did not return normal output for the headless GUT command. Treat test status as unverified until the CLI invocation is repaired.
+
+## Deferred phases
+
+The endless loop progression, loadout selection, run summary, main menu, room-pool expansion, and Qi economy remain deferred until P5d is verified. The current plan intentionally excludes implementation work from P6 onward.
+
+## Open decisions
+
+- [ ] D15 — Confirm F direct-equips only into an empty slot and Tab opens the chooser.
+- [ ] D16 — Confirm rune travel with a weapon on swap and drop.
+- [ ] D17 — Confirm one target-aware `RunePickup` script remains the chosen shape.
+- [ ] D18 — Tune the two-modifier chance after the first playable rune pass.
+- [ ] D19 — Define the initial modifier catalogue and pool scope.
+- [ ] D20 — Reconcile the stray enemy-stats fragment and duplicate training-staff resource.

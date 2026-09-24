@@ -116,6 +116,11 @@ func _die() -> void:
 	hurtbox.invulnerable = true  ## Existing flag on Hurtbox — no new mechanism needed.
 	visual.set_tint(DEATH_TINT)
 	damage_label.text = "X"
+	if enemy_stats != null and enemy_stats.element != Elements.NONE:
+		var rune := RunePickup.new()
+		rune.set_rune(RuneRoller.roll(RunePickup.roll_spirit_element(enemy_stats.element), RuneData.Target.WEAPON))
+		rune.global_position = global_position
+		get_tree().current_scene.add_child.call_deferred(rune)
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
 

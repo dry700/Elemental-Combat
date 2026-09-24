@@ -20,49 +20,71 @@ This is the working checklist for the project. It is intentionally structured fo
 
 P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11
 
-## Current focus
+## Phase status
 
 ### P0 — Repo hygiene and design cleanup
-- [ ] Remove stray or invalid resource files and stale authoring fragments.
-- [ ] Clean up project-level docs and design notes that drifted from the implemented architecture.
-- [ ] Confirm the repo is in a stable baseline before gameplay work resumes.
-- [ ] Verification: no broken asset references, no obvious invalid files, and no newly introduced editor warnings.
+- [x] Remove stray or invalid resource files and stale authoring fragments.
+- [x] Clean up project-level docs and design notes that drifted from the implemented architecture.
+- [x] Confirm the repo is in a stable baseline before gameplay work resumes.
+- [x] Verification: no broken asset references, no obvious invalid files, and no newly introduced editor warnings.
 
 ### P1 — Combat stability and mitigation
-- [ ] Apply armor mitigation consistently in each `_apply_damage()` path.
-- [ ] Implement `ArmorBuffEffect` with refresh-only semantics.
-- [ ] Ensure tests that depend on lethal damage isolate armor from the death/phase logic.
-- [ ] Verify enemy DoT application matches the design intent.
-- [ ] Verification: relevant combat and death tests pass.
+- [x] Apply armor mitigation consistently in each `_apply_damage()` path.
+- [x] Implement `ArmorBuffEffect` with refresh-only semantics.
+- [x] Ensure tests that depend on lethal damage isolate armor from the death/phase logic.
+- [x] Verify enemy DoT application matches the design intent.
+- [x] Verification: relevant combat and death tests pass.
 
 ### P2 — Player death timing and state transitions
-- [ ] Delay the player `died` signal so the death tint is visible before scene transition.
-- [ ] Update death assertions to wait for the signal before checking emission state.
-- [ ] Check run-manager loss tracking for duplicate record entries.
-- [ ] Verification: player death tests and persistence tests pass.
+- [x] Delay the player `died` signal so the death tint is visible before scene transition.
+- [x] Update death assertions to wait for the signal before checking emission state.
+- [x] Check run-manager loss tracking for duplicate record entries.
+- [x] Verification: player death tests and persistence tests pass.
 
 ### P3 — Control resistance and CC handling
-- [ ] Add `CCResistance` and wire it into `ElementalCombatant`.
-- [ ] Replace direct control-effect applications with the shared resistance chokepoints.
-- [ ] Configure enemy default and boss-specific CC thresholds correctly.
-- [ ] Confirm normal enemies remain unaffected unless the tighter profile is intentionally enabled.
-- [ ] Verification: CC tests and related integration tests pass.
+- [x] Add `CCResistance` and wire it into `ElementalCombatant`.
+- [x] Replace direct control-effect applications with the shared resistance chokepoints.
+- [x] Configure enemy default and boss-specific CC thresholds correctly.
+- [x] Confirm normal enemies remain unaffected unless the tighter profile is intentionally enabled.
+- [x] Verification: CC tests and related integration tests pass.
 
 ### P4 — Tutorial onboarding
-- [ ] Add the tutorial room scene and controller.
-- [ ] Implement the stage progression flow and prompt gating.
-- [ ] Persist tutorial completion in `SaveManager` with an idempotent write path.
-- [ ] Gate the exit until the tutorial state is complete.
-- [ ] Route the tutorial exit to the next scene with the correct transition target.
-- [ ] Verification: onboarding flow works and no duplicate tutorial completion writes occur.
+- [x] Add the tutorial room scene and controller.
+- [x] Implement the stage progression flow and prompt gating.
+- [x] Persist tutorial completion in `SaveManager` with an idempotent write path.
+- [x] Gate the exit until the tutorial state is complete.
+- [x] Route the tutorial exit to the next scene with the correct transition target.
+- [x] Verification: onboarding flow works and no duplicate tutorial completion writes occur.
 
-### P5 — Rune pickups and persisted weapon state
-- [ ] Add the rune pickup object and its pickup flow.
-- [ ] Add rune application to the player weapon state and save/load pathing.
-- [ ] Persist rune-equipped weapon state without fragile player-side base-path logic.
-- [ ] Update HUD pickup routing for weapon, rune, and skill overlays.
-- [ ] Validate drop overwrite behavior and pickup interaction rules.
-- [ ] Verification: rune tests, save/load tests, and pickup-flow tests pass.
+### P5 — Runes, pickup swap HUD, and Charge readability
+
+#### P5a — Rune data and pickup foundation (current)
+- [x] Add `RuneData`, `RuneModifierDef`, `RuneRoller` (1–2 modifiers, 25% placeholder for two, saved as dict).
+- [x] Add `RunePickup` (one script, square/circle frame by target, `rune_pickups` group).
+- [x] Wire drops: spirit, boss and room-clear baseline roll full runes (weapon target only).
+- [ ] Verification: unit tests for round-trip, roller and empty pool pass.
+
+#### P5b — Player slot runes and persistence
+- [ ] Add `weapon_rune`/`secondary_weapon_rune`, `apply_rune`, `can_apply_rune`, `swap_weapon(..., new_rune)`.
+- [ ] `resolve_swing(rune)` and `_resolve_skill_charge()` read slot runes with authored-`rune_element` fallback.
+- [ ] Persist rune dicts in `to_save_state()`/`apply_save_state()`; tolerate missing keys and unknown modifier ids.
+- [ ] Weapons carry their rune when swapped or dropped; overwritten runes drop as pickups.
+- [ ] Verification: rune, swap, save/load and existing skill-charge tests pass.
+
+#### P5c — Pickup swap HUD, inputs and font
+- [ ] Add `swap` (Tab) and `inspect` (I) actions; keyboard only.
+- [ ] Rework Hud flow: F direct-equip into an empty slot (never overwrites), Tab chooser, hidden invalid slots, no-op suppression.
+- [ ] Weapon/skill/rune cards, badges (glyph + Charge pips, second badge for a different-element rune), plain DPS via `get_display_dps()`.
+- [ ] Rune inspect pane (world prompt + chooser), two-step Esc.
+- [ ] Import Monogram, add `hud_theme.tres`, set `gui/theme/custom_font`, remove per-label size overrides.
+- [ ] Verification: `test_hud_pickup_overlay.gd` / `test_hud_pickup_prompts.gd` pass unchanged; new tests for hidden slots, F-never-overwrites, DPS.
+
+#### P5d — Charge and Vũ readability
+- [ ] Add `ElementalStatus.set_charge()`/`charge_changed`; route `KHAC_PARTIAL` through it.
+- [ ] `ElementIndicator.set_status()` with 1–3 Charge pips.
+- [ ] `reversed_hit_taken` signal and "Reversed!" popup.
+- [ ] Playtest checkpoint: with Charge 3 reachable, judge Thừa/Vũ feel and revisit the same-element overwrite decision (§4.2).
+- [ ] Verification: status and Vũ reaction tests pass.
 
 ### P6 — Loadout selection
 - [ ] Add the loadout selection scene and controller.
@@ -117,6 +139,18 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [ ] D6 — Finalize main-menu and summary navigation behavior.
 - [ ] D7 — Confirm enemy DoT application behavior in code and tests.
 - [ ] D8 — Document upgrade persistence as technical debt if in-run state must remain non-persistent.
+- [x] D9 — Rune modifiers are rolled at drop time and saved in the save file.
+- [x] D10 — Weapon runes get modifiers in the first pass; runes carry 1–2 modifiers.
+- [x] D11 — Same-element Charge overwrite stays; fix through visibility (pips + "Reversed!" popup).
+- [x] D12 — Separate weapon/skill rune pickups (square/circle), no toggle key; `I` inspects from prompt and chooser.
+- [x] D13 — Runes live on the Player slot; weapon/skill Resources are never duplicated.
+- [x] D14 — Keyboard only; plain DPS stays, delta chip dropped; Monogram only; duplicate-weapon slot hidden.
+- [ ] D15 — Confirm the key flow: F direct-equips into an empty slot and never overwrites; Tab opens the chooser.
+- [ ] D16 — Confirm that a rune travels with its weapon on swap/drop.
+- [ ] D17 — Confirm one `RunePickup` script with a `target` field (vs two scripts).
+- [ ] D18 — Tune the two-modifier chance (25% placeholder) in Sprint 3.
+- [ ] D19 — Write the modifier catalogue (weapon first, then skill); decide global vs per-element pools.
+- [ ] D20 — Fix the stray files: `enemy_stats.gd` fragment and `training_staff.tres` vs `training_staff (1).tres`.
 
 ## Notes and blockers
 
@@ -125,17 +159,18 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
   - Dependency blocked by missing design detail
   - Test failure caused by a changed architecture rule
   - Manual verification still required before moving to the next phase
+- Current verification blocker: `godot` is not available on the terminal PATH. The running editor binary was located, but the headless GUT invocation did not return normal output, so no fresh test result is recorded.
+- P5a implementation is now present in the rune resource, pickup, enemy-drop, and room-clear paths; its runtime verification gate remains open.
 
 ## Current active scope
 
-- [ ] P5 — rune pickups, rune persistence, and HUD overlay routing
-- [ ] P6 — loadout selection and pending-loadout consumption
-- [ ] P7 — run summary and finish-run transition behavior
-- [ ] P8 — main menu and startup scene handoff
-- [ ] P9 — room-pool expansion to six rooms
-- [ ] P10 — Qi and upgrade system work
+- [ ] P5a — rune data, roller, and pickup foundation
+- [ ] P5b — player slot runes and persistence (blocked by P5a)
+- [ ] P5c — pickup swap HUD, inputs, and Monogram theme (blocked by P5b)
+- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (blocked by P5c)
+- [ ] P6 onward — deferred until P5d verification is complete
 
 ## Immediate next action
 
-- Start with the next unchecked phase and complete the smallest verifiable chunk before moving to the next item.
-- After each milestone, update this checklist and re-run the relevant verification before claiming completion.
+- Finish the P5a verification gate by observing the focused rune test result through the Godot CLI.
+- After verification passes, start P5b with Player rune slots and save/load persistence.

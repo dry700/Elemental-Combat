@@ -73,8 +73,10 @@ changes needed there for the Final Report beyond good writing.
 | Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
 | Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, room lifecycle, run sequencing, autosave hook |
 | Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume — local JSON |
-| HUD | `autoloads/hud.gd` | HP/boss bar, equip slots, pickup selection overlay — entirely code-built, no `.tscn` |
-| Pickups | `scripts/items/{weapon_pickup,skill_pickup}.gd` | Proximity tracking only; all input now lives on `Hud` |
+| HUD | `autoloads/hud.gd`, `assets/ui/hud_theme.tres` | HP/boss bar, equip slots, pickup swap chooser (§8.1) — code-built, no `.tscn` |
+| Pickups | `scripts/items/{weapon_pickup,skill_pickup,rune_pickup}.gd` | Proximity tracking + in-world prompt only; all chooser input lives on `Hud` |
+| Runes | `scripts/resources/runes/{rune_data,rune_modifier_def,rune_roller}.gd` | Rolled runes, modifier catalogue, save serialization (§16) |
+| Fonts | `assets/fonts/monogram.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
 | Visuals | `scripts/visuals/sprite_visual.gd`, `scripts/ui/element_indicator.gd`, `scripts/combat/{slash_vfx,hit_spark}.gd` | Sprite/placeholder swap, A.1 pattern glyphs, one-shot VFX |
 | Input | `autoloads/input_setup.gd` | All input actions defined in code, not Project Settings |
 | Upgrade system | `autoloads/upgrade_manager.gd` (planned) | Qi economy, per-run numeric/behavioral buffs — **not yet implemented**, see §4.8 |
@@ -343,6 +345,16 @@ Khắc 3×3 grid (confirmed by `test_reaction_resolver.gd`, all 9 cells):
 | **1** | Full clear | Partial | **Vũ** (reversed onto attacker) |
 | **2** | Full clear | Full clear | Partial |
 | **3** | **Thừa** (overwhelm) | Full clear | Full clear |
+
+**Same-element overwrite — decided, keep.** A same-element hit resolves as
+`NO_REACTION` and calls `status.apply(element, charge)`, replacing the
+target's Charge (not refresh-only for Charge). Consequence: a player's own
+Charge-3 hit leaves the target at Kim 3, and a following Charge-1 Hỏa hit
+is a Vũ against the player. Accepted by decision; mitigation is visibility
+only (§4.9). Alternatives if playtesting says it feels bad: (a) same-element
+hits refresh duration only, never change Charge; (b) only innate/boss/skill
+sources may set Charge 2–3. **Charge 3 has no source until P5 runes ship,
+so Thừa/Vũ cannot occur in a real run yet — playtest them after P5.**
 
 ### 4.3 ICD (Internal Cooldown)
 
@@ -784,6 +796,28 @@ Every fragment that doesn't connect with an enemy during its 0.8s
 flight seeds one of these — Ore Surge against a lone target now
 scatters a ring of hazards instead of just wasting the rest of the
 volley.
+
+### 4.9 Charge & Vũ Readability
+
+- `ElementalStatus` gains `signal charge_changed(element, charge)` and
+  `set_charge(new_charge)`. The `KHAC_PARTIAL` branch in `handle_hit()`
+  must call `set_charge()` instead of writing `status.charge` directly —
+  today that write emits no signal, so any display would go stale.
+- `ElementIndicator.set_element(e)` becomes `set_status(e, charge)`. It draws
+  1–3 pips (2×2 px squares, 1 px gap, centred below the glyph backing
+  circle). Pip count carries the meaning, so it is not colour-only (A.1).
+- Wiring in `ElementalCombatant._ready()`: `status_applied` and
+  `charge_changed` → `set_status(e, c)`; `status_cleared` → `set_status(NONE, 0)`.
+- **Vũ popup:** `ElementalCombatant` gains `signal reversed_hit_taken`,
+  emitted on the combatant that takes the redirected graze (the attacker),
+  right after `apply_graze()` in the `KHAC_VU` branch. The same class builds a
+  floating "Reversed!" label in `_ready()` listening to that signal (rises
+  ~10 px over 0.6 s, fades), placed above the indicator, using the theme font.
+  Shown whether the attacker is the player or an enemy.
+- **Deferred:** a pre-attack hint (indicator pulses when the equipped
+  weapon's Charge would Vũ the target). Add only if playtests still trip on it.
+- Tests: `charge_changed` in `test_elemental_status.gd`; `reversed_hit_taken`
+  emission in `test_elemental_combatant_reactions.gd`'s Vũ test.
 ---
 
 ## 5. Enemies & Bosses
@@ -846,6 +880,12 @@ Qi and purchased upgrade tiers are **never** written to `SaveManager` —
 per-run only, reset by `RunManager` the same as `_elapsed_sec`. If this
 ever changes to a meta-currency, it needs its own explicit design
 decision (see §4.8's per-run-only rationale) before touching this file.	
+
+Equipped runes are saved as `RuneData.to_dict()` inside
+`Player.to_save_state()` (`weapon_rune`, `secondary_weapon_rune`; `skill_1_rune`
+/`skill_2_rune` reserved). Mid-run snapshot only — never meta-progression.
+Missing keys (older saves) mean "no rune"; a modifier id no longer in the
+catalogue is dropped with a `push_warning`, never a crash.
 ---
 
 ## 8. HUD & Input
@@ -862,7 +902,105 @@ the per-element pixel values.
 `InputSetup` (autoload) defines every input action in code
 (`InputMap.add_action`), not via Project Settings, specifically so a
 malformed `project.godot` can't break input configuration.
+### 8.1 Pickup Swap HUD
 
+Replaces the single-key "F opens the overlay" flow. Keyboard only.
+
+**Flow**
+- **In world (mockup Stage 1):** small prompt above the pickup, no cards.
+  `F pick up · Tab choose slot` when a valid slot is empty; `Tab swap` when
+  every valid slot is occupied; runes append `· I inspect`.
+- **F** equips directly into the first empty valid slot. **F never overwrites.**
+- **Tab** opens the chooser when at least one valid slot exists.
+- No valid slot (all hidden, or a no-op swap) → no prompt at all.
+
+**Chooser (mockup Stage 2 only)**
+- The highlighted slot's card sits beside the ground card ("ON GROUND"); the
+  other slot's card is shown dimmed. Toggle with W/S or ↑/↓, confirm with F,
+  1/2 picks and confirms, mouse click picks and confirms, Esc cancels.
+- **Hidden, not dimmed:** a slot that would create a duplicate weapon (§15.4)
+  is not drawn, so the chooser can show a single pre-highlighted option. Rune
+  overlays never offer an empty weapon slot.
+- **No-op suppression:** if the pickup's weapon path equals the target slot's
+  and the rune is identical, that slot is not offered.
+- **Non-colour selection cue:** `▶` marker + thicker border + "SLOT n" label.
+  Cyan/orange are decoration only (A.1).
+- Panel is authored in native px (~260×130 at 576×324); `UI_SCALE` stays only
+  for the existing HP/slot bars until they migrate to the theme.
+- Hint line: `W/S slot · F confirm · I inspect · 1/2 pick · Esc cancel`.
+
+**Cards**
+
+| Kind | Fields |
+|---|---|
+| Weapon | name; tier (space reserved, blank until a tier field exists); `weight · element`; badges; DPS; `EQUIPPED` on slot cards |
+| Skill | name; element glyph + Charge pips (2, or 3 via a same-element rune, per `_resolve_skill_charge`); function line; cooldown |
+| Rune | element glyph; modifier count + short tags; in the chooser, the target weapon's name and current rune |
+
+**Badges (replace the mockup's B1/T1):** element glyph + Charge pips for the
+weapon's own element (base Charge, +1 with a same-element rune); a second
+glyph-only badge when a different-element rune is applied.
+
+**DPS (plain, no delta chip):**
+
+```gdscript
+# WeaponStats — display only, excludes armor/elements/rune modifiers
+func get_display_dps() -> float:
+	var total := 0.0
+	for i in combo_steps.size():
+		total += damage * pow(combo_damage_step_multiplier, i)
+	return total / (combo_steps.size() * attack_duration)
+```
+Chained hits have no idle gap (`_end_or_chain_attack`), so time is
+`steps × attack_duration`. Training dagger ≈ 42, greatsword ≈ 36. Weapon Might
+will hook into `damage` later.
+
+**Rune inspect (`I`, toggle)**
+- **From the world prompt:** a non-modal pane showing the rune's modifiers and
+  its result on the default target slot. It does not freeze the player and
+  closes on leaving range.
+- **Inside the chooser:** the pane docks under the cards and updates live as
+  ↑/↓ moves the slot.
+- Pane content: *New:* modifier lines (resolved from the catalogue); *Replaces:*
+  the highlighted slot's current rune's modifiers, or "Empty"; *Result:*
+  "Charge 1 → 2" (same-element), "Alternates Hỏa / Thổ" (different element),
+  or "No Charge bonus".
+- **Esc is two-step:** first closes the pane, second closes the chooser. The
+  pane starts closed every time the chooser opens.
+
+**Code shape**
+- Keep `_open_overlay(pickup, is_weapon)`, `_overlay_selected_primary`,
+  `_confirm_overlay_selection`, `_on_overlay_option_gui_input` and
+  `_can_open_overlay` names/signatures stable — `test_hud_pickup_overlay.gd`
+  and `test_hud_pickup_prompts.gd` call them. Derive `_overlay_kind`
+  (WEAPON / SKILL / RUNE) from `pickup is RunePickup` and the pickup's target
+  inside `_open_overlay`, so no test call site changes.
+- Add `rune_pickups` group + `_active_rune_pickup` to `_refresh_active_pickups()`.
+- Optional: extract a code-built `PickupCard` helper (`scripts/ui/pickup_card.gd`)
+  so weapon/skill/rune cards share one builder.
+
+### 8.2 Font & theme
+
+One font, everywhere: **Monogram** (CC0 pixel font — verify the licence and its
+native pixel size on the download page before committing it).
+- File: `assets/fonts/monogram.ttf`. Import with antialiasing off, hinting off,
+  subpixel positioning off. Use only integer multiples of the native size,
+  never fractional scaling.
+- `assets/ui/hud_theme.tres` sets the default font and size; applied on the Hud
+  root `Control`. Set `gui/theme/custom_font` in `project.godot` so scene
+  `Label`s (DamageLabel, tutorial labels, debug readout) match.
+- Replace every `add_theme_font_size_override(... int(N * UI_SCALE))` in
+  `hud.gd` with theme sizes. No per-label font overrides in new code.
+
+### 8.3 New input actions (`input_setup.gd`)
+
+| Action | Key | Use |
+|---|---|---|
+| `swap` | Tab | Open the chooser from a pickup prompt |
+| `inspect` | I | Toggle the rune detail pane |
+
+`pickup` (F), `menu_up/down`, `equip_slot_1/2` and `menu_cancel` keep their
+current bindings. No joypad events (decided: keyboard only).
 ---
 
 ## 9. Visuals
@@ -892,6 +1030,7 @@ already framed as "spec said X, build does Y, here's why."*
 | Appendix A: silent on HUD, save/resume mechanics beyond Section 6.2's tech-stack row | Full `Hud` + `SaveManager` + `RunManager` systems, undocumented in Appendix A | Pure addition, not a deviation — Appendix A never scoped these at the mechanic level. This Design.md is now their only spec. |
 | A.4: rune alternation (`_next_swing_uses_innate`) | Runtime-only bool stored **on the shared `WeaponStats` Resource instance itself** | Works today because only `Player` ever wields a `WeaponStats`. **Latent bug if any second caster (future enemy, co-op) ever equips the same `.tres` asset** — state would leak between wielders. Flag in §11. |
 | `run_manager.gd`'s comment cites "Section 7.1" for excluding hub/meta-progression, but 7.1's Out-of-Scope column never actually says this | Hub/meta-progression stays deferred by decision, not by the cited section | Comment is misleading, not wrong in outcome. §4.8's Qi system is per-run and deliberately avoids needing a hub at all — fix the comment to reference this doc instead of a section that doesn't cover it. |
+| A.4: a weapon carries a rune (implied as a weapon property) | Rune is stored on the **Player slot** (`weapon_rune` / `secondary_weapon_rune`) and travels with the weapon on swap/drop | Rolled modifiers can't live on a shared `.tres`, and a runtime `duplicate()` has no `resource_path` (breaks saves and, for skills, `_skill_cooldowns` keyed by instance). Supersedes the earlier §16 `apply_rune()`-duplicates-the-weapon design. |
 ---
 
 ## 11. Known issues / tech debt
@@ -915,6 +1054,10 @@ already framed as "spec said X, build does Y, here's why."*
   `armor_buff` (Rusted Chunk, §4.8.5) are both mechanically live now.
   Outstanding: the four `_apply_damage()` call sites + two test files
   above still need the actual edit — not done as part of this doc pass.
+  - **Same-element Charge overwrite** (§4.2) — accepted, revisit after the P5 playtest with Charge 3 reachable.
+- **Rune modifier catalogue is empty** — runes roll with zero modifiers until `RuneModifierDef` assets exist; the UI shows "no modifiers".
+- `_next_swing_uses_innate` (§10) can now move off the shared Resource onto the Player slot cheaply, since runes no longer duplicate weapons. Optional fix.
+- **Stray files (P0):** `scripts/resources/enemies/enemy_stats.gd` is a 3-line fragment with no class header (real class is `scenes/enemies/enemy_stats.gd`). `scripts/resources/weapons/training_staff.tres` uses inline `ComboStepData(...)` syntax that likely fails to parse, while `training_staff (1).tres` looks editor-saved. §15.1's loadout pool lists `training_staff.tres`. Verify in the editor.
 
 ---
 
@@ -939,6 +1082,8 @@ already framed as "spec said X, build does Y, here's why."*
    feed an adjusted charge *into* `Reactions.resolve()`, never modify
    `reaction_resolver.gd` itself. Add a resolver unit test first if a
    behavioral tier changes what counts as Thừa/Wu at the boundary.
+8. New UI text uses the theme font at integer sizes; no per-label font overrides.
+9. New rune modifier → a `RuneModifierDef` `.tres` plus one effect read-site at the effect layer (§4.8 rules). A modifier never changes raw Charge; the only Charge change is the base same-element rune +1.
 ---
 
 ## 13. Maintenance
@@ -1173,13 +1318,14 @@ func would_duplicate_weapon(is_primary: bool, candidate: WeaponStats) -> bool:
     return other != null and other.resource_path == candidate.resource_path
 ```
 
-`Hud._confirm_overlay_selection()` gets one added guard for
-weapon-kind overlays: if `_player.would_duplicate_weapon(_overlay_selected_primary, pickup.weapon)`,
-don't confirm — show the same inline "(duplicate)" message pattern
-already used for the skill check (§15.2), leave the overlay open.
-`_update_overlay_visuals()` additionally grays out whichever slot
-option would trigger this, so the block is visible before the player
-even tries to confirm, not just after.
+Because runes live on the Player slot (§16), no weapon Resource is ever
+duplicated at runtime, so the `resource_path` comparison above is sufficient —
+no base-path field is needed. In the chooser (§8.1) a slot that would create a
+duplicate is **hidden**, not grayed out, so `_confirm_overlay_selection()` can
+never receive it; keep the `would_duplicate_weapon()` check in
+`_confirm_overlay_selection()` as a defensive guard only. A swap onto the slot
+already holding the same base weapon is offered only when the incoming rune
+differs; otherwise the prompt is suppressed.
 
 Not retroactively enforced — an existing save from before this rule
 existed could still hold two identical weapons; the rule only stops a
@@ -1187,101 +1333,117 @@ existed could still hold two identical weapons; the rule only stops a
 one that's already there.
 ## 16. Runes
 
-New pickup, `scripts/items/rune_pickup.gd`,
-`class_name RunePickup extends Area2D` — mirrors `WeaponPickup`/
-`SkillPickup` exactly: proximity-only (`_player_in_range`), all input
-via `Hud`'s existing overlay, no new input action. One field:
-`@export var rune_element: StringName = Elements.NONE`.
+Runes are **rolled at drop time** (decided), carry **1–2 modifiers** (2 is rarer),
+and are stored on the **Player slot**, not on the weapon Resource.
 
-**`Hud`'s overlay gets a third kind**, not just weapon/skill —
-`_overlay_kind: enum { WEAPON, SKILL, RUNE }` replacing the current
-`_overlay_is_weapon: bool`. RUNE reuses the exact same "slot 1 / slot 2"
-shape as WEAPON (runes only ever target weapon slots, never skills,
-matching A.4), just confirms into `apply_rune()` instead of
-`swap_weapon()`.
+Planned files:
 
-**Application — `Player.apply_rune()`:**
+​```
+assets/
+├── fonts/monogram.ttf
+└── ui/hud_theme.tres
+scripts/
+├── items/rune_pickup.gd
+├── resources/runes/
+│   ├── rune_data.gd
+│   ├── rune_modifier_def.gd
+│   ├── rune_roller.gd
+│   └── modifiers/            # authored RuneModifierDef .tres — content deferred
+└── ui/pickup_card.gd         # optional card builder (§8.1)
+test/
+├── unit/{test_rune_data,test_rune_roller}.gd
+└── integration/{test_rune_pickup,test_player_runes}.gd
+​```
+
+**Data**
+- `RuneData` (`RefCounted`): `element`, `target` (`enum Target { WEAPON, SKILL }`),
+  `modifiers` (array of `{id: StringName, value: float}`), `to_dict()`,
+  `static from_dict()` (returns null when invalid), `describe_lines()`.
+- `RuneModifierDef` (authored `Resource`): `id`, `display_name`, `description`
+  (with a `{v}` value placeholder), `value_min`, `value_max`, `value_step`,
+  `applies_to` (WEAPON / SKILL / BOTH), optional `elements` filter (empty = any).
+- `RuneRoller.roll(element, target, rng = null) -> RuneData`: filters the
+  catalogue by target/element, picks 2 modifiers with `TWO_MODIFIER_CHANCE = 0.25`
+  (placeholder) else 1, no repeated id within a rune, value uniform in
+  range then snapped. An empty pool yields a rune with zero modifiers plus a
+  `push_warning`.
+- **Catalogue content is deferred** — which modifiers exist and whether pools
+  are global or per-element. Constraint: modifiers act at the effect layer and
+  never alter raw Charge (§4.8).
+
+**Pickup — `RunePickup`** (one script, `@export`-free; `rune` set by the spawner)
+- Frame by target: **square = weapon rune, circle = skill rune**. Glyph = an
+  `ElementIndicator` child in the rune's element (A.1 pattern language).
+- Joins `rune_pickups`; tracks `_player_in_range` only; prompt per §8.1.
+- Skill-target runes exist but no drop table spawns them until a skill
+  modifier catalogue exists (§16.2).
+
+**Player**
+```gdscript
+var weapon_rune: RuneData
+var secondary_weapon_rune: RuneData
+signal rune_changed(is_primary: bool, new_rune: RuneData)
+
+func get_weapon_rune(is_primary: bool) -> RuneData
+func can_apply_rune(is_primary: bool) -> bool   # slot holds a weapon
+func apply_rune(is_primary: bool, new_rune: RuneData) -> RuneData  # returns the previous rune
+func swap_weapon(is_primary: bool, new_weapon: WeaponStats, new_rune: RuneData = null) -> WeaponStats
+```
+`swap_weapon`'s return type and `weapon_changed` signal are unchanged, so
+`test_player_weapon_swap.gd` keeps passing; the rune arrives with the weapon.
+`WeaponPickup` gains a runtime `rune` field and reads the slot's previous rune
+*before* swapping, so the dropped weapon keeps it.
+
+**Resolution**
+- `WeaponStats.resolve_swing(rune: RuneData = null)`: effective rune element =
+  `rune.element` if a slot rune exists, else the weapon's authored
+  `rune_element` (kept as a fixture fallback — `runed_*.tres` and
+  `test_weapon_stats.gd` keep working unchanged).
+- `Player._resolve_skill_charge()` iterates (weapon, slot rune) pairs with the
+  same effective-rune rule; `test_player_skill_charge.gd` keeps working.
+
+**Save**
+- `to_save_state()` keeps `weapon_path = weapon.resource_path` (never duplicated)
+  and adds `weapon_rune` / `secondary_weapon_rune` (dict or null). The old
+  `_weapon_base_path` plan is **dropped**.
+- `apply_save_state()` restores runes via `RuneData.from_dict()`, bypassing
+  `swap_weapon` (no meta-progression re-unlock).
+
+**Overwrite:** applying a rune to an occupied rune slot drops the old rune as a
+new `RunePickup` at the pickup's position with its rolled data intact. Overwrite
+is reachable only through the chooser (§8.1), never via F.
+
+**Default chooser highlight:** prefer the weapon slot with no rune, else the slot
+whose weapon element differs from the incoming rune's, else slot 1.
+
+**Test fallout:** new tests for `RuneData` round-trip, `RuneRoller` (count,
+distinct ids, empty pool), `Player.apply_rune`/`swap_weapon` carrying runes, and
+`test_player_save_state.gd` rune round-trip + missing-key tolerance. Existing
+tests keep their call signatures.
+
+### 16.1 Acquisition — changed lines only
+
+Weighting and element rules are unchanged; each drop now rolls a full rune:
 
 ```gdscript
-func apply_rune(is_primary: bool, new_rune_element: StringName) -> void:
-    var target := weapon if is_primary else secondary_weapon
-    if target == null:
-        return
-    var runed := target.duplicate() as WeaponStats
-    runed.rune_element = new_rune_element
-    if is_primary:
-        weapon = runed
-        # _weapon_base_path (below) is deliberately UNCHANGED — same
-        # base weapon, just now runed.
-    else:
-        secondary_weapon = runed
+# spirit _die() (TestDummy / PatrolDummy)
+rune.rune = RuneRoller.roll(RunePickup.roll_spirit_element(enemy_stats.element), RuneData.Target.WEAPON)
+# Boss._die()
+rune.rune = RuneRoller.roll(<existing roll_boss_element(...) or single-element fallback>, RuneData.Target.WEAPON)
+# RoomController._check_cleared() baseline
+baseline.rune = RuneRoller.roll(Elements.ALL[randi() % Elements.ALL.size()], RuneData.Target.WEAPON)
 ```
+`RunePickup.new()` no longer takes `rune_element`. Drops target WEAPON only
+until skill runes ship.
 
-**Save/resume fix — required alongside this, not optional.** `Player`
-gains two new tracked fields, `_weapon_base_path` /
-`_secondary_weapon_base_path`, set whenever a *real* weapon (non-empty
-resource_path) is assigned via `swap_weapon()` or
-`consume_pending_loadout()` — **never** touched by `apply_rune()`,
-since the base weapon type doesn't change, only its rune does.
+### 16.2 Skill Runes (architecture decided, content deferred)
 
-`to_save_state()` saves `_weapon_base_path` (not `weapon.resource_path`
-directly anymore) plus a new `weapon_rune_element` field
-(`weapon.rune_element` — this value duplicate()s correctly even though
-the path doesn't). `apply_save_state()`'s `_load_weapon_path()` loads
-the base asset by path as before, then re-applies the saved rune only
-if it differs from what that asset already bakes in:
-
-```gdscript
-func _load_weapon_path(path: String, rune_element: StringName, is_primary: bool) -> void:
-	if path == "":
-        return
-    var loaded := load(path) as WeaponStats
-    if loaded == null:
-		push_warning("Player.apply_save_state: could not load weapon at %s" % path)
-        return
-	if rune_element != &"none" and rune_element != loaded.rune_element:
-        loaded = loaded.duplicate() as WeaponStats
-        loaded.rune_element = rune_element
-    if is_primary:
-        weapon = loaded
-        _weapon_base_path = path
-    else:
-        secondary_weapon = loaded
-        _secondary_weapon_base_path = path
-```
-
-`consume_pending_loadout()` (§15.3) needs the matching update — setting
-`_weapon_base_path`/`_secondary_weapon_base_path` alongside
-`player.weapon`/`player.secondary_weapon`, not just the weapon fields
-alone, or a loadout-selected weapon would itself fail to survive a
-resume.
-
-**Visual — reuses the A.1 glyph language, not a slot number.** Unlike
-`WeaponPickup`/`SkillPickup` (square-with-"1"/"2", circle-with-"Q"/"E"
-— their identity is *which slot*), a rune's identity is *which
-element*. `RunePickup._draw()` renders the same pattern glyph
-`ElementIndicator` already draws for status icons (diamond/spiral/
-wave/zigzag/dot-grid), tinted by the same `ElementIndicator.ELEMENT_COLOR`
-map — directly reusing the accessibility pattern language A.1
-established, rather than inventing a fourth pickup shape/color scheme.
-"Press F" prompt stays identical to the other two, for consistency.
-
-**Default slot targeting, mirroring `_default_target_is_primary`'s
-exact shape:** prefers whichever weapon slot currently has **no**
-rune (`rune_element == Elements.NONE`), falls back to whichever slot
-has a *different* element than the one being picked up, falls back to
-the pickup's own preferred slot only once both are already occupied by
-the same element. Smarter than weapons' plain empty-slot check, since
-"already runed" is a meaningfully different state than "empty" here.
-
-**Resolved:** overwriting an existing rune **does** leave the old one
-behind as a new `RunePickup` at the same position — same reasoning
-`WeaponPickup` already states outright ("a swap is always reversible,
-never a one-way trade the player didn't mean to make"). Reuses the
-identical `_spawn_dropped`-shaped helper, just for runes instead of
-weapons — cheap, since the pattern already exists twice in this
-codebase (`WeaponPickup`, `SkillPickup`) and this is a third use of the
-same shape, not a new one.
+Skill runes use the same `RuneData` (target SKILL) and the circle-framed
+`RunePickup`. Player fields `skill_1_rune`/`skill_2_rune`, `apply_skill_rune()`,
+the `SKILL_RUNE` overlay kind and save keys are reserved. **Build them together
+with the skill modifier catalogue, not before** — same rule as before. Storing
+the rune on the slot (never duplicating `SkillData`) keeps `_skill_cooldowns`,
+which is keyed by the `SkillData` instance, intact.
 ### 16.1 Acquisition
 
 **Elemental spirits (`TestDummy`/`PatrolDummy`/`Boss` with

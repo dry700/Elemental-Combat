@@ -1,35 +1,120 @@
-## Phase 4 — First-time tutorial
+# Current Implementation Plan
 
-Status: Complete and validated with Godot 4.7.1/GUT.
+Source of truth: [Design.md](Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md).
 
-Scope: This plan reflects the completed P4 work only. P5 and later tasks are intentionally excluded from the current scope and are tracked as the next phase instead of being folded into this review.
+## Phase status
 
-### Objective
-- [x] Add the first-time tutorial room and stage progression flow.
-- [x] Gate the tutorial exit behind a completed-state save flag.
-- [x] Keep the project stable while shipping the tutorial flow and persistence change.
+- [x] P0 — Repo hygiene and design cleanup
+- [x] P1 — Armor mitigation and armor buff component
+- [x] P2 — Player death delay
+- [x] P3 — Control resistance and CC handling
+- [x] P4 — First-time tutorial flow
+- [ ] P5a — Rune data, roller, and pickup foundation
+- [ ] P5b — Player slot runes and persistence
+- [ ] P5c — Pickup swap HUD, inputs, and Monogram theme
+- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
+- [ ] P6 — Loadout selection and pending-loadout consumption
+- [ ] P7 — Run summary and finish-run transitions
+- [ ] P8 — Main menu and startup scene
+- [ ] P9 — Room-pool expansion
+- [ ] P10 — Qi and upgrade system
+- [ ] P11 — Final verification and documentation closeout
 
-### Required tasks
-- [x] Add the tutorial room scene and script with stage progression prompts.
-- [x] Mark the tutorial complete state in `SaveManager` and persist it once.
-- [x] Hook the tutorial completion path into the room exit and scene transition.
-- [x] Validate the tutorial save flow and ensure the full project suite still passes.
+## Current scope: P5a
 
-### Verification
-- [x] Ran the full Godot GUT suite after the P4 work.
-  - Result: 191/191 tests passed with 359 assertions in 3.417s.
-- [x] Ran static diagnostics on the project.
-  - Result: no IDE errors reported.
-- [x] Confirmed the tutorial completion flag persists idempotently without duplicate writes.
+### Rune data
 
-### Blockers and notes
-- [x] No active blockers for P4; the tutorial flow is complete and validated.
-- [x] The scene uses the project room/exit framework and reuses the standard `SaveManager` persistence path.
-- [x] P5 begins once this phase is closed.
+- [x] Add `RuneData` with element, target, modifier list, `to_dict()`, `from_dict()`, and description lines.
+- [x] Add `RuneModifierDef` resource fields and target/element filtering.
+- [x] Add `RuneRoller` with one or two distinct modifiers and the current 25% two-modifier placeholder.
+- [x] Return an empty rune with a warning when the filtered modifier pool is empty.
 
-### Exact next item to work on
-- [ ] Start P5 rune pickups and run-state persistence work: add rune pickups, update the player loadout pathing, and validate the pickup flow before moving on.
+### Rune pickup
 
-### Out of scope for this step
-- [x] Rune pickups and other P5+ work
-- [x] All later post-P4 gameplay development
+- [x] Add one `RunePickup` script with a runtime `rune` field and no exported runtime data.
+- [x] Use a square frame for weapon runes and a circle frame for skill runes.
+- [x] Add the rune element indicator and `rune_pickups` group membership.
+- [x] Keep pickup logic limited to proximity and prompt state; Hud owns chooser input.
+- [x] Roll complete weapon runes for spirit, boss, and room-clear baseline drops.
+- [x] Keep skill-target rune drops disabled until the skill modifier catalogue exists.
+
+### P5a verification gate
+
+- [x] Add `test_rune_data.gd` round-trip and invalid-data cases.
+- [x] Add `test_rune_roller.gd` count, distinct-id, target filtering, and empty-pool cases.
+- [x] Add rune pickup integration coverage.
+- [ ] Run and observe the relevant GUT subset before starting P5b.
+
+## P5b — Player slot runes and persistence
+
+- [ ] Add `weapon_rune` and `secondary_weapon_rune` to Player.
+- [ ] Implement `get_weapon_rune()`, `can_apply_rune()`, and `apply_rune()`.
+- [ ] Keep weapon Resources unduplicated; preserve their `resource_path` values.
+- [ ] Carry a weapon's rune through `swap_weapon()` and dropped `WeaponPickup` instances.
+- [ ] Resolve effective rune elements with the slot rune first and authored `rune_element` as fixture fallback.
+- [ ] Apply same-element Charge bonuses without changing raw Charge rules in the resolver.
+- [ ] Save rune dictionaries in the Player snapshot and tolerate missing or unknown modifier ids.
+- [ ] Drop the previous rune as a rolled pickup on chooser-only overwrite.
+
+### P5b verification gate
+
+- [ ] Pass rune application, weapon swap, skill-charge, and Player save/load tests.
+- [ ] Confirm old saves load with no rune when rune keys are missing.
+- [ ] Confirm unknown modifier ids warn and are skipped rather than crashing.
+
+## P5c — Pickup swap HUD, input, and font
+
+- [ ] Add `swap` on Tab and `inspect` on I through `InputSetup`.
+- [ ] Preserve existing pickup, menu, slot, and cancel bindings; do not add joypad events.
+- [ ] Make F equip directly only into the first empty valid slot; F never overwrites.
+- [ ] Make Tab open the chooser when at least one valid slot exists.
+- [ ] Hide duplicate or no-op weapon slots instead of dimming them.
+- [ ] Suppress prompts when no valid slot exists.
+- [ ] Add weapon, skill, and rune cards with glyphs, Charge pips, modifier tags, and plain DPS.
+- [ ] Add the rune inspect pane and two-step Esc behavior.
+- [ ] Keep the existing tested Hud method names and signatures stable.
+- [ ] Import Monogram and apply it through `hud_theme.tres` and the project default theme.
+- [ ] Remove new per-label font-size overrides.
+
+### P5c verification gate
+
+- [ ] Pass existing pickup overlay and pickup prompt tests without changing their call signatures.
+- [ ] Add coverage for hidden slots, F never overwriting, rune inspection, and DPS display.
+- [ ] Confirm chooser keyboard flow manually at the project viewport size.
+
+## P5d — Charge and Vũ readability
+
+- [ ] Add `ElementalStatus.set_charge()` and `charge_changed`.
+- [ ] Route Khắc partial charge reduction through the setter.
+- [ ] Add Charge pips to `ElementIndicator` for values 1–3.
+- [ ] Add `reversed_hit_taken` and the “Reversed!” popup.
+- [ ] Reach Charge 3 in a playtest and assess Thừa/Vũ readability and feel.
+- [ ] Record the result and any balance/design decision before closing P5.
+
+### P5d verification gate
+
+- [ ] Pass status, Charge, and Vũ reaction tests.
+- [ ] Complete the manual Charge 3 playtest checkpoint.
+- [ ] Update Design.md only if the playtest changes the architecture contract.
+
+## Deferred phases
+
+P6 through P11 remain out of the current implementation scope until P5d is verified. Do not mark later phases complete based on planning work alone.
+
+## Decisions and blockers
+
+- [ ] D15 — Confirm F direct-equips into an empty slot and Tab opens the chooser.
+- [ ] D16 — Confirm a rune travels with its weapon on swap and drop.
+- [ ] D17 — Confirm one `RunePickup` script with a target field remains the chosen shape.
+- [ ] D18 — Tune the two-modifier chance after the first playable rune pass.
+- [ ] D19 — Define the first modifier catalogue and whether pools are global or per-element.
+- [ ] D20 — Remove or reconcile the stray enemy stats fragment and duplicate training-staff resource.
+
+### Verification record
+
+- P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
+- Current implementation: P5a rune data, pickup, enemy-drop, room-clear, and focused test files are present.
+- Static diagnostics: no errors found in the P5a scripts, modified enemy/room scripts, or focused tests.
+- Test command: the absolute-path full GUT invocation returned exit code 0 without output; the selective `-gselect=test_rune` invocation did not return normally. No test count or pass result is claimed.
+- Blocker: `godot` is not on PATH, and the headless GUT output remains unavailable through the current terminal setup.
+- P5 verification: record the focused test command, result, and any diagnostics here before advancing to P5b.

@@ -20,6 +20,7 @@ signal cleared
 
 var _spawn_points: Array[EnemySpawnPoint] = []
 var _is_cleared: bool = false
+var _baseline_rune_spawned: bool = false
 
 
 func _ready() -> void:
@@ -58,6 +59,12 @@ func _check_cleared() -> void:
 		_is_cleared = true
 		if exit != null:
 			exit.locked = false
+		if not _baseline_rune_spawned and exit != null:
+			_baseline_rune_spawned = true
+			var baseline := RunePickup.new()
+			baseline.set_rune(RuneRoller.roll(Elements.ALL[randi() % Elements.ALL.size()], RuneData.Target.WEAPON))
+			baseline.global_position = exit.global_position + Vector2(-15.0, 0.0)
+			get_tree().current_scene.add_child.call_deferred(baseline)
 		cleared.emit()
 		set_process(false)
 
