@@ -436,13 +436,17 @@ func _configure_hitbox_for_current_swing() -> void:
 	hitbox.charge = swing.charge
 	hitbox.position.x = WEAPON_GRIP_OFFSET
 	hitbox.rotation = 0.0
+	var actual_reach := _active_weapon.reach
+	if _active_weapon.weapon_texture != null:
+		actual_reach = float(_active_weapon.weapon_texture.get_width())
+
 	var rect := hitbox_shape.shape as RectangleShape2D
 	if rect != null:
-		rect.size = Vector2(_active_weapon.reach, _active_weapon.hitbox_radius * 2.0)
-	hitbox_shape.position.x = _active_weapon.reach / 2.0  # extends OUTWARD from the grip, not centered on it
+		rect.size = Vector2(actual_reach, _active_weapon.hitbox_radius * 2.0)
+	hitbox_shape.position.x = actual_reach / 2.0  # extends OUTWARD from the grip, not centered on it
 	weapon_sprite.texture = _active_weapon.weapon_texture
 	if weapon_sprite.texture != null:
-		weapon_sprite.offset = Vector2(weapon_sprite.texture.get_width() / 2.0, 0.0)
+		weapon_sprite.offset = Vector2(actual_reach / 2.0, 0.0)
 	weapon_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	weapon_sprite.position = Vector2.ZERO  # sits at Hitbox's own origin now — Hitbox's transform does the moving
 	weapon_sprite.rotation = 0.0
