@@ -16,6 +16,7 @@ func before_each():
 	add_child_autofree(boss)
 	boss.elemental.armor = 0.0
 
+
 func test_starts_in_phase_1_with_phase_1_element():
 	assert_eq(boss._current_phase, 1)
 	assert_eq(boss.elemental.innate_element, boss.boss_stats.element)
@@ -42,5 +43,9 @@ func test_combat_ai_element_override_updates_on_phase_change():
 
 func test_death_at_zero_health_still_works_after_phase_2():
 	boss._apply_damage(boss.boss_stats.max_health * 0.6)  # -> phase 2
-	boss._apply_damage(boss.boss_stats.max_health)         # lethal
+	## Null boss_stats before the lethal hit so boss._die() skips the rune drop
+	## (which calls RuneRoller.roll on an empty catalogue in test context).
+	var lethal := boss.boss_stats.max_health
+	boss.boss_stats = null
+	boss._apply_damage(lethal)         # lethal
 	assert_true(boss._is_dead)

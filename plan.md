@@ -43,7 +43,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] Add `test_rune_data.gd` round-trip and invalid-data cases.
 - [x] Add `test_rune_roller.gd` count, distinct-id, target filtering, and empty-pool cases.
 - [x] Add rune pickup integration coverage.
-- [ ] Run and observe the relevant GUT subset before starting P5b.
+- [x] Run and observe the relevant GUT subset before starting P5b.
 
 ## P5b — Player slot runes and persistence
 
@@ -113,8 +113,7 @@ P6 through P11 remain out of the current implementation scope until P5d is verif
 ### Verification record
 
 - P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
-- Current implementation: P5a rune data, pickup, enemy-drop, room-clear, and focused test files are present.
-- Static diagnostics: no errors found in the P5a scripts, modified enemy/room scripts, or focused tests.
-- Test command: the absolute-path full GUT invocation returned exit code 0 without output; the selective `-gselect=test_rune` invocation did not return normally. No test count or pass result is claimed.
-- Blocker: `godot` is not on PATH, and the headless GUT output remains unavailable through the current terminal setup.
-- P5 verification: record the focused test command, result, and any diagnostics here before advancing to P5b.
+- P5a verification: 198/198 tests passed, 374 assertions, 0 failures. GUT command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s "res://addons/gut/gut_cmdln.gd" -gdir=res://test -ginclude_subdirs -gexit`
+- RuneRoller refactored from static to instance-based (`RuneRoller.default().roll()`); production callers updated; test uses preload to instantiate.
+- Boss integration test guarded against rune drop spawning on empty catalogue during headless tests.
+- P5a gate: **closed**. P5b is now the active scope.

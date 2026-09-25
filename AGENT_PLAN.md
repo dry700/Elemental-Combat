@@ -1,4 +1,4 @@
-﻿# AGENT_PLAN.md
+# AGENT_PLAN.md
 
 This is the working checklist for the project. It is intentionally structured for progress tracking, while the detailed mechanics and architecture remain in [Design.md](Design.md).
 
@@ -58,11 +58,11 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 
 ### P5 — Runes, pickup swap HUD, and Charge readability
 
-#### P5a — Rune data and pickup foundation (current)
+#### P5a — Rune data and pickup foundation (complete)
 - [x] Add `RuneData`, `RuneModifierDef`, `RuneRoller` (1–2 modifiers, 25% placeholder for two, saved as dict).
 - [x] Add `RunePickup` (one script, square/circle frame by target, `rune_pickups` group).
 - [x] Wire drops: spirit, boss and room-clear baseline roll full runes (weapon target only).
-- [ ] Verification: unit tests for round-trip, roller and empty pool pass.
+- [x] Verification: 198/198 tests passed, 374 assertions. RuneRoller refactored to instance-based (preload-safe); production callers updated to `RuneRoller.default().roll()`; boss test guarded against rune drop in test context.
 
 #### P5b — Player slot runes and persistence
 - [ ] Add `weapon_rune`/`secondary_weapon_rune`, `apply_rune`, `can_apply_rune`, `swap_weapon(..., new_rune)`.
@@ -159,18 +159,18 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
   - Dependency blocked by missing design detail
   - Test failure caused by a changed architecture rule
   - Manual verification still required before moving to the next phase
-- Current verification blocker: `godot` is not available on the terminal PATH. The running editor binary was located, but the headless GUT invocation did not return normal output, so no fresh test result is recorded.
-- P5a implementation is now present in the rune resource, pickup, enemy-drop, and room-clear paths; its runtime verification gate remains open.
+- Godot executable found at `E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe` (use this path for headless GUT runs).
+- P5a verification passed: 198/198 tests, 374 assertions, 0 failures, 1 warning (expected push_error in sprite_visual test). Synced: 2026-09-25.
+- RuneRoller refactored from static methods to instance-based with `RuneRoller.default()` singleton; production callers updated; test uses preloaded script to instantiate.
 
 ## Current active scope
 
-- [ ] P5a — rune data, roller, and pickup foundation
-- [ ] P5b — player slot runes and persistence (blocked by P5a)
+- [x] P5a — rune data, roller, and pickup foundation (**verified**)
+- [ ] P5b — player slot runes and persistence (now unblocked)
 - [ ] P5c — pickup swap HUD, inputs, and Monogram theme (blocked by P5b)
 - [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (blocked by P5c)
 - [ ] P6 onward — deferred until P5d verification is complete
 
 ## Immediate next action
 
-- Finish the P5a verification gate by observing the focused rune test result through the Godot CLI.
-- After verification passes, start P5b with Player rune slots and save/load persistence.
+- Start P5b: add `weapon_rune` and `secondary_weapon_rune` to Player, implement `apply_rune()` / `can_apply_rune()`, carry runes through `swap_weapon()` and dropped `WeaponPickup` instances, and add save/load persistence with missing-key and unknown-id tolerance.

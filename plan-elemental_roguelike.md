@@ -41,7 +41,7 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] Implement `RunePickup` target framing, glyph, group, and proximity behavior.
 - [x] Roll full weapon runes for spirit, boss, and room-clear baseline drops.
 - [x] Add unit and integration coverage.
-- [ ] Observe the focused suite result before advancing to P5b.
+- [x] Observe the focused suite result before advancing to P5b.
 
 ### P5b — Player slots and persistence
 

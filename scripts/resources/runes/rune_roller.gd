@@ -1,17 +1,30 @@
 class_name RuneRoller
 extends RefCounted
+## Rolls a RuneData with one or two distinct modifiers drawn from a
+## filtered catalogue. Instantiate and call set_catalogue() before roll().
+## Production code uses the shared RuneRoller.default() singleton; tests
+## create their own instance so catalogue state stays isolated.
 
 const TWO_MODIFIER_CHANCE: float = 0.25
 
-static var modifier_catalogue: Array[RuneModifierDef] = []
+## Shared instance used by gameplay code (boss, patrol_dummy, room_controller, etc.)
+## so they don't need to manage their own instance or catalogue.
+static var _default_instance: RuneRoller = null
 
-static func set_catalogue(definitions: Array[RuneModifierDef]) -> void:
-	modifier_catalogue = definitions.duplicate()
+static func default() -> RuneRoller:
+	if _default_instance == null:
+		_default_instance = RuneRoller.new()
+	return _default_instance
 
-static func roll(element: StringName, target: RuneData.Target, rng: RandomNumberGenerator = null) -> RuneData:
+var _catalogue: Array[RuneModifierDef] = []
+
+func set_catalogue(definitions: Array[RuneModifierDef]) -> void:
+	_catalogue = definitions.duplicate()
+
+func roll(element: StringName, target: RuneData.Target, rng: RandomNumberGenerator = null) -> RuneData:
 	var rune := RuneData.new(element, target)
 	var candidates: Array[RuneModifierDef] = []
-	for definition in modifier_catalogue:
+	for definition in _catalogue:
 		if definition != null and definition.applies_to_rune(target, element):
 			candidates.append(definition)
 	if candidates.is_empty():
