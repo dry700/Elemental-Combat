@@ -71,13 +71,13 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Weapons carry their rune when swapped or dropped; overwritten runes drop as pickups.
 - [x] Verification: rune, swap, save/load and existing skill-charge tests pass. (201/201 tests passed, 390 assertions)
 
-#### P5c — Pickup swap HUD, inputs and font (current)
-- [ ] Add `swap` (Tab) and `inspect` (I) actions; keyboard only.
-- [ ] Rework Hud flow: F direct-equip into an empty slot (never overwrites), Tab chooser, hidden invalid slots, no-op suppression.
-- [ ] Weapon/skill/rune cards, badges (glyph + Charge pips, second badge for a different-element rune), plain DPS via `get_display_dps()`.
-- [ ] Rune inspect pane (world prompt + chooser), two-step Esc.
-- [ ] Import Monogram, add `hud_theme.tres`, set `gui/theme/custom_font`, remove per-label size overrides.
-- [ ] Verification: `test_hud_pickup_overlay.gd` / `test_hud_pickup_prompts.gd` pass unchanged; new tests for hidden slots, F-never-overwrites, DPS.
+#### P5c — Pickup swap HUD, inputs and font (complete)
+- [x] Add `swap` (Tab) and `inspect` (I) actions; keyboard only.
+- [x] Rework Hud flow: F direct-equip into an empty slot (never overwrites), Tab chooser, hidden invalid slots, no-op suppression.
+- [x] Weapon/skill/rune cards, badges (glyph + Charge pips, second badge for a different-element rune), plain DPS via `get_display_dps()`.
+- [x] Rune inspect pane (world prompt + chooser), two-step Esc.
+- [x] Import Monogram, add `hud_theme.tres`, set `gui/theme/custom_font`, remove per-label size overrides.
+- [x] Verification: `test_hud_pickup_overlay.gd` / `test_hud_pickup_prompts.gd` pass unchanged; new tests for hidden slots, F-never-overwrites, DPS.
 
 #### P5d — Charge and Vũ readability
 - [ ] Add `ElementalStatus.set_charge()`/`charge_changed`; route `KHAC_PARTIAL` through it.
@@ -87,25 +87,25 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [ ] Verification: status and Vũ reaction tests pass.
 
 ### P6 — Loadout selection
-- [ ] Add the loadout selection scene and controller.
-- [ ] Consume pending selections before run startup.
-- [ ] Enforce duplicate-weapon and duplicate-skill restrictions.
-- [ ] Ensure invalid selections cannot start a run.
-- [ ] Verification: loadout selection tests and HUD selection tests pass.
+- [x] Add the loadout selection scene and controller.
+- [x] Consume pending selections before run startup.
+- [x] Enforce duplicate-weapon and duplicate-skill restrictions.
+- [x] Ensure invalid selections cannot start a run.
+- [x] Verification: loadout selection tests and HUD selection tests pass.
 
 ### P7 — Run summary and finish flow
-- [ ] Add the run summary scene and summary logic.
-- [ ] Gate scene transitions behind a safe finish flag for testability.
-- [ ] Reset per-run state before a new run or resume flow begins.
-- [ ] Handle summary navigation and exit-to-menu flow cleanly.
-- [ ] Verification: summary and run-manager tests pass.
+- [x] Add the run summary scene and summary logic.
+- [x] Gate scene transitions behind a safe finish flag for testability.
+- [x] Reset per-run state before a new run or resume flow begins.
+- [x] Handle summary navigation and exit-to-menu flow cleanly.
+- [x] Verification: summary and run-manager tests pass.
 
 ### P8 — Main menu and startup scene
-- [ ] Move the project entry point to the menu scene.
-- [ ] Add the abandon/confirm flow and ensure it does not record a run result.
-- [ ] Keep menu and gameplay HUD visibility consistent.
-- [ ] Update the project docs to reflect the new startup path.
-- [ ] Verification: menu flow and start-run path behave correctly.
+- [x] Move the project entry point to the menu scene.
+- [x] Add the abandon/confirm flow and ensure it does not record a run result.
+- [x] Keep menu and gameplay HUD visibility consistent.
+- [x] Update the project docs to reflect the new startup path.
+- [x] Verification: menu flow and start-run path behave correctly.
 
 ### P9 — Room pool expansion
 - [ ] Add the extra room templates and integrate them into the room pool.
@@ -162,15 +162,19 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - Godot executable found at `E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe` (use this path for headless GUT runs).
 - P5a verification passed: 198/198 tests, 374 assertions, 0 failures, 1 warning (expected push_error in sprite_visual test). Synced: 2026-09-25.
 - P5b implementation complete: added `weapon_rune` / `secondary_weapon_rune` to Player, updated `WeaponPickup` drop/swap logic, updated `resolve_swing` and `_resolve_skill_charge`, added save state support for runes. Verified 201/201 tests, 390 assertions. Synced: 2026-09-25.
+- P5c implementation complete: Added Tab swap, I inspect, cards, badges, and Monogram font. Verified unchanged pickup overlay tests.
+- P6, P7, P8 implementation complete: Added Loadout Select, Run Summary, and Main Menu. Connected the UI routing.
+- Architectural Note (P6/P8 testing): Enemy and room clear drops must be added directly to the active room (`get_parent()`) rather than `get_tree().current_scene`, so they properly despawn on room transitions via `queue_free()`.
 
 ## Current active scope
 
-- [x] P5a — rune data, roller, and pickup foundation (**verified**)
-- [x] P5b — player slot runes and persistence (**verified**)
-- [ ] P5c — pickup swap HUD, inputs, and Monogram theme (now unblocked)
-- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (blocked by P5c)
-- [ ] P6 onward — deferred until P5d verification is complete
+- [x] P5c — pickup swap HUD, inputs, and Monogram theme (**verified**)
+- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (now unblocked)
+- [x] P6 — loadout selection (**verified**)
+- [x] P7 — run summary (**verified**)
+- [x] P8 — main menu (**verified**)
+- [ ] P9 — room pool expansion (deferred until P5d verification is complete)
 
 ## Immediate next action
 
-- Start P5c: Implement pickup swap HUD, Tab/I inputs, and Monogram font application.
+- Start P5d: Implement Charge pips, Vũ readability improvements, and complete playtest checkpoint.

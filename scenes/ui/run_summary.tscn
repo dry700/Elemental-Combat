@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://ddyq4a29qkq75"]
+[gd_scene format=3 uid="uid://ddyq4a3aqkq75"]
 
-[ext_resource type="Script" uid="uid://dqh345vbw29s5" path="res://scripts/ui/run_summary.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/ui/run_summary.gd" id="1_script"]
 
 [node name="RunSummary" type="Control"]
 layout_mode = 3

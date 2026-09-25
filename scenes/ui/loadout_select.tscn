@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://caxbxjkvt035y"]
 
-[ext_resource type="Script" uid="uid://df7j8v2l4l2x9" path="res://scripts/ui/loadout_select.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/ui/loadout_select.gd" id="1_script"]
 
 [node name="LoadoutSelect" type="Control"]
 layout_mode = 3

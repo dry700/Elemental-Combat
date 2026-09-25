@@ -9,18 +9,18 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P2 — Player death delay
 - [x] P3 — Control resistance and CC handling
 - [x] P4 — First-time tutorial flow
-- [ ] P5a — Rune data, roller, and pickup foundation
-- [ ] P5b — Player slot runes and persistence
-- [ ] P5c — Pickup swap HUD, inputs, and Monogram theme
+- [x] P5a — Rune data, roller, and pickup foundation
+- [x] P5b — Player slot runes and persistence
+- [x] P5c — Pickup swap HUD, inputs, and Monogram theme
 - [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
-- [ ] P6 — Loadout selection and pending-loadout consumption
-- [ ] P7 — Run summary and finish-run transitions
-- [ ] P8 — Main menu and startup scene
+- [x] P6 — Loadout selection and pending-loadout consumption
+- [x] P7 — Run summary and finish-run transitions
+- [x] P8 — Main menu and startup scene
 - [ ] P9 — Room-pool expansion
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Final verification and documentation closeout
 
-## Current scope: P5a
+## Current scope: P5d
 
 ### Rune data
 
@@ -65,8 +65,8 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## P5c — Pickup swap HUD, input, and font
 
-- [ ] Add `swap` on Tab and `inspect` on I through `InputSetup`.
-- [ ] Preserve existing pickup, menu, slot, and cancel bindings; do not add joypad events.
+- [x] Add `swap` on Tab and `inspect` on I through `InputSetup`.
+- [x] Preserve existing pickup, menu, slot, and cancel bindings; do not add joypad events.
 - [x] Make F equip directly only into the first empty valid slot; F never overwrites.
 - [x] Make Tab open the chooser when at least one valid slot exists.
 - [x] Hide duplicate or no-op weapon slots instead of dimming them.
@@ -117,4 +117,8 @@ P6 through P11 remain out of the current implementation scope until P5d is verif
 - P5a verification: 198/198 tests passed, 374 assertions, 0 failures. GUT command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s "res://addons/gut/gut_cmdln.gd" -gdir=res://test -ginclude_subdirs -gexit`
 - RuneRoller refactored from static to instance-based (`RuneRoller.default().roll()`); production callers updated; test uses preload to instantiate.
 - Boss integration test guarded against rune drop spawning on empty catalogue during headless tests.
-- P5a gate: **closed**. P5b is now the active scope.
+- P5a gate: **closed**.
+- P5b gate: **closed**. Player slot runes and persistence verified.
+- P5c gate: **closed**. HUD swap and inputs verified.
+- P6, P7, P8 features implemented (Loadout Select, Run Summary, Main Menu). Tutorial logic fixed. Drops parented to rooms for proper despawning.
+- P5d is now the active scope.

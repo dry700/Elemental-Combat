@@ -9,13 +9,13 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P2 — Player death delay
 - [x] P3 — Control resistance and CC handling
 - [x] P4 — First-time tutorial flow
-- [ ] P5a — Rune data, roller, and pickup foundation
-- [ ] P5b — Player slot runes and persistence
-- [ ] P5c — Pickup swap HUD, inputs, and Monogram theme
+- [x] P5a — Rune data, roller, and pickup foundation
+- [x] P5b — Player slot runes and persistence
+- [x] P5c — Pickup swap HUD, inputs, and Monogram theme
 - [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
-- [ ] P6 — Loadout selection and pending-loadout consumption
-- [ ] P7 — Run summary and finish-run transitions
-- [ ] P8 — Main menu and startup scene update
+- [x] P6 — Loadout selection and pending-loadout consumption
+- [x] P7 — Run summary and finish-run transitions
+- [x] P8 — Main menu and startup scene update
 - [ ] P9 — Room-pool expansion
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Closeout documentation and final verification
@@ -53,12 +53,12 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 ### P5c — HUD and input
 
-- [ ] Add Tab chooser and I inspect actions through `InputSetup`.
-- [ ] Keep F direct-equip behavior non-destructive.
-- [ ] Implement valid-slot hiding, no-op suppression, cards, badges, and plain DPS.
-- [ ] Implement the rune inspect pane and two-step Esc handling.
-- [ ] Import and apply Monogram through `hud_theme.tres` and project defaults.
-- [ ] Preserve existing tested Hud method names and signatures.
+- [x] Add Tab chooser and I inspect actions through `InputSetup`.
+- [x] Keep F direct-equip behavior non-destructive.
+- [x] Implement valid-slot hiding, no-op suppression, cards, badges, and plain DPS.
+- [x] Implement the rune inspect pane and two-step Esc handling.
+- [x] Import and apply Monogram through `hud_theme.tres` and project defaults.
+- [x] Preserve existing tested Hud method names and signatures.
 
 ### P5d — Charge and Vũ readability
 
@@ -79,7 +79,7 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 ## Deferred phases
 
-The endless loop progression, loadout selection, run summary, main menu, room-pool expansion, and Qi economy remain deferred until P5d is verified. The current plan intentionally excludes implementation work from P6 onward.
+Room-pool expansion and Qi economy remain deferred until P5d is verified. Loadout selection, run summary, and main menu have been implemented.
 
 ## Open decisions
 

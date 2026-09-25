@@ -8,7 +8,7 @@ that's Sprint 2+, per the design rationale in Appendix A.3 of the proposal
 
 1. Open Godot **4.7.x** (this was written against 4.7 conventions specifically).
 2. Import this folder as a project (Godot will detect `project.godot`).
-3. Run the project (F5) — it should open straight into `test_arena.tscn`.
+3. Run the project (F5) — it should open straight into `scenes/ui/main_menu.tscn`.
 
 **I wrote this without a running Godot instance to test it against**, since
 this environment doesn't have Godot installed. It's a first-pass scaffold
