@@ -176,6 +176,10 @@ func _on_player_died() -> void:
 	_finish_run("loss", rooms_cleared)
 
 
+var last_run_outcome: String = ""
+var last_run_rooms_cleared: int = 0
+var last_run_duration_sec: float = 0.0
+
 ## Shared by both a completed run (win) and a player death (loss) — logs
 ## the result, clears the resumable save (a finished run has nothing
 ## left to resume INTO), and stops the elapsed-time clock.
@@ -184,6 +188,21 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
 	set_process(false)
 	SaveManager.record_run_result(outcome, rooms_cleared, _elapsed_sec)
 	SaveManager.clear_in_progress_run()
+	
+	last_run_outcome = outcome
+	last_run_rooms_cleared = rooms_cleared
+	last_run_duration_sec = _elapsed_sec
+	
+	if outcome == "win" and _player != null:
+		pending_weapon_path = _player.weapon.resource_path if _player.weapon != null else ""
+		pending_secondary_weapon_path = _player.secondary_weapon.resource_path if _player.secondary_weapon != null else ""
+		pending_skill_1_path = _player.skill_1.resource_path if _player.skill_1 != null else ""
+		pending_skill_2_path = _player.skill_2.resource_path if _player.skill_2 != null else ""
+	
+	get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
+
+func start_next_loop() -> void:
+	get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
 
 
 func _autosave() -> void:
