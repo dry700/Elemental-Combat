@@ -49,7 +49,7 @@ func _ready() -> void:
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	_base_color = visual_polygon.color
 
-	elemental.indicator_offset = Vector2(0, -68)
+	elemental.indicator_offset = Vector2(0, -20)
 	elemental.armor = boss_stats.armor if "armor" in boss_stats else 10.0
 	elemental.innate_element = boss_stats.element  ## Phase 1 starts as boss_stats.element, same field EnemyStats already uses.
 	add_child(elemental)

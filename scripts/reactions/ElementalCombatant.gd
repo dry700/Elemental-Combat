@@ -158,14 +158,17 @@ func _spawn_text_popup(text: String, color: Color) -> void:
 	lbl.text = text
 	lbl.add_theme_color_override("font_color", color)
 	lbl.add_theme_font_size_override("font_size", 12)
-	# Slight random horizontal/vertical offset so multiple popups don't perfectly overlap
-	var offset_x = randf_range(-40, -10)
-	var offset_y = randf_range(-25, -15)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	
+	# Small random jitter so multiple popups don't perfectly overlap
+	var offset_x = randf_range(-8, 8)
+	var offset_y = randf_range(-12, -4)
 	lbl.position = indicator_offset + Vector2(offset_x, offset_y)
 	add_child(lbl)
 	
 	var tween := create_tween()
-	tween.tween_property(lbl, "position:y", lbl.position.y - 30.0, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(lbl, "position:y", lbl.position.y - 15.0, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.parallel().tween_property(lbl, "modulate:a", 0.0, 1.0).set_ease(Tween.EASE_IN).set_delay(0.5)
 	tween.tween_callback(lbl.queue_free)
 
