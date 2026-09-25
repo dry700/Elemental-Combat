@@ -634,10 +634,13 @@ func swap_skill(is_primary: bool, new_skill: SkillData) -> SkillData:
 func _update_facing() -> void:
 	if state in [State.DODGE, State.ATTACK]:
 		return  # Don't flip mid-action — avoids the hitbox flipping under an active swing.
-	if velocity.x > 5.0:
+	
+	var input_dir := Input.get_axis("move_left", "move_right")
+	if input_dir > 0.0:
 		facing = 1
-	elif velocity.x < -5.0:
+	elif input_dir < 0.0:
 		facing = -1
+		
 	visuals.scale.x = absf(visuals.scale.x) * facing
 
 
