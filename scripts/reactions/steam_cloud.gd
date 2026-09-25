@@ -92,6 +92,16 @@ func _process(delta: float) -> void:
 	_lifetime_timer += delta
 	if _lifetime_timer >= lifetime:
 		queue_free()
+	
+	# Dynamically adjust opacity if the player is inside
+	var target_opacity := 0.85
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player != null and global_position.distance_to(player.global_position) <= radius:
+		target_opacity = 0.98  # Increased opacity when player is inside, per request
+		
+	if opacity != target_opacity:
+		opacity = move_toward(opacity, target_opacity, delta * 0.5)
+		queue_redraw()
 
 
 func _apply_initial_stun() -> void:
