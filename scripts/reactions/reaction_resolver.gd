@@ -48,3 +48,20 @@ static func _resolve_khac(incoming: int, remaining: int) -> Outcome:
 	if incoming >= remaining:
 		return Outcome.KHAC_FULL_CLEAR
 	return Outcome.KHAC_PARTIAL
+
+static func get_reaction_name(outcome: Outcome, pair: Array[StringName]) -> String:
+	if pair.size() != 2:
+		return ""
+	if outcome == Outcome.SINH_TIER_1 or outcome == Outcome.SINH_TIER_2:
+		if Elements.pair_is(pair, Elements.KIM, Elements.THUY): return "Condensation"
+		if Elements.pair_is(pair, Elements.THUY, Elements.MOC): return "Overgrowth"
+		if Elements.pair_is(pair, Elements.MOC, Elements.HOA): return "Wildfire"
+		if Elements.pair_is(pair, Elements.HOA, Elements.THO): return "Cinder Bloom"
+		if Elements.pair_is(pair, Elements.THO, Elements.KIM): return "Ore Surge"
+	elif outcome in [Outcome.KHAC_FULL_CLEAR, Outcome.KHAC_THUA, Outcome.KHAC_PARTIAL, Outcome.KHAC_VU]:
+		if Elements.pair_is(pair, Elements.HOA, Elements.KIM): return "Molten"
+		if Elements.pair_is(pair, Elements.THO, Elements.THUY): return "Silt"
+		if Elements.pair_is(pair, Elements.MOC, Elements.THO): return "Root Break"
+		if Elements.pair_is(pair, Elements.KIM, Elements.MOC): return "Sever"
+		if Elements.pair_is(pair, Elements.THUY, Elements.HOA): return "Douse"
+	return ""

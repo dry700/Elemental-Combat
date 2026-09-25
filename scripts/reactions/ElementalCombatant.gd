@@ -121,7 +121,18 @@ func _ready() -> void:
 	status.status_cleared.connect(func(_element: StringName) -> void: _element_indicator.set_status(Elements.NONE, 0))
 	status.charge_changed.connect(func(charge: int) -> void: _element_indicator.set_status(status.element, charge))
 	disable_effect.expired.connect(func() -> void: disabled_expired.emit())
-	reversed_hit_taken.connect(_spawn_reversed_popup)
+	reversed_hit_taken.connect(func(): _spawn_text_popup("Reversed!", Color(1.0, 0.8, 0.2)))
+	reaction_triggered.connect(func(outcome: Reactions.Outcome, pair: Array[StringName]):
+		var r_name = Reactions.get_reaction_name(outcome, pair)
+		if r_name != "":
+			var color = Color(0.8, 0.8, 0.8) # Default color
+			if outcome == Reactions.Outcome.SINH_TIER_1 or outcome == Reactions.Outcome.SINH_TIER_2:
+				color = ElementIndicator.ELEMENT_COLOR.get(Elements.sinh_generated_element(pair), color)
+			elif outcome in [Reactions.Outcome.KHAC_FULL_CLEAR, Reactions.Outcome.KHAC_THUA, Reactions.Outcome.KHAC_PARTIAL, Reactions.Outcome.KHAC_VU]:
+				# The overcoming element is the first in the pair
+				color = ElementIndicator.ELEMENT_COLOR.get(pair[0], color)
+			_spawn_text_popup(r_name, color)
+	)
 
 	_dot_indicator = DotIndicator.new()
 	_dot_indicator.position = indicator_offset + Vector2(10, -6)
@@ -142,12 +153,15 @@ func _ready() -> void:
 		add_child(_debug_label)
 
 
-func _spawn_reversed_popup() -> void:
+func _spawn_text_popup(text: String, color: Color) -> void:
 	var lbl := Label.new()
-	lbl.text = "Reversed!"
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Gold-ish
+	lbl.text = text
+	lbl.add_theme_color_override("font_color", color)
 	lbl.add_theme_font_size_override("font_size", 12)
-	lbl.position = indicator_offset + Vector2(-25, -20)
+	# Slight random horizontal/vertical offset so multiple popups don't perfectly overlap
+	var offset_x = randf_range(-40, -10)
+	var offset_y = randf_range(-25, -15)
+	lbl.position = indicator_offset + Vector2(offset_x, offset_y)
 	add_child(lbl)
 	
 	var tween := create_tween()
