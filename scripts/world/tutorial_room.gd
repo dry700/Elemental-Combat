@@ -11,6 +11,7 @@ const STARTER_SECONDARY_WEAPON := "res://scripts/resources/weapons/training_hamm
 var _stage_index: int = 0
 var _completed: bool = false
 var _triggered_enemies: Array[Node] = []
+var _dummy_slots: Array[Dictionary] = []
 
 ## Above-the-player movement/jump prompt — tracks the player directly
 ## (same pattern DamageLabel already uses on TestDummy/PatrolDummy/Boss:
@@ -24,6 +25,16 @@ var _has_jumped: bool = false
 
 
 func _ready() -> void:
+	for child in get_children():
+		if child is EnemySpawnPoint:
+			_dummy_slots.append({
+				"scene": child.enemy_scene,
+				"stats": child.enemy_stats,
+				"element": child.starting_element,
+				"pos": child.global_position,
+				"node": null
+			})
+
 	super._ready()
 	_spawn_player_if_needed()
 	_setup_movement_prompt()
@@ -37,6 +48,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)  ## Preserve RoomController's own clear-check polling.
 	_update_movement_prompt()
+	
+	if not _completed:
+		for slot in _dummy_slots:
+			var n = slot.node
+			if n == null or not is_instance_valid(n) or n.is_queued_for_deletion():
+				_respawn_dummy(slot)
 
 
 func _spawn_player_if_needed() -> void:
@@ -61,6 +78,7 @@ func _setup_movement_prompt() -> void:
 	_player_prompt_label.position = Vector2(-40, -46)
 	_player_prompt_label.size = Vector2(80, 16)
 	_player_prompt_label.add_theme_font_size_override("font_size", 10)
+	_player_prompt_label.add_theme_font_override("font", load("res://assets/fonts/monogram.ttf"))
 	_player_prompt_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
 	_player_prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_player_prompt_label.add_theme_constant_override("outline_size", 3)
@@ -87,14 +105,37 @@ func _update_movement_prompt() -> void:
 
 func _connect_enemy_status_signals() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
+		for slot in _dummy_slots:
+			if enemy.global_position.distance_to(slot.pos) < 1.0:
+				slot.node = enemy
+				break
+		
 		var combatant := enemy.get("elemental") as ElementalCombatant
 		if combatant == null:
 			continue
-		if not combatant.status.status_applied.is_connected(_on_enemy_status_applied):
-			combatant.status.status_applied.connect(_on_enemy_status_applied.bind(enemy))
+		if not combatant.reaction_triggered.is_connected(_on_enemy_reaction_triggered):
+			combatant.reaction_triggered.connect(_on_enemy_reaction_triggered.bind(enemy))
 
 
-func _on_enemy_status_applied(_element: StringName, _charge: int, enemy: Node) -> void:
+func _respawn_dummy(slot: Dictionary) -> void:
+	var enemy := (slot.scene as PackedScene).instantiate()
+	if "enemy_stats" in enemy:
+		enemy.enemy_stats = slot.stats
+	if "starting_element" in enemy:
+		enemy.starting_element = slot.element
+	
+	# add_child directly to the room. Using call_deferred is safer here to avoid physics errors
+	# if respawning mid-physics frame, but add_child works if called from _process.
+	add_child(enemy)
+	enemy.global_position = slot.pos
+	slot.node = enemy
+	
+	var combatant := enemy.get("elemental") as ElementalCombatant
+	if combatant != null:
+		combatant.reaction_triggered.connect(_on_enemy_reaction_triggered.bind(enemy))
+
+
+func _on_enemy_reaction_triggered(_outcome: int, _pair: Array, enemy: Node) -> void:
 	if _completed or enemy == null or _triggered_enemies.has(enemy):
 		return
 	_triggered_enemies.append(enemy)
@@ -118,6 +159,9 @@ func _refresh_stage_prompt() -> void:
 			stage_label.text = "Tutorial complete"
 			helper_label.text = "The exit is unlocked — step through to start the run."
 
+
+func _check_cleared() -> void:
+	pass
 
 func _on_exit_entered() -> void:
 	SaveManager.mark_tutorial_completed()

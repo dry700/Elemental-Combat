@@ -37,6 +37,9 @@ signal bonus_damage_dealt(amount: float)
 ## polling elemental.is_disabled() at the right point in _physics_process.
 signal disabled_expired
 
+## Emitted when a hit results in an actual reaction (not NO_REACTION).
+signal reaction_triggered(outcome: Reactions.Outcome, reaction_pair: Array[StringName])
+
 ## Sever shreds this. How armor mitigates incoming damage isn't specified
 ## anywhere in Appendix A (which only covers the elemental system, not a
 ## general stat/defense model) — it exists purely so Sever has something
@@ -295,6 +298,9 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 		_icd_windows[icd_key] = ICD_DURATION
 
 	var result := Reactions.resolve(hit_data.element, hit_data.charge, status)
+	if result.outcome != Reactions.Outcome.NO_REACTION:
+		reaction_triggered.emit(result.outcome, result.reaction_pair)
+		
 	match result.outcome:
 		Reactions.Outcome.NO_REACTION:
 			status.apply(hit_data.element, hit_data.charge)

@@ -580,4 +580,3 @@ func _update_inspect_visuals(pickup: Node) -> void:
 	else:
 		# Centered on screen
 		_inspect_pane.position = Vector2(-PickupCard.CARD_WIDTH / 2.0, -PickupCard.CARD_HEIGHT / 2.0)
-
