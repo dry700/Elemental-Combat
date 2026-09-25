@@ -97,7 +97,7 @@ func _process(delta: float) -> void:
 	var target_opacity := 0.85
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player != null and global_position.distance_to(player.global_position) <= radius:
-		target_opacity = 0.98  # Increased opacity when player is inside, per request
+		target_opacity = 0.4  # Decreased opacity when player is inside so they can see themselves
 		
 	if opacity != target_opacity:
 		opacity = move_toward(opacity, target_opacity, delta * 0.5)
