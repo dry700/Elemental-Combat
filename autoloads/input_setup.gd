@@ -21,6 +21,8 @@ const ATTACK_SECONDARY_BUTTONS: Array[MouseButton] = [MOUSE_BUTTON_RIGHT]
 const SKILL_1_KEYS: Array[Key] = [KEY_Q]
 const SKILL_2_KEYS: Array[Key] = [KEY_E]
 const PICKUP_KEYS: Array[Key] = [KEY_F]
+const SWAP_KEYS: Array[Key] = [KEY_TAB]
+const INSPECT_KEYS: Array[Key] = [KEY_I]
 const EQUIP_SLOT_1_KEYS: Array[Key] = [KEY_1]
 const EQUIP_SLOT_2_KEYS: Array[Key] = [KEY_2]
 const MENU_UP_KEYS: Array[Key] = [KEY_W, KEY_UP]
@@ -41,6 +43,8 @@ func _init() -> void:
 	_register_action("skill_1", SKILL_1_KEYS)
 	_register_action("skill_2", SKILL_2_KEYS)
 	_register_action("pickup", PICKUP_KEYS)
+	_register_action("swap", SWAP_KEYS)
+	_register_action("inspect", INSPECT_KEYS)
 	_register_action("equip_slot_1", EQUIP_SLOT_1_KEYS)
 	_register_action("equip_slot_2", EQUIP_SLOT_2_KEYS)
 	_register_action("menu_up", MENU_UP_KEYS)

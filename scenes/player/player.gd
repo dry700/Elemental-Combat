@@ -49,6 +49,9 @@ signal died
 @export var weapon: WeaponStats
 @export var secondary_weapon: WeaponStats  ## DEBUG ONLY — for testing Sinh with two elements.
 
+var weapon_rune: RuneData = null
+var secondary_weapon_rune: RuneData = null
+
 @export var skill_1: SkillData
 @export var skill_2: SkillData
 
@@ -425,7 +428,8 @@ func _end_or_chain_attack() -> void:
 func _configure_hitbox_for_current_swing() -> void:
 	hitbox.damage = _active_weapon.damage * _combo_damage_multiplier()
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
-	var swing := _active_weapon.resolve_swing()
+	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune
+	var swing := _active_weapon.resolve_swing(active_rune)
 	hitbox.element = swing.element
 	hitbox.charge = swing.charge
 	hitbox.position.x = WEAPON_GRIP_OFFSET
@@ -524,10 +528,13 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 ## weapon slot — "one bonus, not two", so this returns on the first match
 ## rather than stacking. Base 2 matches A.4's Active Skill Charge row.
 func _resolve_skill_charge(skill: SkillData) -> int:
-	for w in [weapon, secondary_weapon]:
-		if w == null:
-			continue
-		if w.rune_element != &"none" and w.rune_element == w.innate_element and w.innate_element == skill.element:
+	if weapon != null:
+		var effective1 = weapon_rune.element if weapon_rune != null else weapon.rune_element
+		if effective1 != &"none" and effective1 == weapon.innate_element and weapon.innate_element == skill.element:
+			return 3
+	if secondary_weapon != null:
+		var effective2 = secondary_weapon_rune.element if secondary_weapon_rune != null else secondary_weapon.rune_element
+		if effective2 != &"none" and effective2 == secondary_weapon.innate_element and secondary_weapon.innate_element == skill.element:
 			return 3
 	return 2
 
@@ -556,18 +563,36 @@ func _find_skill_target(max_range: float) -> ElementalCombatant:
 ## happened to be _active_weapon, the current swing itself isn't
 ## interrupted — resolve_swing() already captured what it needed at
 ## swing-start; only the NEXT attack picks up the new weapon.
-func swap_weapon(is_primary: bool, new_weapon: WeaponStats) -> WeaponStats:
+func swap_weapon(is_primary: bool, new_weapon: WeaponStats, new_rune: RuneData = null) -> WeaponStats:
 	var previous: WeaponStats
 	if is_primary:
 		previous = weapon
 		weapon = new_weapon
+		weapon_rune = new_rune
 	else:
 		previous = secondary_weapon
 		secondary_weapon = new_weapon
+		secondary_weapon_rune = new_rune
 	if new_weapon != null:
 		SaveManager.record_weapon_unlock(new_weapon.resource_path)  ## Meta-progression (Section 6.2) — found once, unlocked forever.
 	weapon_changed.emit(is_primary, new_weapon)
 	return previous
+
+func get_weapon_rune(is_primary: bool) -> RuneData:
+	return weapon_rune if is_primary else secondary_weapon_rune
+
+func can_apply_rune(rune: RuneData, is_primary: bool) -> bool:
+	return (weapon != null) if is_primary else (secondary_weapon != null)
+
+func apply_rune(rune: RuneData, is_primary: bool) -> RuneData:
+	var old_rune: RuneData
+	if is_primary:
+		old_rune = weapon_rune
+		weapon_rune = rune
+	else:
+		old_rune = secondary_weapon_rune
+		secondary_weapon_rune = rune
+	return old_rune
 
 
 ## Called by SkillPickup on an F press — same swap-and-return-the-old-one
@@ -686,7 +711,9 @@ func to_save_state() -> Dictionary:
 		"max_health": max_health,
 		"armor": elemental.armor,
 		"weapon_path": weapon.resource_path if weapon != null else "",
+		"weapon_rune": weapon_rune.to_dict() if weapon_rune != null else null,
 		"secondary_weapon_path": secondary_weapon.resource_path if secondary_weapon != null else "",
+		"secondary_weapon_rune": secondary_weapon_rune.to_dict() if secondary_weapon_rune != null else null,
 		"skill_1_path": skill_1.resource_path if skill_1 != null else "",
 		"skill_2_path": skill_2.resource_path if skill_2 != null else "",
 	}
@@ -706,6 +733,17 @@ func apply_save_state(saved_state: Dictionary) -> void:
 	elemental.armor = saved_state.get("armor", elemental.armor)
 	_load_weapon_path(saved_state.get("weapon_path", ""), true)
 	_load_weapon_path(saved_state.get("secondary_weapon_path", ""), false)
+	
+	if saved_state.has("weapon_rune") and saved_state.weapon_rune != null:
+		weapon_rune = RuneData.from_dict(saved_state.weapon_rune)
+	else:
+		weapon_rune = null
+		
+	if saved_state.has("secondary_weapon_rune") and saved_state.secondary_weapon_rune != null:
+		secondary_weapon_rune = RuneData.from_dict(saved_state.secondary_weapon_rune)
+	else:
+		secondary_weapon_rune = null
+
 	_load_skill_path(saved_state.get("skill_1_path", ""), true)
 	_load_skill_path(saved_state.get("skill_2_path", ""), false)
 

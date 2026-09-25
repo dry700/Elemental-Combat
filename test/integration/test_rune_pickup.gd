@@ -1,6 +1,7 @@
 extends GutTest
 
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
+const RunePickup := preload("res://scripts/items/rune_pickup.gd")
 
 var player: Player
 var pickup: RunePickup

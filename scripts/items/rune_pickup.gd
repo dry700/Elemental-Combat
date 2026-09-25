@@ -62,6 +62,40 @@ func _on_body_exited(body: Node2D) -> void:
 		_player_in_range = null
 		queue_redraw()
 
+func _default_target_is_primary(player: Player) -> bool:
+	if rune == null or rune.target != RuneData.Target.WEAPON:
+		return true
+	if not player.can_apply_rune(rune, true):
+		return false
+	return true
+
+func _do_pickup(player: Player, is_primary: bool) -> void:
+	if rune == null or not player.can_apply_rune(rune, is_primary):
+		return
+	var previous: RuneData = player.weapon_rune if is_primary else player.secondary_weapon_rune
+	player.apply_rune(rune, is_primary)
+	if previous != null:
+		_spawn_dropped(previous, player.global_position)
+	queue_free()
+
+func _spawn_dropped(old_rune: RuneData, pos: Vector2) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var dropped := RunePickup.new()
+	dropped.set_rune(old_rune)
+	dropped.global_position = pos
+	scene_root.add_child(dropped)
+
+func _can_direct_equip(player: Player) -> bool:
+	if rune == null or rune.target != RuneData.Target.WEAPON:
+		return false
+	if player.weapon != null and player.weapon_rune == null:
+		return true
+	if player.secondary_weapon != null and player.secondary_weapon_rune == null:
+		return true
+	return false
+
 func _draw() -> void:
 	var target := RuneData.Target.WEAPON if rune == null else rune.target
 	var color := WEAPON_COLOR if target == RuneData.Target.WEAPON else SKILL_COLOR
@@ -73,4 +107,8 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, RADIUS, color)
 		draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 24, Color.BLACK, 1.5)
 	if _player_in_range != null:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -RADIUS - 6), "Press F", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)
+		var can_equip := _can_direct_equip(_player_in_range)
+		var txt := "F equip  Tab swap" if can_equip else "Tab swap"
+		var offset := -40 if can_equip else -30
+		var width := 80 if can_equip else 60
+		draw_string(ThemeDB.fallback_font, Vector2(offset, -RADIUS - 6), txt, HORIZONTAL_ALIGNMENT_CENTER, width, 12, PROMPT_COLOR)

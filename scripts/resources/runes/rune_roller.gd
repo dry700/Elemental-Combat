@@ -35,7 +35,7 @@ func roll(element: StringName, target: RuneData.Target, rng: RandomNumberGenerat
 	var count := 2 if candidates.size() > 1 and random.randf() < TWO_MODIFIER_CHANCE else 1
 	while not candidates.is_empty() and rune.modifiers.size() < count:
 		var index := random.randi_range(0, candidates.size() - 1)
-		var definition := candidates.pop_at(index)
+		var definition: RuneModifierDef = candidates.pop_at(index)
 		rune.modifiers.append({
 			"id": definition.id,
 			"value": _roll_value(definition, random),

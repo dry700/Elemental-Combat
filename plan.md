@@ -45,42 +45,43 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] Add rune pickup integration coverage.
 - [x] Run and observe the relevant GUT subset before starting P5b.
 
-## P5b — Player slot runes and persistence
+## P5b — Player slot runes and persistence (complete)
 
-- [ ] Add `weapon_rune` and `secondary_weapon_rune` to Player.
-- [ ] Implement `get_weapon_rune()`, `can_apply_rune()`, and `apply_rune()`.
-- [ ] Keep weapon Resources unduplicated; preserve their `resource_path` values.
-- [ ] Carry a weapon's rune through `swap_weapon()` and dropped `WeaponPickup` instances.
-- [ ] Resolve effective rune elements with the slot rune first and authored `rune_element` as fixture fallback.
-- [ ] Apply same-element Charge bonuses without changing raw Charge rules in the resolver.
-- [ ] Save rune dictionaries in the Player snapshot and tolerate missing or unknown modifier ids.
-- [ ] Drop the previous rune as a rolled pickup on chooser-only overwrite.
+- [x] Add `weapon_rune` and `secondary_weapon_rune` to Player.
+- [x] Implement `get_weapon_rune()`, `can_apply_rune()`, and `apply_rune()`.
+- [x] Keep weapon Resources unduplicated; preserve their `resource_path` values.
+- [x] Carry a weapon's rune through `swap_weapon()` and dropped `WeaponPickup` instances.
+- [x] Resolve effective rune elements with the slot rune first and authored `rune_element` as fixture fallback.
+- [x] Apply same-element Charge bonuses without changing raw Charge rules in the resolver.
+- [x] Save rune dictionaries in the Player snapshot and tolerate missing or unknown modifier ids.
+- [x] Drop the previous rune as a rolled pickup on chooser-only overwrite.
 
-### P5b verification gate
+### P5b verification gate (verified)
 
-- [ ] Pass rune application, weapon swap, skill-charge, and Player save/load tests.
-- [ ] Confirm old saves load with no rune when rune keys are missing.
-- [ ] Confirm unknown modifier ids warn and are skipped rather than crashing.
+- [x] Pass rune application, weapon swap, skill-charge, and Player save/load tests.
+- [x] Confirm old saves load with no rune when rune keys are missing.
+- [x] Confirm unknown modifier ids warn and are skipped rather than crashing.
+
 
 ## P5c — Pickup swap HUD, input, and font
 
 - [ ] Add `swap` on Tab and `inspect` on I through `InputSetup`.
 - [ ] Preserve existing pickup, menu, slot, and cancel bindings; do not add joypad events.
-- [ ] Make F equip directly only into the first empty valid slot; F never overwrites.
-- [ ] Make Tab open the chooser when at least one valid slot exists.
-- [ ] Hide duplicate or no-op weapon slots instead of dimming them.
-- [ ] Suppress prompts when no valid slot exists.
-- [ ] Add weapon, skill, and rune cards with glyphs, Charge pips, modifier tags, and plain DPS.
-- [ ] Add the rune inspect pane and two-step Esc behavior.
-- [ ] Keep the existing tested Hud method names and signatures stable.
-- [ ] Import Monogram and apply it through `hud_theme.tres` and the project default theme.
-- [ ] Remove new per-label font-size overrides.
+- [x] Make F equip directly only into the first empty valid slot; F never overwrites.
+- [x] Make Tab open the chooser when at least one valid slot exists.
+- [x] Hide duplicate or no-op weapon slots instead of dimming them.
+- [x] Suppress prompts when no valid slot exists.
+- [x] Add weapon, skill, and rune cards with glyphs, Charge pips, modifier tags, and plain DPS.
+- [x] Add the rune inspect pane and two-step Esc behavior.
+- [x] Keep the existing tested Hud method names and signatures stable.
+- [x] Import Monogram and apply it through `hud_theme.tres` and the project default theme.
+- [x] Remove new per-label font-size overrides.
 
 ### P5c verification gate
 
-- [ ] Pass existing pickup overlay and pickup prompt tests without changing their call signatures.
-- [ ] Add coverage for hidden slots, F never overwriting, rune inspection, and DPS display.
-- [ ] Confirm chooser keyboard flow manually at the project viewport size.
+- [x] Pass existing pickup overlay and pickup prompt tests without changing their call signatures.
+- [x] Add coverage for hidden slots, F never overwriting, rune inspection, and DPS display.
+- [x] Confirm chooser keyboard flow manually at the project viewport size.
 
 ## P5d — Charge and Vũ readability
 

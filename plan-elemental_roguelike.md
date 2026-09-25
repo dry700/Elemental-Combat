@@ -43,13 +43,13 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] Add unit and integration coverage.
 - [x] Observe the focused suite result before advancing to P5b.
 
-### P5b — Player slots and persistence
+### P5b — Player slots and persistence (complete)
 
-- [ ] Add primary and secondary weapon rune slots and the public rune APIs.
-- [ ] Carry runes through weapon swaps and dropped weapon pickups.
-- [ ] Resolve slot rune elements with authored weapon fallback for existing fixtures.
-- [ ] Save and restore rune dictionaries with missing-key and unknown-id tolerance.
-- [ ] Add overwrite pickup behavior and verify focused save/swap tests.
+- [x] Add primary and secondary weapon rune slots and the public rune APIs.
+- [x] Carry runes through weapon swaps and dropped weapon pickups.
+- [x] Resolve slot rune elements with authored weapon fallback for existing fixtures.
+- [x] Save and restore rune dictionaries with missing-key and unknown-id tolerance.
+- [x] Add overwrite pickup behavior and verify focused save/swap tests.
 
 ### P5c — HUD and input
 

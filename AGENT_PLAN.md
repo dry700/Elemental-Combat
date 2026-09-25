@@ -64,14 +64,14 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Wire drops: spirit, boss and room-clear baseline roll full runes (weapon target only).
 - [x] Verification: 198/198 tests passed, 374 assertions. RuneRoller refactored to instance-based (preload-safe); production callers updated to `RuneRoller.default().roll()`; boss test guarded against rune drop in test context.
 
-#### P5b — Player slot runes and persistence
-- [ ] Add `weapon_rune`/`secondary_weapon_rune`, `apply_rune`, `can_apply_rune`, `swap_weapon(..., new_rune)`.
-- [ ] `resolve_swing(rune)` and `_resolve_skill_charge()` read slot runes with authored-`rune_element` fallback.
-- [ ] Persist rune dicts in `to_save_state()`/`apply_save_state()`; tolerate missing keys and unknown modifier ids.
-- [ ] Weapons carry their rune when swapped or dropped; overwritten runes drop as pickups.
-- [ ] Verification: rune, swap, save/load and existing skill-charge tests pass.
+#### P5b — Player slot runes and persistence (complete)
+- [x] Add `weapon_rune`/`secondary_weapon_rune`, `apply_rune`, `can_apply_rune`, `swap_weapon(..., new_rune)`.
+- [x] `resolve_swing(rune)` and `_resolve_skill_charge()` read slot runes with authored-`rune_element` fallback.
+- [x] Persist rune dicts in `to_save_state()`/`apply_save_state()`; tolerate missing keys and unknown modifier ids.
+- [x] Weapons carry their rune when swapped or dropped; overwritten runes drop as pickups.
+- [x] Verification: rune, swap, save/load and existing skill-charge tests pass. (201/201 tests passed, 390 assertions)
 
-#### P5c — Pickup swap HUD, inputs and font
+#### P5c — Pickup swap HUD, inputs and font (current)
 - [ ] Add `swap` (Tab) and `inspect` (I) actions; keyboard only.
 - [ ] Rework Hud flow: F direct-equip into an empty slot (never overwrites), Tab chooser, hidden invalid slots, no-op suppression.
 - [ ] Weapon/skill/rune cards, badges (glyph + Charge pips, second badge for a different-element rune), plain DPS via `get_display_dps()`.
@@ -161,16 +161,16 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
   - Manual verification still required before moving to the next phase
 - Godot executable found at `E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe` (use this path for headless GUT runs).
 - P5a verification passed: 198/198 tests, 374 assertions, 0 failures, 1 warning (expected push_error in sprite_visual test). Synced: 2026-09-25.
-- RuneRoller refactored from static methods to instance-based with `RuneRoller.default()` singleton; production callers updated; test uses preloaded script to instantiate.
+- P5b implementation complete: added `weapon_rune` / `secondary_weapon_rune` to Player, updated `WeaponPickup` drop/swap logic, updated `resolve_swing` and `_resolve_skill_charge`, added save state support for runes. Verified 201/201 tests, 390 assertions. Synced: 2026-09-25.
 
 ## Current active scope
 
 - [x] P5a — rune data, roller, and pickup foundation (**verified**)
-- [ ] P5b — player slot runes and persistence (now unblocked)
-- [ ] P5c — pickup swap HUD, inputs, and Monogram theme (blocked by P5b)
+- [x] P5b — player slot runes and persistence (**verified**)
+- [ ] P5c — pickup swap HUD, inputs, and Monogram theme (now unblocked)
 - [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (blocked by P5c)
 - [ ] P6 onward — deferred until P5d verification is complete
 
 ## Immediate next action
 
-- Start P5b: add `weapon_rune` and `secondary_weapon_rune` to Player, implement `apply_rune()` / `can_apply_rune()`, carry runes through `swap_weapon()` and dropped `WeaponPickup` instances, and add save/load persistence with missing-key and unknown-id tolerance.
+- Start P5c: Implement pickup swap HUD, Tab/I inputs, and Monogram font application.

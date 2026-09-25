@@ -50,7 +50,12 @@ enum AttackStyle { SWING, THRUST }
 ## NEXT swing applies. Runtime-only, not exported/persisted — starts
 ## fresh each time the game runs. Same-element runes never touch this.
 var _next_swing_uses_innate: bool = true
-
+	
+func get_display_dps() -> float:
+	var total := 0.0
+	for i in combo_steps.size():
+		total += damage * pow(combo_damage_step_multiplier, i)
+	return total / (combo_steps.size() * attack_duration)
 
 ## Resolves the element and Charge THIS swing actually applies, per A.4's
 ## rune fork and the Base/+Rune Charge table:
@@ -62,20 +67,21 @@ var _next_swing_uses_innate: bool = true
 ## elements, deliberately weaker than cross-source ones) possible from a
 ## single weapon. Call once per attack (not per frame) — the alternation
 ## only advances when a swing actually happens.
-func resolve_swing() -> Dictionary:
+func resolve_swing(slot_rune: RuneData = null) -> Dictionary:
 	var base_charge := 2 if weight == Weight.HEAVY else 1
+	var effective_rune_element := slot_rune.element if slot_rune != null else rune_element
 
-	if rune_element == &"none" or rune_element == innate_element:
+	if effective_rune_element == &"none" or effective_rune_element == innate_element:
 		# No rune, or a same-element rune. Only the latter gets +1 Charge —
-		# rune_element == innate_element == "none" (both unset) falls
+		# effective_rune_element == innate_element == "none" (both unset) falls
 		# through here too, correctly adding nothing.
 		var charge := base_charge
-		if rune_element != &"none" and rune_element == innate_element:
+		if effective_rune_element != &"none" and effective_rune_element == innate_element:
 			charge += 1
 		return {"element": innate_element, "charge": charge}
 
 	# Different-element rune: alternate elements, no Charge bonus — "at
 	# the cost of that Charge bonus" (A.4).
-	var element := innate_element if _next_swing_uses_innate else rune_element
+	var element := innate_element if _next_swing_uses_innate else effective_rune_element
 	_next_swing_uses_innate = not _next_swing_uses_innate
 	return {"element": element, "charge": base_charge}

@@ -22,16 +22,24 @@ func test_to_save_state_captures_health_armor_and_equipped_paths():
 	player.skill_1 = load(SKILL_PATH)
 	player.current_health = 55.0
 	player.elemental.armor = 7.0
+	
+	var test_rune = RuneData.new(Elements.HOA, RuneData.Target.WEAPON)
+	test_rune.modifiers.append({"id": &"damage", "value": 1.5})
+	player.weapon_rune = test_rune
+	
 	var state := player.to_save_state()
 	assert_eq(state["current_health"], 55.0)
 	assert_eq(state["armor"], 7.0)
 	assert_eq(state["weapon_path"], WEAPON_PATH)
 	assert_eq(state["skill_1_path"], SKILL_PATH)
+	assert_not_null(state["weapon_rune"])
+	assert_eq(state["weapon_rune"]["element"], "hoa")
 
 func test_to_save_state_uses_empty_string_for_an_unset_slot():
 	var state := player.to_save_state()
 	assert_eq(state["secondary_weapon_path"], "")
 	assert_eq(state["skill_2_path"], "")
+	assert_null(state["secondary_weapon_rune"])
 
 func test_apply_save_state_restores_health_armor_and_weapon():
 	var state := {
@@ -39,7 +47,13 @@ func test_apply_save_state_restores_health_armor_and_weapon():
 		"max_health": 100.0,
 		"armor": 4.0,
 		"weapon_path": WEAPON_PATH,
+		"weapon_rune": {
+			"element": "thuy",
+			"target": RuneData.Target.WEAPON,
+			"modifiers": []
+		},
 		"secondary_weapon_path": "",
+		"secondary_weapon_rune": null,
 		"skill_1_path": "",
 		"skill_2_path": "",
 	}
@@ -47,6 +61,8 @@ func test_apply_save_state_restores_health_armor_and_weapon():
 	assert_eq(player.current_health, 33.0)
 	assert_eq(player.elemental.armor, 4.0)
 	assert_eq(player.weapon.resource_path, WEAPON_PATH)
+	assert_not_null(player.weapon_rune)
+	assert_eq(player.weapon_rune.element, Elements.THUY)
 
 func test_apply_save_state_leaves_a_slot_untouched_when_path_is_empty():
 	var original_weapon := player.weapon
@@ -58,6 +74,11 @@ func test_save_then_apply_round_trips_correctly():
 	player.weapon = load(WEAPON_PATH)
 	player.skill_2 = load(SKILL_PATH)
 	player.current_health = 21.0
+	
+	var test_rune = RuneData.new(Elements.HOA, RuneData.Target.WEAPON)
+	test_rune.modifiers.append({"id": &"reach", "value": 1.2})
+	player.weapon_rune = test_rune
+	
 	var state := player.to_save_state()
 
 	var fresh_scene: PackedScene = load(PLAYER_SCENE_PATH)
@@ -68,3 +89,7 @@ func test_save_then_apply_round_trips_correctly():
 	assert_eq(fresh_player.current_health, 21.0)
 	assert_eq(fresh_player.weapon.resource_path, WEAPON_PATH)
 	assert_eq(fresh_player.skill_2.resource_path, SKILL_PATH)
+	assert_not_null(fresh_player.weapon_rune)
+	assert_eq(fresh_player.weapon_rune.element, Elements.HOA)
+	assert_eq(fresh_player.weapon_rune.modifiers.size(), 1)
+	assert_eq(fresh_player.weapon_rune.modifiers[0].id, &"reach")

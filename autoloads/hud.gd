@@ -78,19 +78,23 @@ var _boss: Boss
 ## near, if any — see _refresh_active_pickups().
 var _active_weapon_pickup: WeaponPickup = null
 var _active_skill_pickup: SkillPickup = null
+var _active_rune_pickup: Node = null
 
 ## --- Pickup selection overlay state ---
 var _overlay_panel: Control
 var _overlay_title: Label
-var _overlay_slot_1_box: ColorRect
-var _overlay_slot_1_label: Label
-var _overlay_slot_2_box: ColorRect
-var _overlay_slot_2_label: Label
+var _overlay_card_1: PickupCard
+var _overlay_card_2: PickupCard
+
+enum OverlayKind { WEAPON, SKILL, RUNE }
 
 var _overlay_active: bool = false
-var _overlay_pickup: Node = null  ## A WeaponPickup or SkillPickup — no shared base class, same duck-typing convention as elsewhere in this project.
-var _overlay_is_weapon: bool = true
+var _overlay_pickup: Node = null  ## A WeaponPickup, SkillPickup, or RunePickup
+var _overlay_kind: OverlayKind = OverlayKind.WEAPON
 var _overlay_selected_primary: bool = true
+
+var _inspect_pane: PickupCard
+var _inspect_active: bool = false
 
 
 func _ready() -> void:
@@ -199,7 +203,7 @@ func _build_boss_panel(root: Control) -> void:
 ## methods (keyboard nav+confirm, numeric shortcuts, click).
 func _build_overlay(root: Control) -> void:
 	var panel_width := 300.0 * UI_SCALE
-	var panel_height := 150.0 * UI_SCALE
+	var panel_height := 180.0 * UI_SCALE
 	_overlay_panel = Control.new()
 	_overlay_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## The panel itself passes clicks through; only its option Controls below opt in.
 	_overlay_panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -221,14 +225,12 @@ func _build_overlay(root: Control) -> void:
 	var options_container := VBoxContainer.new()
 	options_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	options_container.position = Vector2((panel_width - 260 * UI_SCALE) / 2.0, 38 * UI_SCALE)
-	options_container.size = Vector2(260 * UI_SCALE, 84 * UI_SCALE)
+	options_container.size = Vector2(260 * UI_SCALE, 104 * UI_SCALE)
 	options_container.add_theme_constant_override("separation", int(8 * UI_SCALE))
 	_overlay_panel.add_child(options_container)
 
-	var opt1 := _make_overlay_option(options_container, true)
-	_overlay_slot_1_box = opt1[0]; _overlay_slot_1_label = opt1[1]
-	var opt2 := _make_overlay_option(options_container, false)
-	_overlay_slot_2_box = opt2[0]; _overlay_slot_2_label = opt2[1]
+	_overlay_card_1 = _make_overlay_option(options_container, true)
+	_overlay_card_2 = _make_overlay_option(options_container, false)
 
 	var hint := Label.new()
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -239,6 +241,12 @@ func _build_overlay(root: Control) -> void:
 	hint.add_theme_font_size_override("font_size", 9)
 	hint.add_theme_font_size_override("font_size", maxi(5, int(9 * UI_SCALE)))
 	_overlay_panel.add_child(hint)
+	
+	_inspect_pane = PickupCard.new()
+	_inspect_pane.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_inspect_pane.set_anchors_preset(Control.PRESET_CENTER)
+	_inspect_pane.visible = false
+	root.add_child(_inspect_pane)
 
 
 ## Builds one clickable slot option. mouse_filter = STOP is deliberate
@@ -247,24 +255,12 @@ func _build_overlay(root: Control) -> void:
 ## (attack is bound to mouse buttons); only these two options, only
 ## while the overlay itself is visible (Godot skips input on hidden
 ## Controls entirely), actually need to receive one.
-func _make_overlay_option(parent: Control, is_primary: bool) -> Array:
-	var option := Control.new()
-	option.custom_minimum_size = Vector2(260, 36) * UI_SCALE
+func _make_overlay_option(parent: Control, is_primary: bool) -> PickupCard:
+	var option := PickupCard.new()
 	option.mouse_filter = Control.MOUSE_FILTER_STOP
 	option.gui_input.connect(_on_overlay_option_gui_input.bind(is_primary))
 	parent.add_child(option)
-
-	var box := _make_rect(option, SLOT_EMPTY_COLOR, Vector2.ZERO, option.custom_minimum_size)
-
-	var label := Label.new()
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", int(13 * UI_SCALE))
-	option.add_child(label)
-
-	return [box, label]
+	return option
 
 
 func _make_rect(parent: Control, color: Color, pos: Vector2, size: Vector2) -> ColorRect:
@@ -323,6 +319,11 @@ func _refresh_active_pickups() -> void:
 		var pickup := node as SkillPickup
 		if pickup != null and pickup.get("_player_in_range") != null:
 			_active_skill_pickup = pickup
+			break
+	_active_rune_pickup = null
+	for node in get_tree().get_nodes_in_group("rune_pickups"):
+		if node.get("_player_in_range") != null:
+			_active_rune_pickup = node
 			break
 
 
@@ -393,11 +394,41 @@ func is_overlay_active() -> bool:
 ## true.
 func _handle_pickup_overlay_input() -> void:
 	if not _overlay_active:
-		if Input.is_action_just_pressed("pickup") and _can_open_overlay():
-			if _active_weapon_pickup != null:
-				_open_overlay(_active_weapon_pickup, true)
-			elif _active_skill_pickup != null:
-				_open_overlay(_active_skill_pickup, false)
+		if _can_open_overlay():
+			var pickup = _active_weapon_pickup if _active_weapon_pickup != null else (_active_skill_pickup if _active_skill_pickup != null else _active_rune_pickup)
+			if pickup != null:
+				var is_weapon = pickup == _active_weapon_pickup
+				if Input.is_action_just_pressed("inspect"):
+					if pickup is RunePickup:
+						_inspect_active = not _inspect_active
+						_update_inspect_visuals(pickup)
+					return
+				elif Input.is_action_just_pressed("pickup"):
+					if is_weapon:
+						if _player.weapon == null:
+							pickup.call("_do_pickup", _player, true)
+						elif _player.secondary_weapon == null:
+							pickup.call("_do_pickup", _player, false)
+					elif pickup == _active_skill_pickup:
+						if _player.skill_1 == null:
+							pickup.call("_do_pickup", _player, true)
+						elif _player.skill_2 == null:
+							pickup.call("_do_pickup", _player, false)
+					else:
+						var rpickup := pickup as RunePickup
+						if rpickup != null and rpickup._can_direct_equip(_player):
+							if _player.weapon != null and _player.weapon_rune == null:
+								rpickup._do_pickup(_player, true)
+							elif _player.secondary_weapon != null and _player.secondary_weapon_rune == null:
+								rpickup._do_pickup(_player, false)
+				elif Input.is_action_just_pressed("swap"):
+					_inspect_active = false
+					_update_inspect_visuals(null)
+					_open_overlay(pickup, is_weapon)
+					
+		if _inspect_active and (_active_rune_pickup == null or _active_rune_pickup.get("_player_in_range") == null):
+			_inspect_active = false
+			_update_inspect_visuals(null)
 		return
 
 	# Auto-close if the target was freed from elsewhere, or the player
@@ -406,12 +437,24 @@ func _handle_pickup_overlay_input() -> void:
 		_close_overlay()
 		return
 
-	if Input.is_action_just_pressed("menu_cancel"):
-		_close_overlay()
+	if Input.is_action_just_pressed("inspect"):
+		if _overlay_kind == OverlayKind.RUNE:
+			_inspect_active = not _inspect_active
+			_update_inspect_visuals(_overlay_pickup)
+		return
+
+	if Input.is_action_just_pressed("menu_cancel") or Input.is_action_just_pressed("swap"):
+		if _inspect_active and Input.is_action_just_pressed("menu_cancel"):
+			_inspect_active = false
+			_update_inspect_visuals(_overlay_pickup)
+		else:
+			_close_overlay()
 	elif Input.is_action_just_pressed("menu_up"):
 		_overlay_selected_primary = true
+		_update_inspect_visuals(_overlay_pickup)
 	elif Input.is_action_just_pressed("menu_down"):
 		_overlay_selected_primary = false
+		_update_inspect_visuals(_overlay_pickup)
 	elif Input.is_action_just_pressed("equip_slot_1"):
 		_overlay_selected_primary = true
 		_confirm_overlay_selection()
@@ -450,7 +493,10 @@ func _on_overlay_option_gui_input(event: InputEvent, is_primary: bool) -> void:
 func _open_overlay(pickup: Node, is_weapon: bool) -> void:
 	_overlay_active = true
 	_overlay_pickup = pickup
-	_overlay_is_weapon = is_weapon
+	if pickup is RunePickup:
+		_overlay_kind = OverlayKind.RUNE
+	else:
+		_overlay_kind = OverlayKind.WEAPON if is_weapon else OverlayKind.SKILL
 	_overlay_selected_primary = pickup.call("_default_target_is_primary", _player) if _player != null else true
 
 
@@ -473,27 +519,65 @@ func _update_overlay_visuals() -> void:
 		return
 
 	var item_name := "Item"
-	if _overlay_is_weapon:
-		var weapon: WeaponStats = _overlay_pickup.get("weapon")
-		if weapon != null:
-			item_name = weapon.weapon_name
-	else:
+	if _overlay_kind == OverlayKind.WEAPON or _overlay_kind == OverlayKind.RUNE:
+		if _overlay_kind == OverlayKind.WEAPON:
+			var weapon: WeaponStats = _overlay_pickup.get("weapon")
+			if weapon != null:
+				item_name = weapon.weapon_name
+		else:
+			var rune: RuneData = _overlay_pickup.get("rune")
+			if rune != null:
+				item_name = "Rune of %s" % rune.element
+		
+		if _player != null:
+			_overlay_card_1.set_weapon(_player.weapon, _player.weapon_rune, true)
+			_overlay_card_2.set_weapon(_player.secondary_weapon, _player.secondary_weapon_rune, true)
+	elif _overlay_kind == OverlayKind.SKILL:
 		var skill: SkillData = _overlay_pickup.get("skill")
 		if skill != null:
 			item_name = skill.skill_name
+			
+		if _player != null:
+			_overlay_card_1.set_skill(_player.skill_1, _player.weapon_rune)
+			_overlay_card_2.set_skill(_player.skill_2, _player.secondary_weapon_rune)
+
 	_overlay_title.text = "Equip %s into:" % item_name
+	_overlay_card_1.set_selected(_overlay_selected_primary)
+	_overlay_card_2.set_selected(not _overlay_selected_primary)
+	
+	if _inspect_active:
+		_update_inspect_visuals(_overlay_pickup)
 
-	_overlay_slot_1_label.text = "1 \u2014 %s" % _current_slot_name(true)
-	_overlay_slot_2_label.text = "2 \u2014 %s" % _current_slot_name(false)
-	_overlay_slot_1_box.color = OVERLAY_SELECTED_COLOR if _overlay_selected_primary else SLOT_EMPTY_COLOR
-	_overlay_slot_2_box.color = OVERLAY_SELECTED_COLOR if not _overlay_selected_primary else SLOT_EMPTY_COLOR
+func _update_inspect_visuals(pickup: Node) -> void:
+	if not _inspect_active or pickup == null or not (pickup is RunePickup):
+		_inspect_pane.visible = false
+		return
+	
+	var rune_pickup := pickup as RunePickup
+	if rune_pickup.rune == null:
+		return
+		
+	_inspect_pane.visible = true
+	
+	var target_w: WeaponStats = null
+	var target_r: RuneData = null
+	
+	if _player != null:
+		if _overlay_active:
+			target_w = _player.weapon if _overlay_selected_primary else _player.secondary_weapon
+			target_r = _player.weapon_rune if _overlay_selected_primary else _player.secondary_weapon_rune
+		else:
+			target_w = _player.weapon
+			target_r = _player.weapon_rune
+			
+	_inspect_pane.set_rune_inspect(rune_pickup.rune, target_w, target_r)
+	
+	if _overlay_active:
+		# Dock under the overlay panel
+		var panel_width := 300.0 * UI_SCALE
+		var panel_height := 180.0 * UI_SCALE
+		_inspect_pane.position = Vector2(-PickupCard.CARD_WIDTH / 2.0, panel_height / 2.0 + 8.0)
+	else:
+		# Centered on screen
+		_inspect_pane.position = Vector2(-PickupCard.CARD_WIDTH / 2.0, -PickupCard.CARD_HEIGHT / 2.0)
 
-
-func _current_slot_name(is_primary: bool) -> String:
-	if _player == null:
-		return "Empty"
-	if _overlay_is_weapon:
-		var w: WeaponStats = _player.weapon if is_primary else _player.secondary_weapon
-		return w.weapon_name if w != null else "Empty"
-	var s: SkillData = _player.skill_1 if is_primary else _player.skill_2
-	return s.skill_name if s != null else "Empty"

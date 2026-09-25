@@ -26,6 +26,8 @@ enum Slot { PRIMARY, SECONDARY }
 ## different option.
 @export var slot: Slot = Slot.PRIMARY
 
+var rune: RuneData = null
+
 const HALF_SIZE: float = 5.0
 const PRIMARY_COLOR := Color(0.85, 0.75, 0.3)
 const SECONDARY_COLOR := Color(0.4, 0.75, 0.85)
@@ -83,9 +85,10 @@ func _default_target_is_primary(player: Player) -> bool:
 ## never called directly from this script's own input handling anymore.
 func _do_pickup(player: Player, is_primary: bool) -> void:
 	_picked_up = true
-	var previous := player.swap_weapon(is_primary, weapon)
+	var old_rune := player.get_weapon_rune(is_primary)
+	var previous := player.swap_weapon(is_primary, weapon, rune)
 	if previous != null:
-		_spawn_dropped(previous, is_primary)
+		_spawn_dropped(previous, is_primary, old_rune)
 	queue_free()
 
 
@@ -93,12 +96,13 @@ func _do_pickup(player: Player, is_primary: bool) -> void:
 ## slot it just vacated, so its own "1"/"2" visual and its own default
 ## stay accurate to where it actually came from, not to this pickup's
 ## original `slot`.
-func _spawn_dropped(old_weapon: WeaponStats, from_slot_primary: bool) -> void:
+func _spawn_dropped(old_weapon: WeaponStats, from_slot_primary: bool, old_rune: RuneData = null) -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
 		return
 	var dropped := WeaponPickup.new()
 	dropped.weapon = old_weapon
+	dropped.rune = old_rune
 	dropped.slot = Slot.PRIMARY if from_slot_primary else Slot.SECONDARY
 	dropped.global_position = global_position
 	scene_root.add_child(dropped)
@@ -112,4 +116,8 @@ func _draw() -> void:
 	var label := "1" if slot == Slot.PRIMARY else "2"
 	draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
 	if _player_in_range != null:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -s - 6), "Press F", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)
+		var can_equip := _player_in_range.weapon == null or _player_in_range.secondary_weapon == null
+		var txt := "F equip  Tab swap" if can_equip else "Tab swap"
+		var offset := -40 if can_equip else -30
+		var width := 80 if can_equip else 60
+		draw_string(ThemeDB.fallback_font, Vector2(offset, -s - 6), txt, HORIZONTAL_ALIGNMENT_CENTER, width, 12, PROMPT_COLOR)
