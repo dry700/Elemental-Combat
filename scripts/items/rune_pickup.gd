@@ -79,7 +79,7 @@ func _do_pickup(player: Player, is_primary: bool) -> void:
 	queue_free()
 
 func _spawn_dropped(old_rune: RuneData, pos: Vector2) -> void:
-	var scene_root := get_tree().current_scene
+	var scene_root := get_parent()
 	if scene_root == null:
 		return
 	var dropped := RunePickup.new()

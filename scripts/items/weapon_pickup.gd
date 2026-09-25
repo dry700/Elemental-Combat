@@ -97,7 +97,7 @@ func _do_pickup(player: Player, is_primary: bool) -> void:
 ## stay accurate to where it actually came from, not to this pickup's
 ## original `slot`.
 func _spawn_dropped(old_weapon: WeaponStats, from_slot_primary: bool, old_rune: RuneData = null) -> void:
-	var scene_root := get_tree().current_scene
+	var scene_root := get_parent()
 	if scene_root == null:
 		return
 	var dropped := WeaponPickup.new()

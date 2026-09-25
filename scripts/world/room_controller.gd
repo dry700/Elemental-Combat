@@ -64,7 +64,7 @@ func _check_cleared() -> void:
 			var baseline := RunePickup.new()
 			baseline.set_rune(RuneRoller.default().roll(Elements.ALL[randi() % Elements.ALL.size()], RuneData.Target.WEAPON))
 			baseline.global_position = exit.global_position + Vector2(-15.0, 0.0)
-			get_tree().current_scene.add_child.call_deferred(baseline)
+			add_child.call_deferred(baseline)
 		cleared.emit()
 		set_process(false)
 

@@ -1,11 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dvlbol0rtd16r"]
 
-[ext_resource type="Script" path="res://scripts/world/tutorial_room.gd" id="1_tutorial"]
-[ext_resource type="Script" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
-[ext_resource type="Script" path="res://scripts/world/room_exit.gd" id="3_exit"]
+[ext_resource type="Script" uid="uid://b5jqbl0ul0ccj" path="res://scripts/world/tutorial_room.gd" id="1_tutorial"]
+[ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
+[ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="4_dummy"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="6_brawler"]
+[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
+[ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="6_brawler"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(350, 20)
@@ -13,72 +13,60 @@ size = Vector2(350, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
 size = Vector2(10, 30)
 
-[node name="TutorialRoom" type="Node2D"]
+[node name="TutorialRoom" type="Node2D" unique_id=974801751]
 script = ExtResource("1_tutorial")
-exit = NodePath("Exit")
 
-[node name="Ground" type="StaticBody2D" parent="."]
+[node name="Ground" type="StaticBody2D" parent="." unique_id=1295388573]
 position = Vector2(0, 110)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground" unique_id=109652381]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="Visual" type="Polygon2D" parent="Ground"]
+[node name="Visual" type="Polygon2D" parent="Ground" unique_id=1334146613]
 color = Color(0.25, 0.25, 0.3, 1)
 polygon = PackedVector2Array(-175, -10, 175, -10, 175, 10, -175, 10)
 
-[node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
+[node name="PlayerSpawn" type="Node2D" parent="." unique_id=693090264 groups=["player_spawn"]]
 position = Vector2(-150, 90)
 
-[node name="DummySpawnOne" type="Node2D" parent="."]
+[node name="DummySpawnOne" type="Node2D" parent="." unique_id=714720588]
 position = Vector2(-40, 93)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_dummy")
 enemy_stats = ExtResource("5_stats")
 starting_element = &"kim"
 
-[node name="DummySpawnTwo" type="Node2D" parent="."]
+[node name="DummySpawnTwo" type="Node2D" parent="." unique_id=639493362]
 position = Vector2(55, 93)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_dummy")
 enemy_stats = ExtResource("6_brawler")
 starting_element = &"kim"
 
-[node name="Exit" type="Area2D" parent="."]
+[node name="Exit" type="Area2D" parent="." unique_id=1358792442]
 position = Vector2(160, 95)
 collision_layer = 0
 script = ExtResource("3_exit")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit" unique_id=1698281485]
 shape = SubResource("RectangleShape2D_exit")
 
-[node name="Visual" type="Polygon2D" parent="Exit"]
+[node name="Visual" type="Polygon2D" parent="Exit" unique_id=2135856469]
 polygon = PackedVector2Array(-5, -15, 5, -15, 5, 15, -5, 15)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1336845775]
 
-[node name="StageLabel" type="Label" parent="CanvasLayer"]
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
+[node name="StageLabel" type="Label" parent="CanvasLayer" unique_id=810179361]
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 220.0
 offset_bottom = 32.0
 text = "Stage 1 — Learn the reaction"
 
-[node name="HelperLabel" type="Label" parent="CanvasLayer"]
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
+[node name="HelperLabel" type="Label" parent="CanvasLayer" unique_id=548611140]
 offset_left = 16.0
 offset_top = 32.0
 offset_right = 540.0
 offset_bottom = 52.0
 text = "Land a basic reaction on the dummy to unlock the next step."
-

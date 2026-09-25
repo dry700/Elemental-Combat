@@ -72,7 +72,7 @@ func _do_pickup(player: Player, is_primary: bool) -> void:
 
 
 func _spawn_dropped(old_skill: SkillData, from_slot_primary: bool) -> void:
-	var scene_root := get_tree().current_scene
+	var scene_root := get_parent()
 	if scene_root == null:
 		return
 	var dropped := SkillPickup.new()
