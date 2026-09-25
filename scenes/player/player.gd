@@ -295,10 +295,19 @@ func _try_start_dodge() -> void:
 func _process_dodge(delta: float) -> void:
 	_dodge_timer += delta
 	var in_iframe_window := _dodge_timer >= dodge_iframe_window.x and _dodge_timer <= dodge_iframe_window.y
+	var was_in_iframe := hurtbox.invulnerable
 	hurtbox.invulnerable = in_iframe_window
 
+	if in_iframe_window and not was_in_iframe:
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if is_instance_valid(enemy) and enemy is CollisionObject2D:
+				add_collision_exception_with(enemy)
+	elif not in_iframe_window and was_in_iframe:
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if is_instance_valid(enemy) and enemy is CollisionObject2D:
+				remove_collision_exception_with(enemy)
+
 	if _dodge_timer >= dodge_duration:
-		hurtbox.invulnerable = false
 		state = State.IDLE if is_on_floor() else State.FALL
 
 
