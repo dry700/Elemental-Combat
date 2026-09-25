@@ -69,6 +69,7 @@ func _populate_column(vbox: VBoxContainer, pool: Array[String], on_selected: Cal
 				
 		btn.text = res_name
 		btn.toggle_mode = true
+		btn.set_meta("path", path)
 		btn.pressed.connect(func():
 			# Untoggle other buttons in the same column
 			for child in vbox.get_children():
@@ -86,6 +87,11 @@ func _validate() -> void:
 	var ready_to_start := true
 	var error_msg := ""
 	
+	_update_column_disabled(weapon_1_vbox, _selected_weapon_2)
+	_update_column_disabled(weapon_2_vbox, _selected_weapon_1)
+	_update_column_disabled(skill_1_vbox, _selected_skill_2)
+	_update_column_disabled(skill_2_vbox, _selected_skill_1)
+	
 	if _selected_weapon_1 == "" or _selected_weapon_2 == "" or _selected_skill_1 == "" or _selected_skill_2 == "":
 		ready_to_start = false
 		error_msg = "Please select an option for all 4 slots."
@@ -98,6 +104,12 @@ func _validate() -> void:
 		
 	start_button.disabled = not ready_to_start
 	error_label.text = error_msg
+
+func _update_column_disabled(vbox: VBoxContainer, selected_in_other: String) -> void:
+	for child in vbox.get_children():
+		if child is Button and child.has_meta("path"):
+			var path = child.get_meta("path")
+			child.disabled = (path == selected_in_other and selected_in_other != "")
 
 
 func _on_start_pressed() -> void:
