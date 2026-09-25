@@ -42,6 +42,33 @@ var _player: Player = null
 var _elapsed_sec: float = 0.0
 var _run_active: bool = false
 
+var pending_weapon_path: String = ""
+var pending_secondary_weapon_path: String = ""
+var pending_skill_1_path: String = ""
+var pending_skill_2_path: String = ""
+
+func consume_pending_loadout(player: Player) -> void:
+	if pending_weapon_path != "":
+		var w := load(pending_weapon_path) as WeaponStats
+		if w != null:
+			player.weapon = w
+	if pending_secondary_weapon_path != "":
+		var w2 := load(pending_secondary_weapon_path) as WeaponStats
+		if w2 != null:
+			player.secondary_weapon = w2
+	if pending_skill_1_path != "":
+		var s1 := load(pending_skill_1_path) as SkillData
+		if s1 != null:
+			player.skill_1 = s1
+	if pending_skill_2_path != "":
+		var s2 := load(pending_skill_2_path) as SkillData
+		if s2 != null:
+			player.skill_2 = s2
+	pending_weapon_path = ""
+	pending_secondary_weapon_path = ""
+	pending_skill_1_path = ""
+	pending_skill_2_path = ""
+
 
 func start_run(room_container: Node, player: Player) -> void:
 	_room_container = room_container

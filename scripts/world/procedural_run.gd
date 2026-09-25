@@ -5,4 +5,5 @@ extends Node2D
 
 
 func _ready() -> void:
+	RunManager.consume_pending_loadout(player)
 	RunManager.start_run(room_container, player)
