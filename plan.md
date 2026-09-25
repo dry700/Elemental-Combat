@@ -12,7 +12,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P5a — Rune data, roller, and pickup foundation
 - [x] P5b — Player slot runes and persistence
 - [x] P5c — Pickup swap HUD, inputs, and Monogram theme
-- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
+- [x] P5d — Charge pips, Vũ readability, and playtest checkpoint
 - [x] P6 — Loadout selection and pending-loadout consumption
 - [x] P7 — Run summary and finish-run transitions
 - [x] P8 — Main menu and startup scene
@@ -20,7 +20,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Final verification and documentation closeout
 
-## Current scope: P5d
+## Current scope: P9
 
 ### Rune data
 
@@ -85,18 +85,18 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## P5d — Charge and Vũ readability
 
-- [ ] Add `ElementalStatus.set_charge()` and `charge_changed`.
-- [ ] Route Khắc partial charge reduction through the setter.
-- [ ] Add Charge pips to `ElementIndicator` for values 1–3.
-- [ ] Add `reversed_hit_taken` and the “Reversed!” popup.
-- [ ] Reach Charge 3 in a playtest and assess Thừa/Vũ readability and feel.
-- [ ] Record the result and any balance/design decision before closing P5.
+- [x] Add `ElementalStatus.set_charge()` and `charge_changed`.
+- [x] Route Khắc partial charge reduction through the setter.
+- [x] Add Charge pips to `ElementIndicator` for values 1–3.
+- [x] Add `reversed_hit_taken` and the “Reversed!” popup.
+- [x] Reach Charge 3 in a playtest and assess Thừa/Vũ readability and feel.
+- [x] Record the result and any balance/design decision before closing P5.
 
 ### P5d verification gate
 
-- [ ] Pass status, Charge, and Vũ reaction tests.
-- [ ] Complete the manual Charge 3 playtest checkpoint.
-- [ ] Update Design.md only if the playtest changes the architecture contract.
+- [x] Pass status, Charge, and Vũ reaction tests.
+- [x] Complete the manual Charge 3 playtest checkpoint.
+- [x] Update Design.md only if the playtest changes the architecture contract.
 
 ## Deferred phases
 

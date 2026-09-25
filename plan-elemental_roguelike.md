@@ -12,7 +12,7 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P5a — Rune data, roller, and pickup foundation
 - [x] P5b — Player slot runes and persistence
 - [x] P5c — Pickup swap HUD, inputs, and Monogram theme
-- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint
+- [x] P5d — Charge pips, Vũ readability, and playtest checkpoint
 - [x] P6 — Loadout selection and pending-loadout consumption
 - [x] P7 — Run summary and finish-run transitions
 - [x] P8 — Main menu and startup scene update
@@ -62,10 +62,10 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 ### P5d — Charge and Vũ readability
 
-- [ ] Add charge setter/signal and route Khắc partial reduction through it.
-- [ ] Render one to three Charge pips in `ElementIndicator`.
-- [ ] Add the reversed-hit signal and “Reversed!” popup.
-- [ ] Complete the Charge 3 playtest checkpoint and record any resulting decision.
+- [x] Add charge setter/signal and route Khắc partial reduction through it.
+- [x] Render one to three Charge pips in `ElementIndicator`.
+- [x] Add the reversed-hit signal and “Reversed!” popup.
+- [x] Complete the Charge 3 playtest checkpoint and record any resulting decision.
 
 ## Progress and verification
 

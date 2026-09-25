@@ -5,6 +5,7 @@ extends RefCounted
 
 signal status_applied(element: StringName, charge: int)
 signal status_cleared(element: StringName)
+signal charge_changed(new_charge: int)
 
 const DECAY_SECONDS: float = 5.0  ## Mid-point of A.3's "~4-6s" window.
 
@@ -18,6 +19,12 @@ func tick(delta: float) -> void:
 	_decay_timer -= delta
 	if _decay_timer <= 0.0:
 		clear()
+
+func set_charge(new_charge: int) -> void:
+	if element == Elements.NONE:
+		return
+	charge = new_charge
+	charge_changed.emit(charge)
 
 ## Refresh only — never stacks (A.3's explicit fix). p_duration lets a
 ## specific reaction extend the decay window past the default 5s (used by

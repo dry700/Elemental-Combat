@@ -26,7 +26,7 @@ static func roll_spirit_element(own_element: StringName) -> StringName:
 func set_rune(value: RuneData) -> void:
 	rune = value
 	if _indicator != null:
-		_indicator.set_element(rune.element if rune != null else Elements.NONE)
+		_indicator.set_status(rune.element if rune != null else Elements.NONE)
 	queue_redraw()
 
 func _ready() -> void:
@@ -43,7 +43,7 @@ func _ready() -> void:
 	_indicator.scale = Vector2.ONE * 2.0
 	add_child(_indicator)
 	if rune != null:
-		_indicator.set_element(rune.element)
+		_indicator.set_status(rune.element)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	queue_redraw()

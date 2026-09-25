@@ -79,12 +79,12 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Import Monogram, add `hud_theme.tres`, set `gui/theme/custom_font`, remove per-label size overrides.
 - [x] Verification: `test_hud_pickup_overlay.gd` / `test_hud_pickup_prompts.gd` pass unchanged; new tests for hidden slots, F-never-overwrites, DPS.
 
-#### P5d — Charge and Vũ readability
-- [ ] Add `ElementalStatus.set_charge()`/`charge_changed`; route `KHAC_PARTIAL` through it.
-- [ ] `ElementIndicator.set_status()` with 1–3 Charge pips.
-- [ ] `reversed_hit_taken` signal and "Reversed!" popup.
-- [ ] Playtest checkpoint: with Charge 3 reachable, judge Thừa/Vũ feel and revisit the same-element overwrite decision (§4.2).
-- [ ] Verification: status and Vũ reaction tests pass.
+#### P5d — Charge and Vũ readability (complete)
+- [x] Add `ElementalStatus.set_charge()`/`charge_changed`; route `KHAC_PARTIAL` through it.
+- [x] `ElementIndicator.set_status()` with 1–3 Charge pips.
+- [x] `reversed_hit_taken` signal and "Reversed!" popup.
+- [x] Playtest checkpoint: with Charge 3 reachable, judge Thừa/Vũ feel and revisit the same-element overwrite decision (§4.2).
+- [x] Verification: status and Vũ reaction tests pass.
 
 ### P6 — Loadout selection
 - [x] Add the loadout selection scene and controller.
@@ -163,18 +163,19 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P5a verification passed: 198/198 tests, 374 assertions, 0 failures, 1 warning (expected push_error in sprite_visual test). Synced: 2026-09-25.
 - P5b implementation complete: added `weapon_rune` / `secondary_weapon_rune` to Player, updated `WeaponPickup` drop/swap logic, updated `resolve_swing` and `_resolve_skill_charge`, added save state support for runes. Verified 201/201 tests, 390 assertions. Synced: 2026-09-25.
 - P5c implementation complete: Added Tab swap, I inspect, cards, badges, and Monogram font. Verified unchanged pickup overlay tests.
+- P5d implementation complete: Added `ElementalStatus.set_charge()`, Charge pips visually in `ElementIndicator`, and "Reversed!" popup text in `ElementalCombatant`.
 - P6, P7, P8 implementation complete: Added Loadout Select, Run Summary, and Main Menu. Connected the UI routing.
 - Architectural Note (P6/P8 testing): Enemy and room clear drops must be added directly to the active room (`get_parent()`) rather than `get_tree().current_scene`, so they properly despawn on room transitions via `queue_free()`.
 
 ## Current active scope
 
 - [x] P5c — pickup swap HUD, inputs, and Monogram theme (**verified**)
-- [ ] P5d — Charge pips, Vũ readability, and playtest checkpoint (now unblocked)
+- [x] P5d — Charge pips, Vũ readability, and playtest checkpoint (**verified**)
 - [x] P6 — loadout selection (**verified**)
 - [x] P7 — run summary (**verified**)
 - [x] P8 — main menu (**verified**)
-- [ ] P9 — room pool expansion (deferred until P5d verification is complete)
+- [ ] P9 — room pool expansion (now unblocked)
 
 ## Immediate next action
 
-- Start P5d: Implement Charge pips, Vũ readability improvements, and complete playtest checkpoint.
+- Start P9: Add the extra room templates and integrate them into the room pool.

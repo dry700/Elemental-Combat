@@ -32,18 +32,18 @@ const ELEMENT_COLOR := {
 }
 
 var _element: StringName = Elements.NONE
-
+var _charge: int = 0
 
 func _ready() -> void:
 	visible = false
 
-
 ## Refresh-only, same spirit as ElementalStatus itself — redraws only on
 ## an actual change, not every call.
-func set_element(element: StringName) -> void:
-	if element == _element:
+func set_status(element: StringName, charge: int = 1) -> void:
+	if element == _element and charge == _charge:
 		return
 	_element = element
+	_charge = charge
 	visible = element != Elements.NONE
 	queue_redraw()
 
@@ -64,6 +64,15 @@ func _draw() -> void:
 			_draw_zigzag(color)
 		Elements.THO:
 			_draw_dot_grid(color)
+			
+	# Draw charge pips below the indicator (up to 3)
+	var pips_to_draw = clampi(_charge, 0, 3)
+	var pip_radius = 1.0
+	var pip_y = BG_RADIUS + 2.0
+	var pip_spacing = 3.0
+	var start_x = -(pips_to_draw - 1) * pip_spacing * 0.5
+	for i in range(pips_to_draw):
+		draw_circle(Vector2(start_x + i * pip_spacing, pip_y), pip_radius, color)
 
 
 func _draw_diamond(color: Color) -> void:

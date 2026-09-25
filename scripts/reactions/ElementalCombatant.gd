@@ -40,6 +40,9 @@ signal disabled_expired
 ## Emitted when a hit results in an actual reaction (not NO_REACTION).
 signal reaction_triggered(outcome: Reactions.Outcome, reaction_pair: Array[StringName])
 
+## Emitted when a hit triggers KHAC_VU (Reversed).
+signal reversed_hit_taken
+
 ## Sever shreds this. How armor mitigates incoming damage isn't specified
 ## anywhere in Appendix A (which only covers the elemental system, not a
 ## general stat/defense model) — it exists purely so Sever has something
@@ -114,9 +117,11 @@ func _ready() -> void:
 	_element_indicator = ElementIndicator.new()
 	_element_indicator.position = indicator_offset
 	add_child(_element_indicator)
-	status.status_applied.connect(func(element: StringName, _charge: int) -> void: _element_indicator.set_element(element))
-	status.status_cleared.connect(func(_element: StringName) -> void: _element_indicator.set_element(Elements.NONE))
+	status.status_applied.connect(func(element: StringName, charge: int) -> void: _element_indicator.set_status(element, charge))
+	status.status_cleared.connect(func(_element: StringName) -> void: _element_indicator.set_status(Elements.NONE, 0))
+	status.charge_changed.connect(func(charge: int) -> void: _element_indicator.set_status(status.element, charge))
 	disable_effect.expired.connect(func() -> void: disabled_expired.emit())
+	reversed_hit_taken.connect(_spawn_reversed_popup)
 
 	_dot_indicator = DotIndicator.new()
 	_dot_indicator.position = indicator_offset + Vector2(10, -6)
@@ -136,6 +141,19 @@ func _ready() -> void:
 		_debug_label.visible = false
 		add_child(_debug_label)
 
+
+func _spawn_reversed_popup() -> void:
+	var lbl := Label.new()
+	lbl.text = "Reversed!"
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Gold-ish
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.position = indicator_offset + Vector2(-25, -20)
+	add_child(lbl)
+	
+	var tween := create_tween()
+	tween.tween_property(lbl, "position:y", lbl.position.y - 30.0, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(lbl, "modulate:a", 0.0, 1.0).set_ease(Tween.EASE_IN).set_delay(0.5)
+	tween.tween_callback(lbl.queue_free)
 
 ## Call once per physics frame from the owner. Ticks status/slow/disable
 ## and returns any DoT damage due this frame.
@@ -422,12 +440,15 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				_spawn_steam_cloud(thua, hit_data.source)
 		Reactions.Outcome.KHAC_PARTIAL:
 			print("Khắc partial: ", result.reaction_pair)
-			status.charge = maxi(status.charge - hit_data.charge, 0)
-			if status.charge <= 0:
+			var new_charge := maxi(status.charge - hit_data.charge, 0)
+			if new_charge <= 0:
 				status.clear()
+			else:
+				status.set_charge(new_charge)
 			apply_graze()
 		Reactions.Outcome.KHAC_VU:
 			print("Vũ! Reversed — attacker takes the graze instead.")
+			reversed_hit_taken.emit()
 			# Target's status is deliberately untouched — no status.apply()
 			# or .clear() here, per A.3 ("the target's status is
 			# untouched, and the attacker instead takes the ... graze").
