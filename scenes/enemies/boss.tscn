@@ -4,6 +4,12 @@
 [ext_resource type="Script" uid="uid://ws5ijxpff2d5" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
 [ext_resource type="Script" uid="uid://dt3h3wgas43p5" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.15, 0.15, 0.15, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill"]
+bg_color = Color(0.85, 0.2, 0.2, 1)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_boss"]
 size = Vector2(16, 24)
 
@@ -31,10 +37,12 @@ script = ExtResource("2_hurtbox")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox" unique_id=2080768499]
 shape = SubResource("RectangleShape2D_boss")
 
-[node name="DamageLabel" type="Label" parent="." unique_id=1645317170]
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=1645317170]
 offset_left = -15.0
-offset_top = -34.0
+offset_top = -28.0
 offset_right = 15.0
 offset_bottom = -24.0
-text = "0"
-horizontal_alignment = 1
+theme_override_styles/background = SubResource("StyleBoxFlat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fill")
+value = 100.0
+show_percentage = false

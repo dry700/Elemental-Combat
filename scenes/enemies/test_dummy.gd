@@ -22,7 +22,8 @@ const SPECIAL_TELEGRAPH_TINT: Color = Color(1.0, 0.5, 0.9)
 @onready var hurtbox: Hurtbox = $Hurtbox
 @onready var visual_polygon: Polygon2D = $PlaceholderVisual
 @onready var visual: SpriteVisual = $SpriteVisual
-@onready var damage_label: Label = $DamageLabel
+const DamagePopup = preload("res://scripts/ui/damage_number.gd")
+@onready var health_bar: ProgressBar = $HealthBar
 
 var elemental := ElementalCombatant.new()
 var combat_ai: EnemyCombatAI
@@ -51,12 +52,15 @@ func _ready() -> void:
 	if enemy_stats != null:
 		elemental.cc_resistance.configure(enemy_stats.cc_free_hits, enemy_stats.cc_window_seconds)
 		_current_health = enemy_stats.max_health
+		health_bar.value = 100.0
 		add_to_group("enemies")  ## RoomController polls this group to know when a room is cleared.
 		combat_ai = EnemyCombatAI.new()
 		combat_ai.stats = enemy_stats
 		combat_ai.can_chase = false
 		add_child(combat_ai)
 		combat_ai.telegraph_started.connect(_on_telegraph_started)
+	else:
+		health_bar.visible = false
 
 
 func _physics_process(delta: float) -> void:
@@ -100,10 +104,11 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 func _apply_damage(amount: float) -> void:
 	var mitigated := elemental.mitigate_damage(amount)
 	_total_damage_taken += mitigated
-	damage_label.text = str(int(_total_damage_taken))
+	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
 	_flash()
 	if enemy_stats != null and not _is_dead:
 		_current_health -= mitigated
+		health_bar.value = (_current_health / enemy_stats.max_health) * 100.0
 		if _current_health <= 0.0:
 			_die()
 
@@ -115,7 +120,7 @@ func _die() -> void:
 	_is_dead = true
 	hurtbox.invulnerable = true  ## Existing flag on Hurtbox — no new mechanism needed.
 	visual.set_tint(DEATH_TINT)
-	damage_label.text = "X"
+	health_bar.visible = false
 	if enemy_stats != null and enemy_stats.element != Elements.NONE:
 		var rune := RunePickup.new()
 		rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(enemy_stats.element), RuneData.Target.WEAPON))

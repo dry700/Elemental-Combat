@@ -27,6 +27,8 @@ signal skill_changed(is_primary: bool, new_skill: SkillData)
 ## when the player's health hit zero).
 signal died
 
+const DamagePopup = preload("res://scripts/ui/damage_number.gd")
+
 ## --- Movement tuning (starting points) ---
 @export var max_speed: float = 110.0
 @export var acceleration: float = 900.0
@@ -683,7 +685,9 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 func _apply_damage(amount: float) -> void:
 	if _is_dead:
 		return
-	current_health = maxf(current_health - elemental.mitigate_damage(amount), 0.0)
+	var mitigated = elemental.mitigate_damage(amount)
+	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
+	current_health = maxf(current_health - mitigated, 0.0)
 	if current_health <= 0.0:
 		_die()
 

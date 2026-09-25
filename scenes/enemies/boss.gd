@@ -30,7 +30,8 @@ const DECEL_WHEN_NOT_CHASING: float = 400.0
 @onready var hurtbox: Hurtbox = $Hurtbox
 @onready var visual_polygon: Polygon2D = $PlaceholderVisual
 @onready var visual: SpriteVisual = $SpriteVisual
-@onready var damage_label: Label = $DamageLabel
+const DamagePopup = preload("res://scripts/ui/damage_number.gd")
+@onready var health_bar: ProgressBar = $HealthBar
 
 var elemental := ElementalCombatant.new()
 var combat_ai: EnemyCombatAI
@@ -58,6 +59,7 @@ func _ready() -> void:
 	elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge if "innate_charge" in boss_stats else 1)
 
 	_current_health = boss_stats.max_health
+	health_bar.value = 100.0
 	add_to_group("enemies")  ## Same group RoomController waits on for a normal enemy.
 	add_to_group("bosses")   ## Lets Hud find this specifically, separate from ordinary enemies.
 	combat_ai = EnemyCombatAI.new()
@@ -122,12 +124,14 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 func _apply_damage(amount: float) -> void:
 	var mitigated := elemental.mitigate_damage(amount)
 	_total_damage_taken += mitigated
-	damage_label.text = str(int(_total_damage_taken))
+	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
 	_flash()
 	if _is_dead:
 		return
 
 	_current_health -= mitigated
+	if boss_stats != null:
+		health_bar.value = (_current_health / boss_stats.max_health) * 100.0
 	if _current_health <= 0.0:
 		_die()
 		return
@@ -169,7 +173,7 @@ func _die() -> void:
 	_is_dead = true
 	hurtbox.invulnerable = true
 	visual.set_tint(DEATH_TINT)
-	damage_label.text = "X"
+	health_bar.visible = false
 	if boss_stats != null and boss_stats.element != Elements.NONE:
 		var rune := RunePickup.new()
 		rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))
