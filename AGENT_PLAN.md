@@ -110,7 +110,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 ### P9 — Procedural Map Generation & Room System Overhaul
 - [x] Design and implement 4x3 chunk-based map generation algorithm (`MapGenerator`).
 - [x] Replace static room templates with `procedural_room.tscn`.
-- [x] Create 6 unique chunks (climb, drop, crossroad, hallway, start, end) using programmatic tools.
+- [x] Create 9 unique chunk templates (including _v2 variants for climb, hallway, and crossroads) using programmatic tools.
 - [x] Implement OneWayPlatform on Physics Layer 3 with 24px vertical jump spacing.
 - [x] Fix player and enemy collision masks to interact properly with Layer 3 platforms.
 - [x] Fix secondary weapon combo buffer dropping inputs.
