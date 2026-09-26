@@ -1742,62 +1742,31 @@ finishing/abandoning back to it).
 
 ## 19. Room Chunk Authoring & Generation
 
-Normal rooms are not authored as one indivisible layout. They are built
-from a library of pre-built chunks, such as entry, traversal, combat,
-reward, connector, and exit chunks. Each chunk carries tilemap layout data
-and its associated gameplay markers. A room-building algorithm selects
-compatible chunks, places their tilemap data into a complete room,
-validates the required spawn/exit contract, and then hands the generated
-room to `RoomController`.
-The algorithm must preserve a reachable player path from the room entry to
-the exit and must keep chunk boundaries compatible; the exact chunk schema,
-placement constraints, and random seed policy are implementation decisions
-for the room-generation phase. The tileset asset and tile definitions are
-intentionally deferred until they are provided.
+Normal rooms are assembled dynamically by MapGenerator, overriding the old static room models. procedural_room.tscn is the only active normal room scene; it acts as a shell that delegates its layout construction to MapGenerator before spawning enemies and placing the player.
 
-The boss room remains a dedicated authored encounter unless its own chunk
-composition is explicitly designed later. The first-time tutorial remains
-a dedicated authored scene and is not generated from normal-room chunks.
+### 19.1 Map Generator Algorithm
+The room-building algorithm operates on a fixed 4x3 grid of "chunks".
+- **Pathing:** It carves a critical path from a random start cell to a random end cell using a recursive backtracker, plus a 50% chance to carve a single short dead-end branch. This ensures a highly linear, focused traversal without overwhelming labyrinths.
+- **Bitmasking:** Each cell computes a door_mask based on its neighbors (UP=1, RIGHT=2, DOWN=4, LEFT=8).
+- **Chunk Instantiation:** The algorithm searches scenes/world/chunks/ for a pre-built chunk matching the exact door mask. If found, it instantiates it. 
+- **Procedural Fallback:** If no chunk template matches the mask, MapGenerator dynamically builds a fallback chunk from scratch using a TileMapLayer. 
 
-### 19.1 Room Template Checklist
+### 19.2 Chunk Architecture
+- **Dimensions:** Every chunk is strictly 416x320 pixels (26x20 tiles, at 16x16px per tile). Wall thickness is 2 tiles. Side doors span y=13 to y=18. Top/bottom doors span x=10 to x=16.
+- **Composition:** Hand-authored chunks are defined programmatically via scripts/editor_tools/build_chunks.gd. This macro spits out templates like chunk_climb.tscn and chunk_drop.tscn, pre-populated with EnemySpawnPoint markers.
+- **Vertical Navigation:** 
+  - To respect the player's 31.5px jump apex (Gravity 700, Jump Velocity -210), all vertical traversal utilizes OneWayPlatform nodes (instead of solid tiles). 
+  - Platforms are spaced at exactly 1.5 tiles (24 pixels) vertically, guaranteeing the player can single-jump between them.
+  - Platforms sit on Physics Layer 3 (ONE_WAY_PLATFORM_LAYER), which both the Player and Enemies (via collision_mask = 5) collide with. The Player drops through them seamlessly via the drop_down action ('S' key).
 
-Every generated normal room must satisfy the same runtime contract as the
-existing `room_a/b/c` templates:
-shared shape exactly:
+### 19.3 Room Controller Integration
+ProceduralRoomController extends the original RoomController. When added to the tree:
+1. It runs MapGenerator.generate().
+2. It dynamically pins PlayerSpawn and RoomExit to the floor level (y = CHUNK_HEIGHT - 32 - 15) of the Start and End chunks respectively.
+3. It recursively harvests all EnemySpawnPoint markers baked inside the chunks.
+4. It initializes the standard room lifecycle, ensuring kill-tracking and loot drops work identically to the old static rooms.
 
-- Root `Node2D`, `RoomController` script attached, and a tilemap node using
-  the provided tileset for generated geometry.
-- `exit` NodePath set
-  (or left for `RoomController._ready()`'s own `find_child("Exit")`
-  fallback to recover it).
-- `Ground` (`StaticBody2D`), width 350–450px — the range every existing
-  room already falls in; nothing enforces this, it's a convention to
-  hold to for pacing consistency, not a hard constraint.
-- Exactly one `PlayerSpawn` marker, in the `"player_spawn"` group.
-- 1+ `EnemySpawnPoint` nodes, each with `enemy_scene` +
-  `enemy_stats` set (`starting_element`/`starting_charge` only if the
-  enemy should start already carrying a status — most shouldn't).
-- One `Exit` (`RoomExit` script), `locked = true` by default —
-  `RoomController._ready()` unlocks it automatically if the room has
-  no spawn points, otherwise `RoomController` handles unlocking on
-  clear.
+### 19.4 The Old Rooms
 
-Nothing here is new architecture — this section exists purely so the
-next room built follows the pattern without re-deriving it from reading
-three existing `.tscn` files side by side.
-
-### 19.2 Selection & Scope
-
-- **`ROOMS_PER_RUN` stays 3.** The loop pacing is unchanged: the builder
-  generates three normal rooms, then `RunManager` appends the dedicated
-  boss room.
-- **Chunk selection belongs to the room builder.** It replaces choosing
-  one complete normal-room scene from `ROOM_SCENE_PATHS`. The builder may
-  use uniform random selection and no immediate chunk repeats, but its
-  compatibility rules must run before a chunk is placed.
-- **The current `room_a/b/c` scenes remain compatibility fixtures** while
-  the chunk library and builder are developed. Once the builder is active,
-  `RunManager` should request three generated normal rooms rather than
-  treating those complete scenes as the long-term content model.
-- Cross-run memory and deterministic seed persistence remain future work
-  unless the save contract is expanded deliberately.
+oom_a.tscn through 
+oom_e.tscn have been formally retired from RunManager's active pool. They remain in the codebase strictly as historical test fixtures or references for spacing.
