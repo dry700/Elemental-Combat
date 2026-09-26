@@ -1,5 +1,5 @@
 # Elemental Roguelike — Session Context File
-*Generated: 2026-09-25 · Load this at the start of any new session to restore full project context.*
+*Generated: 2026-09-26 · Load this at the start of any new session to restore full project context.*
 
 ---
 
@@ -55,15 +55,15 @@
 | P2 — Player death delay (0.6 s fade before `died.emit()`) | Complete | Verified |
 | P3 — CCResistance + CC handling | Complete | Verified |
 | P4 — Tutorial room + SaveManager.tutorial_completed | Complete | Verified |
-| **P5a — RuneData, RuneRoller, RunePickup, drop wiring** | Complete | **198/198 tests, 374 assertions** |
-| **P5b — Player slot runes + persistence** | Complete | **201/201 tests, 390 assertions** |
-| P5c — Pickup swap HUD, Tab/I inputs, Monogram font | **NEXT** | — |
-| P5d — Charge pips, Vu readability, playtest checkpoint | Blocked by P5c | — |
-| P6 — Loadout selection | Deferred | — |
-| P7 — Run summary + finish-run transitions | Deferred | — |
-| P8 — Main menu + startup scene | Deferred | — |
-| P9 — Room pool expansion (6 rooms; currently 4) | Deferred | — |
-| P10a-f — Qi + UpgradeManager + specializations | Deferred | — |
+| P5a — RuneData, RuneRoller, RunePickup, drop wiring | Complete | Verified |
+| P5b — Player slot runes + persistence | Complete | Verified |
+| P5c — Pickup swap HUD, Tab/I inputs, Monogram font | Complete | Verified |
+| P5d — Charge pips, Vu readability, playtest checkpoint | Complete | Verified |
+| P6 — Loadout selection | Complete | Verified |
+| P7 — Run summary + finish-run transitions | Complete | Verified |
+| P8 — Main menu + startup scene | Complete | Verified |
+| **P9 — Room pool expansion (6 rooms; currently 4)** | Complete | Verified |
+| **P10a-f — Qi + UpgradeManager + specializations** | **NEXT** | — |
 | P11 — Final verification + closeout docs | Deferred | — |
 
 ---
@@ -112,47 +112,26 @@
 
 ---
 
-## P5b — Next Phase Checklist
+## P9 — Next Phase Checklist
 
-> Gate: P5a verified. Start P5b.
+> Gate: P8 verified. Start P9.
 
 ### Files to create/modify
-- `scenes/player/player.gd` — add rune slots + API
-- `scripts/items/weapon_pickup.gd` — carry rune through pickup swap
-- `test/unit/test_player_save_state.gd` — extend for rune round-trip cases
-- New: `test/unit/test_player_rune_slots.gd` (or extend existing weapon swap tests)
+- `scenes/world/rooms/` — add 2 new room templates (e.g. `room_d.tscn`, `room_e.tscn`)
+- `autoloads/run_manager.gd` — update pool if necessary (or verify it auto-detects)
+- `test/unit/test_run_manager_sequence.gd` — update tests if room counts or expectations change
+- `scripts/world/room_controller.gd` — verify drops or mechanics in new rooms
 
-### Required Player API (from Design.md + plan.md)
+### Key tasks for P9 (from AGENT_PLAN.md)
+- Add the extra room templates and integrate them into the room pool.
+- Validate each room against the room controller contract.
+- Ensure spirit stats keep innate element and drop element aligned.
+- Verify room generation still respects the intended layout and spawn rules.
 
-```gdscript
-# New vars on Player:
-var weapon_rune: RuneData = null
-var secondary_weapon_rune: RuneData = null
-
-# New methods:
-func get_weapon_rune(is_primary: bool) -> RuneData
-func can_apply_rune(rune: RuneData, is_primary: bool) -> bool
-func apply_rune(rune: RuneData, is_primary: bool) -> RuneData  # returns old rune if any
-
-# Modified:
-func swap_weapon(new_weapon: WeaponStats, is_primary: bool, new_rune: RuneData = null) -> WeaponStats
-```
-
-### Key constraints for P5b
-- Weapon `Resource` objects are **never duplicated** — preserve `resource_path`
-- A rune **travels with its weapon** on `swap_weapon()` and dropped `WeaponPickup` instances
-- Resolve effective rune element: slot rune first, then authored `weapon.rune_element` as fallback
-- Same-element Charge bonus only — modifiers act at the effect layer, never mutate raw Charge in resolver
-- Save rune as dict via `rune.to_dict()` in `to_save_state()`; restore via `RuneData.from_dict()` in `apply_save_state()`
-- **Missing rune keys in older saves** → `null` rune (no crash)
-- **Unknown modifier ids** → `push_warning` and skip (no crash)
-- Overwrite (chooser-only): drop old rune as a new `RunePickup` near player position
-
-### Verification gate for P5b
-- Pass: rune apply, weapon swap carry, skill-charge, and Player save/load tests
-- Pass: existing `test_player_weapon_swap.gd`, `test_player_save_state.gd` (must not regress)
-- Confirm: old saves load with `null` rune when rune keys are absent
-- Confirm: unknown modifier ids warn and skip rather than crash
+### Verification gate for P9
+- Pass: existing `test_run_manager_sequence.gd` and any new generation tests
+- Confirm: Rooms load and instantiate correctly without errors
+- Confirm: Drops from spirits in new rooms function as expected
 
 ---
 
@@ -271,8 +250,8 @@ elemental_roguelike/
 
 | Milestone | Tests | Assertions | Failures |
 |-----------|-------|------------|---------|
-| P4 complete | 191 | 359 | 0 |
 | P5a complete | 198 | 374 | 0 |
+| P8 complete | 201 | 390 | 0 |
 
 1 persistent expected warning: `SpriteVisual has no fallback_polygon` in `test_sprite_visual.gd` — this is an `[ExpectedError]` block and is correct.
 

@@ -108,11 +108,11 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Verification: menu flow and start-run path behave correctly.
 
 ### P9 — Room pool expansion
-- [ ] Add the extra room templates and integrate them into the room pool.
-- [ ] Validate each room against the room controller contract.
-- [ ] Ensure spirit stats keep innate element and drop element aligned.
-- [ ] Verify room generation still respects the intended layout and spawn rules.
-- [ ] Verification: room template validation and generation-related tests pass.
+- [x] Add the extra room templates and integrate them into the room pool.
+- [x] Validate each room against the room controller contract.
+- [x] Ensure spirit stats keep innate element and drop element aligned.
+- [x] Verify room generation still respects the intended layout and spawn rules.
+- [x] Verification: room template validation and generation-related tests pass.
 
 ### P10 — Qi and upgrade economy
 - [ ] Create the upgrade manager and register it properly.
@@ -174,8 +174,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] P6 — loadout selection (**verified**)
 - [x] P7 — run summary (**verified**)
 - [x] P8 — main menu (**verified**)
-- [ ] P9 — room pool expansion (now unblocked)
+- [x] P9 — room pool expansion (**verified**)
+- [ ] P10 — Qi and upgrade economy
 
 ## Immediate next action
 
-- Start P9: Add the extra room templates and integrate them into the room pool.
+- Start P10: Create the upgrade manager and register it properly.

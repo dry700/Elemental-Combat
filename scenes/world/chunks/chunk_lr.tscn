@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://cphf1obl1x4dw"]
+
+[ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="1_spawn"]
+[ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="2_enemy"]
+[ext_resource type="Resource" uid="uid://d38c6srgn8rcd" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="3_stats"]
+
+[sub_resource type="GDScript" id="GDScript_1"]
+script/source = "extends Node2D
+
+@export var door_mask: int = 10 # Left (8) + Right (2)
+"
+
+[node name="ChunkLR" type="Node2D" unique_id=923798062]
+script = SubResource("GDScript_1")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=9758505]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=264936757]
+polygon = PackedVector2Array(0, 0, 800, 0, 800, 40, 0, 40)
+
+[node name="CollisionPolygon2D2" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=143634993]
+polygon = PackedVector2Array(0, 560, 800, 560, 800, 600, 0, 600)
+
+[node name="CollisionPolygon2D3" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1976552076]
+polygon = PackedVector2Array(0, 40, 40, 40, 40, 240, 0, 240)
+
+[node name="CollisionPolygon2D4" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=354355053]
+polygon = PackedVector2Array(0, 360, 40, 360, 40, 560, 0, 560)
+
+[node name="CollisionPolygon2D5" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1220300872]
+polygon = PackedVector2Array(760, 40, 800, 40, 800, 240, 760, 240)
+
+[node name="CollisionPolygon2D6" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1901808429]
+polygon = PackedVector2Array(760, 360, 800, 360, 800, 560, 760, 560)
+
+[node name="Polygon2D" type="Polygon2D" parent="." unique_id=808887905]
+color = Color(0.2, 0.3, 0.4, 1)
+polygon = PackedVector2Array(0, 0, 800, 0, 800, 40, 760, 40, 760, 240, 800, 240, 800, 360, 760, 360, 760, 560, 800, 560, 800, 600, 0, 600, 0, 560, 40, 560, 40, 360, 0, 360, 0, 240, 40, 240, 40, 40, 0, 40)
+
+[node name="EnemySpawnPoint" type="Node2D" parent="." unique_id=1270692758]
+position = Vector2(400, 560)
+script = ExtResource("1_spawn")
+enemy_scene = ExtResource("2_enemy")
+enemy_stats = ExtResource("3_stats")

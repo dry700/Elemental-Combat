@@ -36,6 +36,10 @@ window/stretch/mode="viewport"
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
+[gui]
+
+theme/custom_font="res://assets/fonts/monogram.ttf"
+
 [physics]
 
 2d/default_gravity=700
@@ -43,7 +47,3 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
-
-[gui]
-
-theme/custom_font="res://assets/fonts/monogram.ttf"

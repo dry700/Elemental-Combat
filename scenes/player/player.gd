@@ -231,8 +231,10 @@ func _update_timers(delta: float) -> void:
 	# State.ATTACK specifically (unlike jump's unconditional capture)
 	# because _try_start_attack() already handles a press landing in any
 	# OTHER state directly — capturing it again here too would be redundant.
-	if state == State.ATTACK and Input.is_action_just_pressed("attack"):
-		_attack_buffered = true
+	if state == State.ATTACK:
+		var expected_action = "attack_secondary" if (_active_weapon != null and _active_weapon == secondary_weapon) else "attack"
+		if Input.is_action_just_pressed(expected_action):
+			_attack_buffered = true
 
 	var dot_damage := elemental.tick(delta)
 	if dot_damage > 0.0:
@@ -315,7 +317,7 @@ func _try_start_attack() -> void:
 	if Input.is_action_just_pressed("attack"):
 		_start_attack(weapon)
 	elif Input.is_action_just_pressed("attack_secondary") and secondary_weapon != null:
-		_start_attack(secondary_weapon, true)
+		_start_attack(secondary_weapon)
 
 
 ## Starts a fresh swing, OR — same weapon, still inside its post-swing

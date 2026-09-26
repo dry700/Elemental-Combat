@@ -89,8 +89,4 @@ func _draw() -> void:
 	var label := "Q" if slot == Slot.PRIMARY else "E"
 	draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
 	if _player_in_range != null:
-		var can_equip := _player_in_range.skill_1 == null or _player_in_range.skill_2 == null
-		var txt := "F equip  Tab swap" if can_equip else "Tab swap"
-		var offset := -40 if can_equip else -30
-		var width := 80 if can_equip else 60
-		draw_string(ThemeDB.fallback_font, Vector2(offset, -RADIUS - 6), txt, HORIZONTAL_ALIGNMENT_CENTER, width, 12, PROMPT_COLOR)
+		draw_string(ThemeDB.fallback_font, Vector2(-30, -RADIUS - 6), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)

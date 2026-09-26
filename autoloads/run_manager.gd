@@ -19,9 +19,7 @@ extends Node
 ## for exactly this reason.
 
 const ROOM_SCENE_PATHS: Array[String] = [
-	"res://scenes/world/rooms/room_a.tscn",
-	"res://scenes/world/rooms/room_b.tscn",
-	"res://scenes/world/rooms/room_c.tscn",
+	"res://scenes/world/rooms/procedural_room.tscn",
 ]
 
 ## Always the LAST room of a run — never part of the random pool above,

@@ -107,8 +107,4 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, RADIUS, color)
 		draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 24, Color.BLACK, 1.5)
 	if _player_in_range != null:
-		var can_equip := _can_direct_equip(_player_in_range)
-		var txt := "F equip  Tab swap" if can_equip else "Tab swap"
-		var offset := -40 if can_equip else -30
-		var width := 80 if can_equip else 60
-		draw_string(ThemeDB.fallback_font, Vector2(offset, -RADIUS - 6), txt, HORIZONTAL_ALIGNMENT_CENTER, width, 12, PROMPT_COLOR)
+		draw_string(ThemeDB.fallback_font, Vector2(-30, -RADIUS - 6), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)

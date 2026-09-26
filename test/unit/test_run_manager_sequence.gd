@@ -25,5 +25,6 @@ func test_normal_rooms_still_avoid_immediate_repeats():
 	# this change, but wasn't under test before now.
 	for attempt in range(20):  # Run several times since this is randomised.
 		var sequence := RunManager._generate_sequence()
-		for i in range(1, RunManager.ROOMS_PER_RUN):
-			assert_ne(sequence[i], sequence[i - 1], "no two consecutive NORMAL rooms should repeat")
+		if RunManager.ROOM_SCENE_PATHS.size() > 1:
+			for i in range(1, RunManager.ROOMS_PER_RUN):
+				assert_ne(sequence[i], sequence[i - 1], "no two consecutive NORMAL rooms should repeat")

@@ -85,6 +85,9 @@ var _overlay_panel: Control
 var _overlay_title: Label
 var _overlay_card_1: PickupCard
 var _overlay_card_2: PickupCard
+var _ground_item_card: PickupCard
+var _ground_container_1: CenterContainer
+var _ground_container_2: CenterContainer
 
 enum OverlayKind { WEAPON, SKILL, RUNE }
 
@@ -202,45 +205,81 @@ func _build_boss_panel(root: Control) -> void:
 ## plus a title naming the item and a hint line covering all three input
 ## methods (keyboard nav+confirm, numeric shortcuts, click).
 func _build_overlay(root: Control) -> void:
-	var panel_width := 300.0 * UI_SCALE
-	var panel_height := 180.0 * UI_SCALE
-	_overlay_panel = Control.new()
-	_overlay_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## The panel itself passes clicks through; only its option Controls below opt in.
-	_overlay_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_overlay_panel.position = Vector2(-panel_width / 2.0, -panel_height / 2.0)
-	_overlay_panel.size = Vector2(panel_width, panel_height)
+	_overlay_panel = CenterContainer.new()
+	_overlay_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay_panel.visible = false
 	root.add_child(_overlay_panel)
-
-	_make_rect(_overlay_panel, OVERLAY_BG_COLOR, Vector2.ZERO, Vector2(panel_width, panel_height))
-
+	
+	var bg_panel := PanelContainer.new()
+	bg_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = OVERLAY_BG_COLOR
+	style.content_margin_left = int(20 * UI_SCALE)
+	style.content_margin_right = int(20 * UI_SCALE)
+	style.content_margin_top = int(16 * UI_SCALE)
+	style.content_margin_bottom = int(16 * UI_SCALE)
+	bg_panel.add_theme_stylebox_override("panel", style)
+	_overlay_panel.add_child(bg_panel)
+	
+	var main_vbox := VBoxContainer.new()
+	main_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_theme_constant_override("separation", int(12 * UI_SCALE))
+	bg_panel.add_child(main_vbox)
+	
+	var header_hbox := HBoxContainer.new()
+	header_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_hbox.add_theme_constant_override("separation", int(20 * UI_SCALE))
+	main_vbox.add_child(header_hbox)
+	
+	var ground_label := Label.new()
+	ground_label.text = "On Ground"
+	ground_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ground_label.custom_minimum_size = Vector2(260, 0)
+	ground_label.add_theme_font_size_override("font_size", 18)
+	header_hbox.add_child(ground_label)
+	
 	_overlay_title = Label.new()
-	_overlay_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_overlay_title.position = Vector2(10 * UI_SCALE, 8 * UI_SCALE)
-	_overlay_title.size = Vector2(panel_width - 20 * UI_SCALE, 20 * UI_SCALE)
+	_overlay_title.text = "Current Loadout"
 	_overlay_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_overlay_title.add_theme_font_size_override("font_size", int(14 * UI_SCALE))
-	_overlay_panel.add_child(_overlay_title)
-
-	var options_container := VBoxContainer.new()
-	options_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	options_container.position = Vector2((panel_width - 260 * UI_SCALE) / 2.0, 38 * UI_SCALE)
-	options_container.size = Vector2(260 * UI_SCALE, 104 * UI_SCALE)
-	options_container.add_theme_constant_override("separation", int(8 * UI_SCALE))
-	_overlay_panel.add_child(options_container)
-
-	_overlay_card_1 = _make_overlay_option(options_container, true)
-	_overlay_card_2 = _make_overlay_option(options_container, false)
-
+	_overlay_title.custom_minimum_size = Vector2(260, 0)
+	_overlay_title.add_theme_font_size_override("font_size", 18)
+	header_hbox.add_child(_overlay_title)
+	
+	var row1 := HBoxContainer.new()
+	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row1.add_theme_constant_override("separation", int(20 * UI_SCALE))
+	main_vbox.add_child(row1)
+	
+	_ground_container_1 = CenterContainer.new()
+	_ground_container_1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ground_container_1.custom_minimum_size = Vector2(260, 48)
+	row1.add_child(_ground_container_1)
+	
+	_overlay_card_1 = _make_overlay_option(row1, true)
+	
+	var row2 := HBoxContainer.new()
+	row2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row2.add_theme_constant_override("separation", int(20 * UI_SCALE))
+	main_vbox.add_child(row2)
+	
+	_ground_container_2 = CenterContainer.new()
+	_ground_container_2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ground_container_2.custom_minimum_size = Vector2(260, 48)
+	row2.add_child(_ground_container_2)
+	
+	_overlay_card_2 = _make_overlay_option(row2, false)
+	
+	_ground_item_card = PickupCard.new()
+	_ground_item_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ground_container_1.add_child(_ground_item_card)
+	
 	var hint := Label.new()
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hint.text = "W/S or \u2191/\u2193 + F to confirm  \u00b7  1/2 or click to pick  \u00b7  Esc to cancel"
-	hint.position = Vector2(6 * UI_SCALE, panel_height - 22 * UI_SCALE)
-	hint.size = Vector2(panel_width - 12 * UI_SCALE, 16 * UI_SCALE)
+	hint.text = "Click / \u2191\u2193 to preview  \u00b7  Click again / F to confirm  \u00b7  Esc to cancel"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 9)
-	hint.add_theme_font_size_override("font_size", maxi(5, int(9 * UI_SCALE)))
-	_overlay_panel.add_child(hint)
+	hint.add_theme_font_size_override("font_size", 14)
+	main_vbox.add_child(hint)
 	
 	_inspect_pane = PickupCard.new()
 	_inspect_pane.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -404,23 +443,36 @@ func _handle_pickup_overlay_input() -> void:
 						_update_inspect_visuals(pickup)
 					return
 				elif Input.is_action_just_pressed("pickup"):
+					_inspect_active = false
+					_update_inspect_visuals(null)
+					
+					var auto_equip = false
 					if is_weapon:
 						if _player.weapon == null:
 							pickup.call("_do_pickup", _player, true)
+							auto_equip = true
 						elif _player.secondary_weapon == null:
 							pickup.call("_do_pickup", _player, false)
+							auto_equip = true
 					elif pickup == _active_skill_pickup:
 						if _player.skill_1 == null:
 							pickup.call("_do_pickup", _player, true)
+							auto_equip = true
 						elif _player.skill_2 == null:
 							pickup.call("_do_pickup", _player, false)
+							auto_equip = true
 					else:
 						var rpickup := pickup as RunePickup
 						if rpickup != null and rpickup._can_direct_equip(_player):
 							if _player.weapon != null and _player.weapon_rune == null:
 								rpickup._do_pickup(_player, true)
+								auto_equip = true
 							elif _player.secondary_weapon != null and _player.secondary_weapon_rune == null:
 								rpickup._do_pickup(_player, false)
+								auto_equip = true
+					
+					if not auto_equip:
+						_open_overlay(pickup, is_weapon)
 				elif Input.is_action_just_pressed("swap"):
 					_inspect_active = false
 					_update_inspect_visuals(null)
@@ -451,10 +503,10 @@ func _handle_pickup_overlay_input() -> void:
 			_close_overlay()
 	elif Input.is_action_just_pressed("menu_up"):
 		_overlay_selected_primary = true
-		_update_inspect_visuals(_overlay_pickup)
+		_update_overlay_visuals()
 	elif Input.is_action_just_pressed("menu_down"):
 		_overlay_selected_primary = false
-		_update_inspect_visuals(_overlay_pickup)
+		_update_overlay_visuals()
 	elif Input.is_action_just_pressed("equip_slot_1"):
 		_overlay_selected_primary = true
 		_confirm_overlay_selection()
@@ -476,14 +528,16 @@ func _can_open_overlay() -> bool:
 	return _player.state not in [Player.State.ATTACK, Player.State.DODGE, Player.State.DISABLED]
 
 
-## Mouse path — a click on either option selects AND confirms in one
-## step, independent of whatever the keyboard had highlighted.
+## Mouse path — a click on either option selects it, a second click confirms.
 func _on_overlay_option_gui_input(event: InputEvent, is_primary: bool) -> void:
 	if not _overlay_active:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_overlay_selected_primary = is_primary
-		_confirm_overlay_selection()
+		if _overlay_selected_primary == is_primary:
+			_confirm_overlay_selection()
+		else:
+			_overlay_selected_primary = is_primary
+			_update_overlay_visuals()
 
 
 ## If the player is somehow in range of both a weapon AND a skill pickup
@@ -518,30 +572,34 @@ func _update_overlay_visuals() -> void:
 	if not _overlay_active:
 		return
 
-	var item_name := "Item"
-	if _overlay_kind == OverlayKind.WEAPON or _overlay_kind == OverlayKind.RUNE:
-		if _overlay_kind == OverlayKind.WEAPON:
-			var weapon: WeaponStats = _overlay_pickup.get("weapon")
-			if weapon != null:
-				item_name = weapon.weapon_name
-		else:
-			var rune: RuneData = _overlay_pickup.get("rune")
-			if rune != null:
-				item_name = "Rune of %s" % rune.element
+	if _overlay_kind == OverlayKind.WEAPON:
+		var weapon: WeaponStats = _overlay_pickup.get("weapon")
+		var pickup_rune: RuneData = _overlay_pickup.get("rune")
+		_ground_item_card.set_weapon(weapon, pickup_rune, false)
+		
+		if _player != null:
+			_overlay_card_1.set_weapon(_player.weapon, _player.weapon_rune, true)
+			_overlay_card_2.set_weapon(_player.secondary_weapon, _player.secondary_weapon_rune, true)
+	elif _overlay_kind == OverlayKind.RUNE:
+		var rune: RuneData = _overlay_pickup.get("rune")
+		_ground_item_card.set_rune_inspect(rune, null, null)
 		
 		if _player != null:
 			_overlay_card_1.set_weapon(_player.weapon, _player.weapon_rune, true)
 			_overlay_card_2.set_weapon(_player.secondary_weapon, _player.secondary_weapon_rune, true)
 	elif _overlay_kind == OverlayKind.SKILL:
 		var skill: SkillData = _overlay_pickup.get("skill")
-		if skill != null:
-			item_name = skill.skill_name
+		_ground_item_card.set_skill(skill, null)
 			
 		if _player != null:
 			_overlay_card_1.set_skill(_player.skill_1, _player.weapon_rune)
 			_overlay_card_2.set_skill(_player.skill_2, _player.secondary_weapon_rune)
 
-	_overlay_title.text = "Equip %s into:" % item_name
+	if _ground_item_card.get_parent() != null:
+		var target_container = _ground_container_1 if _overlay_selected_primary else _ground_container_2
+		if _ground_item_card.get_parent() != target_container:
+			_ground_item_card.reparent(target_container, false)
+
 	_overlay_card_1.set_selected(_overlay_selected_primary)
 	_overlay_card_2.set_selected(not _overlay_selected_primary)
 	
