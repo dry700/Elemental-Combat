@@ -1,0 +1,111 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/world/map_gen/chunk_base.gd" id="1_5q8ht"]
+[ext_resource type="TileSet" path="res://scenes/world/chunks/chunk_tileset.tres" id="2_4ago7"]
+[ext_resource type="PackedScene" path="res://scenes/world/one_way_platform.tscn" id="3_jp7lp"]
+[ext_resource type="Script" path="res://scripts/world/one_way_platform.gd" id="4_8ntwr"]
+[ext_resource type="Script" path="res://scripts/world/enemy_spawn_point.gd" id="5_si571"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="6_3m8f3"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_dxxx0"]
+
+[node name="" type="Node2D" unique_id=2002674135]
+script = ExtResource("1_5q8ht")
+door_mask = 11
+
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1812238752]
+tile_map_data = PackedByteArray("AAAAAAAAAQAAAAAAAAAAAAEAAQAAAAAAAAAAAAIAAQAAAAAAAAAAAAMAAQAAAAAAAAAAAAQAAQAAAAAAAAAAAAUAAQAAAAAAAAAAAAYAAQAAAAAAAAAAAAcAAQAAAAAAAAAAAAgAAQAAAAAAAAAAAAkAAQAAAAAAAAAAAAoAAQAAAAAAAAAAAAsAAQAAAAAAAAAAAAwAAQAAAAAAAAAAABIAAQAAAAAAAAAAABMAAQAAAAAAAAABAAAAAQAAAAAAAAABAAEAAQAAAAAAAAABAAIAAQAAAAAAAAABAAMAAQAAAAAAAAABAAQAAQAAAAAAAAABAAUAAQAAAAAAAAABAAYAAQAAAAAAAAABAAcAAQAAAAAAAAABAAgAAQAAAAAAAAABAAkAAQAAAAAAAAABAAoAAQAAAAAAAAABAAsAAQAAAAAAAAABAAwAAQAAAAAAAAABABIAAQAAAAAAAAABABMAAQAAAAAAAAACAAAAAQAAAAAAAAACAAEAAQAAAAAAAAACABIAAQAAAAAAAAACABMAAQAAAAAAAAADAAAAAQAAAAAAAAADAAEAAQAAAAAAAAADABIAAQAAAAAAAAADABMAAQAAAAAAAAAEAAAAAQAAAAAAAAAEAAEAAQAAAAAAAAAEABIAAQAAAAAAAAAEABMAAQAAAAAAAAAFAAAAAQAAAAAAAAAFAAEAAQAAAAAAAAAFABIAAQAAAAAAAAAFABMAAQAAAAAAAAAGAAAAAQAAAAAAAAAGAAEAAQAAAAAAAAAGABIAAQAAAAAAAAAGABMAAQAAAAAAAAAHAAAAAQAAAAAAAAAHAAEAAQAAAAAAAAAHABIAAQAAAAAAAAAHABMAAQAAAAAAAAAIAAAAAQAAAAAAAAAIAAEAAQAAAAAAAAAIABIAAQAAAAAAAAAIABMAAQAAAAAAAAAJAAAAAQAAAAAAAAAJAAEAAQAAAAAAAAAJABIAAQAAAAAAAAAJABMAAQAAAAAAAAAKABIAAQAAAAAAAAAKABMAAQAAAAAAAAALABIAAQAAAAAAAAALABMAAQAAAAAAAAAMABIAAQAAAAAAAAAMABMAAQAAAAAAAAANABIAAQAAAAAAAAANABMAAQAAAAAAAAAOABIAAQAAAAAAAAAOABMAAQAAAAAAAAAPABIAAQAAAAAAAAAPABMAAQAAAAAAAAAQAAAAAQAAAAAAAAAQAAEAAQAAAAAAAAAQABIAAQAAAAAAAAAQABMAAQAAAAAAAAARAAAAAQAAAAAAAAARAAEAAQAAAAAAAAARABIAAQAAAAAAAAARABMAAQAAAAAAAAASAAAAAQAAAAAAAAASAAEAAQAAAAAAAAASABIAAQAAAAAAAAASABMAAQAAAAAAAAATAAAAAQAAAAAAAAATAAEAAQAAAAAAAAATABIAAQAAAAAAAAATABMAAQAAAAAAAAAUAAAAAQAAAAAAAAAUAAEAAQAAAAAAAAAUABIAAQAAAAAAAAAUABMAAQAAAAAAAAAVAAAAAQAAAAAAAAAVAAEAAQAAAAAAAAAVABIAAQAAAAAAAAAVABMAAQAAAAAAAAAWAAAAAQAAAAAAAAAWAAEAAQAAAAAAAAAWABIAAQAAAAAAAAAWABMAAQAAAAAAAAAXAAAAAQAAAAAAAAAXAAEAAQAAAAAAAAAXABIAAQAAAAAAAAAXABMAAQAAAAAAAAAYAAAAAQAAAAAAAAAYAAEAAQAAAAAAAAAYAAIAAQAAAAAAAAAYAAMAAQAAAAAAAAAYAAQAAQAAAAAAAAAYAAUAAQAAAAAAAAAYAAYAAQAAAAAAAAAYAAcAAQAAAAAAAAAYAAgAAQAAAAAAAAAYAAkAAQAAAAAAAAAYAAoAAQAAAAAAAAAYAAsAAQAAAAAAAAAYAAwAAQAAAAAAAAAYABIAAQAAAAAAAAAYABMAAQAAAAAAAAAZAAAAAQAAAAAAAAAZAAEAAQAAAAAAAAAZAAIAAQAAAAAAAAAZAAMAAQAAAAAAAAAZAAQAAQAAAAAAAAAZAAUAAQAAAAAAAAAZAAYAAQAAAAAAAAAZAAcAAQAAAAAAAAAZAAgAAQAAAAAAAAAZAAkAAQAAAAAAAAAZAAoAAQAAAAAAAAAZAAsAAQAAAAAAAAAZAAwAAQAAAAAAAAAZABIAAQAAAAAAAAAZABMAAQAAAAAAAAA=")
+tile_set = ExtResource("2_4ago7")
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=2075659656 instance=ExtResource("3_jp7lp")]
+position = Vector2(96, 264)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@22" type="StaticBody2D" parent="." unique_id=2078320403 instance=ExtResource("3_jp7lp")]
+position = Vector2(272, 264)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@23" type="StaticBody2D" parent="." unique_id=2107231113 instance=ExtResource("3_jp7lp")]
+position = Vector2(176, 240)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+width_tiles = 4
+
+[node name="@StaticBody2D@24" type="StaticBody2D" parent="." unique_id=398395979 instance=ExtResource("3_jp7lp")]
+position = Vector2(96, 216)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@25" type="StaticBody2D" parent="." unique_id=1290142873 instance=ExtResource("3_jp7lp")]
+position = Vector2(272, 216)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@26" type="StaticBody2D" parent="." unique_id=418213277 instance=ExtResource("3_jp7lp")]
+position = Vector2(176, 192)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+width_tiles = 4
+
+[node name="@StaticBody2D@27" type="StaticBody2D" parent="." unique_id=389769865 instance=ExtResource("3_jp7lp")]
+position = Vector2(96, 168)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@28" type="StaticBody2D" parent="." unique_id=628472956 instance=ExtResource("3_jp7lp")]
+position = Vector2(272, 168)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@29" type="StaticBody2D" parent="." unique_id=1773934912 instance=ExtResource("3_jp7lp")]
+position = Vector2(176, 144)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+width_tiles = 4
+
+[node name="@StaticBody2D@30" type="StaticBody2D" parent="." unique_id=184329529 instance=ExtResource("3_jp7lp")]
+position = Vector2(96, 120)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@31" type="StaticBody2D" parent="." unique_id=1294230757 instance=ExtResource("3_jp7lp")]
+position = Vector2(272, 120)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@32" type="StaticBody2D" parent="." unique_id=309206163 instance=ExtResource("3_jp7lp")]
+position = Vector2(176, 96)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+width_tiles = 4
+
+[node name="@StaticBody2D@33" type="StaticBody2D" parent="." unique_id=1759692937 instance=ExtResource("3_jp7lp")]
+position = Vector2(96, 72)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@34" type="StaticBody2D" parent="." unique_id=801804405 instance=ExtResource("3_jp7lp")]
+position = Vector2(272, 72)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+
+[node name="@StaticBody2D@35" type="StaticBody2D" parent="." unique_id=1936093472 instance=ExtResource("3_jp7lp")]
+position = Vector2(176, 48)
+collision_layer = 4
+script = ExtResource("4_8ntwr")
+width_tiles = 4
+
+[node name="SpawnPoint_897" type="Node2D" parent="." unique_id=638107483]
+position = Vector2(216, 208)
+script = ExtResource("5_si571")
+enemy_scene = ExtResource("6_3m8f3")
+enemy_stats = ExtResource("7_dxxx0")
+starting_element = &"kim"
+
+[node name="SpawnPoint_16" type="Node2D" parent="." unique_id=1643026094]
+position = Vector2(216, 112)
+script = ExtResource("5_si571")
+enemy_scene = ExtResource("6_3m8f3")
+enemy_stats = ExtResource("7_dxxx0")
+starting_element = &"kim"

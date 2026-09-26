@@ -1,46 +1,49 @@
-[gd_scene format=4 uid="uid://uxpw0yupfyiv"]
+[gd_scene format=4]
 
-[ext_resource type="Script" uid="uid://damt7owqhg1gd" path="res://scripts/world/map_gen/chunk_base.gd" id="1_7dxbo"]
-[ext_resource type="TileSet" uid="uid://ctppkgnih0jyt" path="res://scenes/world/chunks/chunk_tileset.tres" id="2_y7jib"]
+[ext_resource type="Script" path="res://scripts/world/map_gen/chunk_base.gd" id="1_7dxbo"]
+[ext_resource type="TileSet" path="res://scenes/world/chunks/chunk_tileset.tres" id="2_y7jib"]
 [ext_resource type="PackedScene" path="res://scenes/world/one_way_platform.tscn" id="3_h77mo"]
-[ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="5_iyhi1"]
+[ext_resource type="Script" path="res://scripts/world/one_way_platform.gd" id="4_2moyd"]
+[ext_resource type="Script" path="res://scripts/world/enemy_spawn_point.gd" id="5_iyhi1"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="6_dds26"]
-[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_s1x1j"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_s1x1j"]
 
-[node name="Node2D2" type="Node2D" unique_id=1552339478]
+[node name="" type="Node2D" unique_id=803151355]
 script = ExtResource("1_7dxbo")
 door_mask = 14
 
-[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=964949181]
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1005852946]
 tile_map_data = PackedByteArray("AAAAAAAAAQAAAAAAAAAAAAEAAQAAAAAAAAAAAAIAAQAAAAAAAAAAAAMAAQAAAAAAAAAAAAQAAQAAAAAAAAAAAAUAAQAAAAAAAAAAAAYAAQAAAAAAAAAAAAcAAQAAAAAAAAAAAAgAAQAAAAAAAAAAAAkAAQAAAAAAAAAAAAoAAQAAAAAAAAAAAAsAAQAAAAAAAAAAAAwAAQAAAAAAAAAAABIAAQAAAAAAAAAAABMAAQAAAAAAAAABAAAAAQAAAAAAAAABAAEAAQAAAAAAAAABAAIAAQAAAAAAAAABAAMAAQAAAAAAAAABAAQAAQAAAAAAAAABAAUAAQAAAAAAAAABAAYAAQAAAAAAAAABAAcAAQAAAAAAAAABAAgAAQAAAAAAAAABAAkAAQAAAAAAAAABAAoAAQAAAAAAAAABAAsAAQAAAAAAAAABAAwAAQAAAAAAAAABABIAAQAAAAAAAAABABMAAQAAAAAAAAACAAAAAQAAAAAAAAACAAEAAQAAAAAAAAACABIAAQAAAAAAAAACABMAAQAAAAAAAAADAAAAAQAAAAAAAAADAAEAAQAAAAAAAAADABIAAQAAAAAAAAADABMAAQAAAAAAAAAEAAAAAQAAAAAAAAAEAAEAAQAAAAAAAAAEABIAAQAAAAAAAAAEABMAAQAAAAAAAAAFAAAAAQAAAAAAAAAFAAEAAQAAAAAAAAAFABIAAQAAAAAAAAAFABMAAQAAAAAAAAAGAAAAAQAAAAAAAAAGAAEAAQAAAAAAAAAGABIAAQAAAAAAAAAGABMAAQAAAAAAAAAHAAAAAQAAAAAAAAAHAAEAAQAAAAAAAAAHABIAAQAAAAAAAAAHABMAAQAAAAAAAAAIAAAAAQAAAAAAAAAIAAEAAQAAAAAAAAAIABIAAQAAAAAAAAAIABMAAQAAAAAAAAAJAAAAAQAAAAAAAAAJAAEAAQAAAAAAAAAJABIAAQAAAAAAAAAJABMAAQAAAAAAAAAKAAAAAQAAAAAAAAAKAAEAAQAAAAAAAAALAAAAAQAAAAAAAAALAAEAAQAAAAAAAAAMAAAAAQAAAAAAAAAMAAEAAQAAAAAAAAANAAAAAQAAAAAAAAANAAEAAQAAAAAAAAAOAAAAAQAAAAAAAAAOAAEAAQAAAAAAAAAPAAAAAQAAAAAAAAAPAAEAAQAAAAAAAAAQAAAAAQAAAAAAAAAQAAEAAQAAAAAAAAAQABIAAQAAAAAAAAAQABMAAQAAAAAAAAARAAAAAQAAAAAAAAARAAEAAQAAAAAAAAARABIAAQAAAAAAAAARABMAAQAAAAAAAAASAAAAAQAAAAAAAAASAAEAAQAAAAAAAAASABIAAQAAAAAAAAASABMAAQAAAAAAAAATAAAAAQAAAAAAAAATAAEAAQAAAAAAAAATABIAAQAAAAAAAAATABMAAQAAAAAAAAAUAAAAAQAAAAAAAAAUAAEAAQAAAAAAAAAUABIAAQAAAAAAAAAUABMAAQAAAAAAAAAVAAAAAQAAAAAAAAAVAAEAAQAAAAAAAAAVABIAAQAAAAAAAAAVABMAAQAAAAAAAAAWAAAAAQAAAAAAAAAWAAEAAQAAAAAAAAAWABIAAQAAAAAAAAAWABMAAQAAAAAAAAAXAAAAAQAAAAAAAAAXAAEAAQAAAAAAAAAXABIAAQAAAAAAAAAXABMAAQAAAAAAAAAYAAAAAQAAAAAAAAAYAAEAAQAAAAAAAAAYAAIAAQAAAAAAAAAYAAMAAQAAAAAAAAAYAAQAAQAAAAAAAAAYAAUAAQAAAAAAAAAYAAYAAQAAAAAAAAAYAAcAAQAAAAAAAAAYAAgAAQAAAAAAAAAYAAkAAQAAAAAAAAAYAAoAAQAAAAAAAAAYAAsAAQAAAAAAAAAYAAwAAQAAAAAAAAAYABIAAQAAAAAAAAAYABMAAQAAAAAAAAAZAAAAAQAAAAAAAAAZAAEAAQAAAAAAAAAZAAIAAQAAAAAAAAAZAAMAAQAAAAAAAAAZAAQAAQAAAAAAAAAZAAUAAQAAAAAAAAAZAAYAAQAAAAAAAAAZAAcAAQAAAAAAAAAZAAgAAQAAAAAAAAAZAAkAAQAAAAAAAAAZAAoAAQAAAAAAAAAZAAsAAQAAAAAAAAAZAAwAAQAAAAAAAAAZABIAAQAAAAAAAAAZABMAAQAAAAAAAAA=")
 tile_set = ExtResource("2_y7jib")
 
-[node name="OneWayPlatform" parent="." unique_id=1884903845 instance=ExtResource("3_h77mo")]
+[node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=2075659656 instance=ExtResource("3_h77mo")]
 position = Vector2(64, 80)
+collision_layer = 4
+script = ExtResource("4_2moyd")
 width_tiles = 4
 
-[node name="@StaticBody2D@14" parent="." unique_id=1674464320 instance=ExtResource("3_h77mo")]
+[node name="@StaticBody2D@14" type="StaticBody2D" parent="." unique_id=1401708302 instance=ExtResource("3_h77mo")]
 position = Vector2(288, 152)
+collision_layer = 4
+script = ExtResource("4_2moyd")
 width_tiles = 4
 
-[node name="@StaticBody2D@15" parent="." unique_id=845720010 instance=ExtResource("3_h77mo")]
+[node name="@StaticBody2D@15" type="StaticBody2D" parent="." unique_id=571288795 instance=ExtResource("3_h77mo")]
 position = Vector2(128, 224)
+collision_layer = 4
+script = ExtResource("4_2moyd")
 width_tiles = 4
 
-[node name="SpawnPoint_647" type="Node2D" parent="." unique_id=1615009898]
+[node name="SpawnPoint_530" type="Node2D" parent="." unique_id=292733420]
 position = Vector2(88, 48)
 script = ExtResource("5_iyhi1")
 enemy_scene = ExtResource("6_dds26")
 enemy_stats = ExtResource("7_s1x1j")
 starting_element = &"kim"
 
-[node name="SpawnPoint_427" type="Node2D" parent="." unique_id=997736599]
+[node name="SpawnPoint_383" type="Node2D" parent="." unique_id=813363650]
 position = Vector2(312, 120)
 script = ExtResource("5_iyhi1")
 enemy_scene = ExtResource("6_dds26")
 enemy_stats = ExtResource("7_s1x1j")
 starting_element = &"kim"
-
-[node name="OneWayPlatform2" parent="." unique_id=1028172972 instance=ExtResource("3_h77mo")]
-position = Vector2(192, 312)
-width_tiles = 4
