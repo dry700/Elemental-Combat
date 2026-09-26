@@ -107,12 +107,15 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Update the project docs to reflect the new startup path.
 - [x] Verification: menu flow and start-run path behave correctly.
 
-### P9 — Room pool expansion
-- [x] Add the extra room templates and integrate them into the room pool.
-- [x] Validate each room against the room controller contract.
-- [x] Ensure spirit stats keep innate element and drop element aligned.
-- [x] Verify room generation still respects the intended layout and spawn rules.
-- [x] Verification: room template validation and generation-related tests pass.
+### P9 — Procedural Map Generation & Room System Overhaul
+- [x] Design and implement 4x3 chunk-based map generation algorithm (`MapGenerator`).
+- [x] Replace static room templates with `procedural_room.tscn`.
+- [x] Create 6 unique chunks (climb, drop, crossroad, hallway, start, end) using programmatic tools.
+- [x] Implement OneWayPlatform on Physics Layer 3 with 24px vertical jump spacing.
+- [x] Fix player and enemy collision masks to interact properly with Layer 3 platforms.
+- [x] Fix secondary weapon combo buffer dropping inputs.
+- [x] Reorganize utility scripts into `scripts/editor_tools`.
+- [x] Verification: generated rooms spawn properly, platforms allow drop-through mechanics, and combat integration tests pass.
 
 ### P10 — Qi and upgrade economy
 - [ ] Create the upgrade manager and register it properly.
@@ -174,9 +177,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] P6 — loadout selection (**verified**)
 - [x] P7 — run summary (**verified**)
 - [x] P8 — main menu (**verified**)
-- [x] P9 — room pool expansion (**verified**)
+- [x] P9 — procedural map generation & room overhaul (**verified**)
 - [ ] P10 — Qi and upgrade economy
 
 ## Immediate next action
 
-- Start P10: Create the upgrade manager and register it properly.
+- Start P10: Create the upgrade manager (`upgrade_manager.gd`), define the Qi economy stats, and register the manager as an Autoload.
