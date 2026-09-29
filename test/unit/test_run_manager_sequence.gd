@@ -28,3 +28,6 @@ func test_normal_rooms_still_avoid_immediate_repeats():
 		if RunManager.ROOM_SCENE_PATHS.size() > 1:
 			for i in range(1, RunManager.ROOMS_PER_RUN):
 				assert_ne(sequence[i], sequence[i - 1], "no two consecutive NORMAL rooms should repeat")
+		else:
+			for i in range(RunManager.ROOMS_PER_RUN):
+				assert_eq(sequence[i], RunManager.ROOM_SCENE_PATHS[0], "all normal rooms must use the only available path")

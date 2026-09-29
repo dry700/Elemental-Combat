@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="BossStats" format=3 uid="uid://ddxce12x2arb"]
+﻿[gd_resource type="Resource" script_class="BossStats" format=3 uid="uid://ddxce12x2arb"]
 
 [ext_resource type="Script" uid="uid://dcd8nj0wbabe7" path="res://scripts/resources/enemies/boss_stats.gd" id="1"]
 
 [resource]
+qi_reward = 50.0
 script = ExtResource("1")
 boss_name = "Ember Tide"
 phase_2_element = &"hoa"
@@ -20,3 +21,4 @@ element = &"thuy"
 telegraph_duration = 0.4
 special_telegraph_duration = 0.8
 active_window = 0.16
+

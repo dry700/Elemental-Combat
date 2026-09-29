@@ -8,6 +8,8 @@
 
 config_version=5
 
+"ï»¿config_version"=5
+
 [application]
 
 config/name="Elemental Roguelike (Working Title)"
@@ -21,6 +23,7 @@ HitStop="*res://autoloads/hit_stop.gd"
 ScreenShake="*res://autoloads/screen_shake.gd"
 VisionBlocker="*res://autoloads/vision_blocker.gd"
 SaveManager="*res://autoloads/save_manager.gd"
+UpgradeManager="*res://autoloads/upgrade_manager.gd"
 RunManager="*res://autoloads/run_manager.gd"
 Hud="*res://autoloads/hud.gd"
 

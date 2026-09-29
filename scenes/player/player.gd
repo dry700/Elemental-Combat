@@ -87,6 +87,7 @@ var _attack_timer: float = 0.0
 var _combo_step: int = 0
 var _combo_window_timer: float = 0.0
 var _attack_buffered: bool = false
+var _shot_fired: bool = false
 var _drop_through_timer: float = 0.0
 var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
 ## Set on ANY jump-key press during State.DISABLED (however early in the
@@ -356,6 +357,9 @@ func _process_attack(delta: float) -> void:
 		if step.style == WeaponStats.AttackStyle.THRUST:
 			hitbox.rotation = 0.0
 			hitbox.position.x = WEAPON_GRIP_OFFSET + sin(t * PI) * step.thrust_extend_distance
+		elif step.style == WeaponStats.AttackStyle.SHOOT:
+			hitbox.rotation = 0.0
+			hitbox.position.x = WEAPON_GRIP_OFFSET
 		else:
 			hitbox.rotation = lerp_angle(deg_to_rad(step.swing_rotation_start_deg), deg_to_rad(step.swing_rotation_end_deg), t)
 			hitbox.position.x = WEAPON_GRIP_OFFSET
@@ -365,8 +369,13 @@ func _process_attack(delta: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 
+	var is_shoot := _current_combo_step_data().style == WeaponStats.AttackStyle.SHOOT
 	if _attack_timer >= active_start and _attack_timer < active_end:
-		if not hitbox.monitoring:
+		if is_shoot:
+			if not _shot_fired:
+				_shot_fired = true
+				_fire_arrow()
+		elif not hitbox.monitoring:
 			hitbox.enable()
 			_spawn_slash_vfx()
 	else:
@@ -402,6 +411,26 @@ func _spawn_slash_vfx() -> void:
 		vfx = SlashVFX.new()
 	vfx.element = hitbox.element
 	hitbox.add_child(vfx)
+
+## SHOOT-style swing: spawns one arrow at the start of the active window.
+## Damage/element/charge come from the Hitbox values already configured for
+## this swing, so combo scaling and rune alternation apply unchanged.
+func _fire_arrow() -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var arrow := ArrowProjectile.new()
+	arrow.attacker = self
+	arrow.direction = Vector2(facing, 0)
+	arrow.speed = _active_weapon.projectile_speed
+	arrow.lifetime = _active_weapon.projectile_lifetime
+	arrow.element = hitbox.element
+	arrow.charge = hitbox.charge
+	arrow.damage = hitbox.damage
+	arrow.weapon_weight = hitbox.weapon_weight
+	arrow.knockback_strength = hitbox.knockback_strength
+	arrow.global_position = global_position + Vector2(facing * (WEAPON_GRIP_OFFSET + 4.0), 0.0)
+	scene_root.add_child(arrow)
 	
 ## Called the instant a swing's attack_duration elapses. If the player
 ## already buffered another attack press during this swing (captured in
@@ -439,6 +468,7 @@ func _end_or_chain_attack() -> void:
 ## AND its child WeaponSprite, instead of only the sprite animating
 ## while the hitbox sat still.
 func _configure_hitbox_for_current_swing() -> void:
+	_shot_fired = false
 	hitbox.damage = _active_weapon.damage * _combo_damage_multiplier()
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
 	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune

@@ -41,3 +41,7 @@ enum Tier { NORMAL, ELITE }
 ## repeatedly can learn and react to it. A.6's "natural tutorial for one
 ## reaction" only works if the telegraph is learnable, not a coin flip.
 @export var special_attack_every: int = 3
+
+## Qi awarded to the player when this enemy is killed (§4.8.1).
+## 0.0 = no reward (e.g. neutral/training enemies that should not contribute).
+@export var qi_reward: float = 0.0

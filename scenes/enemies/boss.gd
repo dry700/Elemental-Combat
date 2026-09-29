@@ -174,11 +174,13 @@ func _die() -> void:
 	hurtbox.invulnerable = true
 	visual.set_tint(DEATH_TINT)
 	health_bar.visible = false
-	if boss_stats != null and boss_stats.element != Elements.NONE:
-		var rune := RunePickup.new()
-		rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))
-		rune.global_position = global_position
-		get_parent().add_child.call_deferred(rune)
+	if boss_stats != null:
+		UpgradeManager.award_qi(boss_stats.qi_reward)
+		if boss_stats.element != Elements.NONE:
+			var rune := RunePickup.new()
+			rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))
+			rune.global_position = global_position
+			get_parent().add_child.call_deferred(rune)
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
 

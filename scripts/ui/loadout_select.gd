@@ -4,6 +4,7 @@ const STARTING_WEAPON_PATHS: Array[String] = [
 	"res://scripts/resources/weapons/training_dagger.tres",
 	"res://scripts/resources/weapons/training_spear.tres",
 	"res://scripts/resources/weapons/training_staff.tres",
+	"res://scripts/resources/weapons/training_bow.tres",
 	"res://scripts/resources/weapons/training_greatsword.tres",
 	"res://scripts/resources/weapons/training_hammer.tres",
 ]

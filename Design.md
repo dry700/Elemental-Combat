@@ -79,7 +79,7 @@ changes needed there for the Final Report beyond good writing.
 | Fonts | `assets/fonts/monogram.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
 | Visuals | `scripts/visuals/sprite_visual.gd`, `scripts/ui/element_indicator.gd`, `scripts/combat/{slash_vfx,hit_spark}.gd` | Sprite/placeholder swap, A.1 pattern glyphs, one-shot VFX |
 | Input | `autoloads/input_setup.gd` | All input actions defined in code, not Project Settings |
-| Upgrade system | `autoloads/upgrade_manager.gd` (planned) | Qi economy, per-run numeric/behavioral buffs — **not yet implemented**, see §4.8 |
+| Upgrade system | `autoloads/upgrade_manager.gd` | Qi economy and per-run upgrade state — P10a foundations implemented; purchase UI/effect hooks remain, see §4.8 |
 ---
 
 ## 3. Core Combat Loop
@@ -407,18 +407,22 @@ Two subclasses, genuinely different hit behaviour:
 - `SkillProjectile` (Ignite Dart) — single-hit, calls the real
   `handle_hit()`, ICD-bypassed.
 
-### 4.8 Stage Upgrade System (Qi Economy) — PLANNED, not yet implemented
+### 4.8 Stage Upgrade System (Qi Economy) — IMPLEMENTED (P10a foundations)
 
 Per-run-only power growth, paid for with an in-run currency ("Qi"),
 spent at will rather than forced on room clear. Resets completely on
 death or new run — never touches `SaveManager`, never persists.
 
-**Constraints (read before implementing — these protect the tested
+**Constraints (these protect the tested
 reaction logic):**
-
+**A** and **D→C (Vitality)** are now implemented as repeatable stat paths.
 - **Never mutate raw Charge directly.** Charge (1–3) is load-bearing
   input to `Reactions.resolve()` — the 3×3 Khắc grid and Thừa/Wu
   thresholds are tuned against exact int values
+
+**C. Vitality** — repeatable. Each purchase adds 10 maximum HP. The first
+purchase costs 15 Qi and each later purchase costs 10 Qi more than the
+previous one.
   (`test_reaction_resolver.gd` asserts all 9 cells). A "+1 Charge"
   upgrade must compute into the charge value the *same way the rune
   bonus already does* — before `Reactions.resolve()` is called, as a
@@ -434,8 +438,9 @@ reaction logic):**
 
 #### 4.8.1 Currency — earning Qi
 
-`EnemyStats` gains `qi_reward: float`, read from the existing `_die()`
-path on every enemy body (no new pickup/physics needed):
+`EnemyStats` has `qi_reward: float`, read from the existing `_die()` path on
+every enemy body (no new pickup/physics needed). `UpgradeManager.award_qi()`
+ignores non-positive rewards and emits `qi_changed` after valid awards:
 
 | Enemy tier | `qi_reward` (starting value, tune in Sprint 3) |
 |---|---|
@@ -455,7 +460,9 @@ magnitude boost) is superseded by Khắc Specialization below, which does
 the same job with more build identity. **A** and **D→C (Vitality)** are
 unchanged from the earlier draft.
 
-**A. Weapon Might** — unchanged, see previous draft.
+**A. Weapon Might** — repeatable. Each purchase adds 10% to the player's
+weapon damage multiplier. The first purchase costs 15 Qi and each later
+purchase costs 10 Qi more than the previous one.
 
 **B. Reaction Mastery** — replaces "Charge Flow." Never touches Charge
 values at all (this is what resolves 4.8.4's original tension — see
@@ -503,8 +510,7 @@ that would normally be base-magnitude.
 | Sever | Kim+Mộc | Armor shred always 6.0, never base 3.0 |
 | Douse | Thủy+Hỏa | Cloud always Thừa radius/stun (65px / 0.5s), never base (45px / 0.3s) |
 
-**Costs** (placeholder, tune in Sprint 3, same status as every other
-number in this section):
+**Reaction costs** (implemented P10a values):
 
 | Rank | Cost | Cumulative for one fully-specialized reaction |
 |---|---|---|
@@ -520,8 +526,8 @@ purchase increases the player's Damage or maximum HP respectively, and the
 next purchase costs more based on that category's current rank. Their ranks
 are per-run state and reset with Qi; they never touch `SaveManager`.
 
-The exact stat increment and price curve are tuning values to be selected
-with the first playable upgrade menu. The purchase contract is fixed:
+The current stat increments and price curves are the verified P10a values.
+The purchase contract is fixed:
 
 - a purchase is allowed only when the player has enough Qi;
 - the price is deducted immediately and the category rank increases by one;
@@ -533,7 +539,8 @@ Reaction specializations are different: each named reaction can be selected
 once at Rank 1 and once at Rank 2, after which it is fully specialized and
 cannot be purchased again. The reaction rank costs remain 20 Qi and 45 Qi;
 the repeatable HP and Damage curves are independent of those one-time
-reaction purchases.
+reaction purchases. P10a exposes purchase methods and getters but does not
+yet provide upgrade-menu input or apply every effect hook in combat.
 
 #### 4.8.3 Getter API (revised)
 

@@ -30,12 +30,14 @@ func before_each():
 	RunManager._player = player
 	RunManager._elapsed_sec = 0.0
 	RunManager._run_active = true
+	RunManager.skip_scene_transitions = true
 	if player.died.is_connected(RunManager._on_player_died):
 		player.died.disconnect(RunManager._on_player_died)
 	player.died.connect(RunManager._on_player_died)
 
 func after_each():
 	RunManager._run_active = false
+	RunManager.skip_scene_transitions = false
 	RunManager.set_process(false)
 
 func test_finish_run_win_records_history_and_clears_save():

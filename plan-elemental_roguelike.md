@@ -1,6 +1,6 @@
 # Elemental Roguelike Plan
 
-This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The current implementation boundary is P5a; later work must wait for the preceding verification gate.
+This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The current implementation boundary is P10a; P10b remains deferred until the upgrade-menu scope is started.
 
 ## Current status
 
@@ -16,9 +16,19 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P6 — Loadout selection and pending-loadout consumption
 - [x] P7 — Run summary and finish-run transitions
 - [x] P8 — Main menu and startup scene update
-- [ ] P9 — Room-pool expansion
+- [x] P9 — Room-pool expansion
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Closeout documentation and final verification
+
+## P10a design contract
+
+- `UpgradeManager` is a script-only autoload and owns per-run Qi/rank state.
+- Reaction specializations are one-time Rank 1/Rank 2 purchases.
+- Weapon Might and Vitality are repeatable purchases with category-local
+	escalating prices.
+- Qi and upgrade ranks never enter `SaveManager`.
+- P10a exposes data and purchase APIs; UI/input and remaining effect hooks are
+	P10b+ work.
 
 ## P5 design contract
 
@@ -70,16 +80,15 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 ## Progress and verification
 
 - P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
-- P5a–P5d must each have a focused verification result before the next sub-phase begins.
-- Full-suite verification is required before P5 is marked complete.
-- Current review found P5a implementation and focused tests added across the rune resource, pickup, enemy, room, and test paths.
-- Static diagnostics report no errors in the P5a implementation or focused tests.
-- The absolute-path GUT command returned exit code 0 without output; the selective rune-test command did not return normally, so no test count or pass result is claimed.
-- Verification blocker: `godot` is not on PATH, and the discovered Godot executable did not return normal output for the headless GUT command. Treat test status as unverified until the CLI invocation is repaired.
+- P5a–P5d gates are closed; P6–P9 implementation is complete in the current worktree.
+- P10a full-suite verification: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
+- Static diagnostics report no errors in the changed upgrade/run/player files.
+- A reset-state regression was fixed and covered for favored Sinh elements.
 
 ## Deferred phases
 
-Room-pool expansion and Qi economy remain deferred until P5d is verified. Loadout selection, run summary, and main menu have been implemented.
+P10b+ and final closeout remain deferred. P9 and P10a are verified; loadout
+selection, run summary, main menu, and procedural room generation are implemented.
 
 ## Open decisions
 
@@ -89,3 +98,8 @@ Room-pool expansion and Qi economy remain deferred until P5d is verified. Loadou
 - [ ] D18 — Tune the two-modifier chance after the first playable rune pass.
 - [ ] D19 — Define the initial modifier catalogue and pool scope.
 - [ ] D20 — Reconcile the stray enemy-stats fragment and duplicate training-staff resource.
+
+## Exact next item
+
+Start P10b: implement the room-cleared upgrade menu/input flow and connect
+the P10a purchase APIs to the remaining player and reaction effect hooks.

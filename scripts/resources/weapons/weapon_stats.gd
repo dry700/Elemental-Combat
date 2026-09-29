@@ -3,7 +3,7 @@ extends Resource
 ## Describes one weapon's combat stats and weight archetype (Appendix A.4).
 
 enum Weight { LIGHT, MEDIUM, HEAVY }
-enum AttackStyle { SWING, THRUST }
+enum AttackStyle { SWING, THRUST, SHOOT }
 
 @export var weapon_name: String = "Training Dagger"
 @export var weapon_texture: Texture2D  ## Full swap per A.4 — set per .tres, e.g. hoa_dagger.png.
@@ -25,6 +25,9 @@ enum AttackStyle { SWING, THRUST }
 @export var lunge_speed: float = 75.0 ## Forward speed during the pre-active-window wind-up.
 @export var reach: float = 7.0         ## Local x-offset of the hitbox from the wielder's centre.
 @export var hitbox_radius: float = 5.0 ## Size of the hit area itself.
+
+@export var projectile_speed: float = 240.0    ## SHOOT only.
+@export var projectile_lifetime: float = 0.6   ## SHOOT only. Range ≈ speed × lifetime.
 
 ## Grace period after a swing ends during which another attack press
 ## still continues the combo instead of restarting at hit 1.

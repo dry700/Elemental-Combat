@@ -1,4 +1,4 @@
-class_name RuneRoller
+﻿class_name RuneRoller
 extends RefCounted
 ## Rolls a RuneData with one or two distinct modifiers drawn from a
 ## filtered catalogue. Instantiate and call set_catalogue() before roll().
@@ -8,7 +8,7 @@ extends RefCounted
 const TWO_MODIFIER_CHANCE: float = 0.25
 
 ## Shared instance used by gameplay code (boss, patrol_dummy, room_controller, etc.)
-## so they don't need to manage their own instance or catalogue.
+## so they do not need to manage their own instance or catalogue.
 static var _default_instance: RuneRoller = null
 
 static func default() -> RuneRoller:
@@ -18,8 +18,13 @@ static func default() -> RuneRoller:
 
 var _catalogue: Array[RuneModifierDef] = []
 
-func set_catalogue(definitions: Array[RuneModifierDef]) -> void:
-	_catalogue = definitions.duplicate()
+## Accepts Array or Array[RuneModifierDef]. Untyped arrays are safe to pass
+## from test code where the static type cannot be inferred at parse time.
+func set_catalogue(definitions: Array) -> void:
+	_catalogue.clear()
+	for definition in definitions:
+		if definition is RuneModifierDef:
+			_catalogue.append(definition)
 
 func roll(element: StringName, target: RuneData.Target, rng: RandomNumberGenerator = null) -> RuneData:
 	var rune := RuneData.new(element, target)

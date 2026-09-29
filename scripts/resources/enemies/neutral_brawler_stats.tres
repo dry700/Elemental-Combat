@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://d38c6srgn8rcd"]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://dtq8vxadaw86v"]
 
 [ext_resource type="Script" uid="uid://dumwspw37ptk4" path="res://scenes/enemies/enemy_stats.gd" id="1"]
 
@@ -12,3 +12,4 @@ telegraph_duration = 0.3
 special_telegraph_duration = 0.6
 active_window = 0.14
 special_attack_every = 4
+qi_reward = 10.0

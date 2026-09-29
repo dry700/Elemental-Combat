@@ -1,4 +1,4 @@
-# AGENT_PLAN.md
+﻿# AGENT_PLAN.md
 
 This is the working checklist for the project. It is intentionally structured for progress tracking, while the detailed mechanics and architecture remain in [Design.md](Design.md).
 
@@ -118,12 +118,13 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Verification: generated rooms spawn properly, platforms allow drop-through mechanics, and combat integration tests pass.
 
 ### P10 — Qi and upgrade economy
-- [ ] Create the upgrade manager and register it properly.
-- [ ] Add Qi reward tracking to enemy death and reset flow.
-- [ ] Implement reaction mastery and stat-upgrade purchase logic.
-- [ ] Enforce specialization rules without mutating raw charge values in the resolver.
+- [x] P10a — Create the upgrade manager and register it properly.
+- [x] P10a — Add Qi reward tracking to enemy death and reset flow.
+- [x] P10a — Implement reaction mastery and repeatable stat-upgrade purchase logic.
+- [x] P10a — Enforce specialization rules without mutating raw charge values in the resolver.
 - [ ] Finish remaining effect hooks and upgrade-related side effects.
-- [ ] Verification: upgrade-manager tests and affected reaction tests pass.
+- [x] P10a verification: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
+- [ ] P10b verification: upgrade-menu/input and remaining effect-hook tests.
 
 ### P11 — Final verification and closeout
 - [ ] Run the full GUT suite.
@@ -134,8 +135,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 
 ## Active decision log
 
-- [ ] D1 — Confirm the missing earlier draft or decide how Weapon Might and Vitality should be handled.
-- [ ] D2 — Resolve the missing revised getter API naming if the design snippet is still absent.
+- [x] D1 — Weapon Might and Vitality are repeatable per-run stat upgrades with independent escalating prices.
+- [x] D2 — Use the implemented getter names in `UpgradeManager`; reaction resolver remains unchanged.
 - [ ] D3 — Finalize the upgrade-menu input and room-state gating rule.
 - [ ] D4 — Confirm whether upgrades apply only to player-owned hits or to all combatants.
 - [ ] D5 — Confirm that tutorial routing continues through the loadout flow unless a change is explicitly approved.
@@ -169,6 +170,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P5d implementation complete: Added `ElementalStatus.set_charge()`, Charge pips visually in `ElementIndicator`, and "Reversed!" popup text in `ElementalCombatant`.
 - P6, P7, P8 implementation complete: Added Loadout Select, Run Summary, and Main Menu. Connected the UI routing.
 - Architectural Note (P6/P8 testing): Enemy and room clear drops must be added directly to the active room (`get_parent()`) rather than `get_tree().current_scene`, so they properly despawn on room transitions via `queue_free()`.
+- P9 verified in the current worktree: procedural room generation, chunk variants, platform collision/drop-through behavior, and related combat tests are covered by the green full suite.
+- P10a verified 2026-09-29: `UpgradeManager` is registered after `SaveManager`; enemy Qi rewards, reset boundaries, one-time reaction ranks, and repeatable Weapon Might/Vitality purchases are implemented. Reset now clears favored Sinh elements as well as ranks.
+- P10b remains blocked on the unresolved upgrade-menu input and room-state gating decision (D3), plus the player-owned-hit policy (D4).
 
 ## Current active scope
 
@@ -178,8 +182,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] P7 — run summary (**verified**)
 - [x] P8 — main menu (**verified**)
 - [x] P9 — procedural map generation & room overhaul (**verified**)
-- [ ] P10 — Qi and upgrade economy
+- [ ] P10b — Qi upgrade menu, input, and remaining effect hooks
 
 ## Immediate next action
 
-- Start P10: Create the upgrade manager (`upgrade_manager.gd`), define the Qi economy stats, and register the manager as an Autoload.
+- Start P10b: implement the room-cleared upgrade menu/input flow and connect the P10a purchase APIs to the remaining player and reaction effect hooks.

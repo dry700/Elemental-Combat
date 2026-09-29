@@ -12,7 +12,14 @@ metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [sub_resource type="Resource" id="Resource_shrxc"]
 script = ExtResource("1_625cj")
+swing_rotation_start_deg = 0.0
+swing_rotation_end_deg = -90.0
 thrust_extend_distance = 10.0
+metadata/_custom_type_script = "uid://0fjribao1my8"
+
+[sub_resource type="Resource" id="Resource_2l3fc"]
+script = ExtResource("1_625cj")
+swing_rotation_start_deg = -90.0
 metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [resource]
@@ -25,4 +32,4 @@ active_window = Vector2(0.08, 0.13)
 innate_element = &"thuy"
 reach = 11.0
 combo_damage_step_multiplier = 1.1
-combo_steps = Array[Object]([SubResource("Resource_eyt3x"), SubResource("Resource_shrxc")])
+combo_steps = Array[Object]([SubResource("Resource_eyt3x"), SubResource("Resource_shrxc"), SubResource("Resource_2l3fc")])

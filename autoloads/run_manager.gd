@@ -78,6 +78,7 @@ func start_run(room_container: Node, player: Player) -> void:
 	if saved is Dictionary:
 		_resume_from_save(saved)
 	else:
+		UpgradeManager.reset()
 		_sequence = _generate_sequence()
 		_elapsed_sec = 0.0
 		_current_index = -1
@@ -178,6 +179,9 @@ var last_run_outcome: String = ""
 var last_run_rooms_cleared: int = 0
 var last_run_duration_sec: float = 0.0
 
+## Set to true in tests to prevent change_scene_to_file from being called.
+var skip_scene_transitions: bool = false
+
 ## Shared by both a completed run (win) and a player death (loss) — logs
 ## the result, clears the resumable save (a finished run has nothing
 ## left to resume INTO), and stops the elapsed-time clock.
@@ -186,6 +190,7 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
 	set_process(false)
 	SaveManager.record_run_result(outcome, rooms_cleared, _elapsed_sec)
 	SaveManager.clear_in_progress_run()
+	UpgradeManager.reset()
 	
 	last_run_outcome = outcome
 	last_run_rooms_cleared = rooms_cleared
@@ -197,7 +202,8 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
 		pending_skill_1_path = _player.skill_1.resource_path if _player.skill_1 != null else ""
 		pending_skill_2_path = _player.skill_2.resource_path if _player.skill_2 != null else ""
 	
-	get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
+	if not skip_scene_transitions:
+		get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
 
 func start_next_loop() -> void:
 	get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")

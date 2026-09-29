@@ -51,6 +51,7 @@ const OVERLAY_SELECTED_COLOR := Color(0.35, 0.55, 0.85, 0.9)
 
 var _player_hp_bg: ColorRect
 var _player_hp_fill: ColorRect
+var _qi_label: Label
 
 var _boss_panel: Control
 var _boss_name_label: Label
@@ -109,9 +110,15 @@ func _ready() -> void:
 	add_child(root)
 
 	_build_player_hp_bar(root)
+	_build_qi_label(root)
 	_build_slots(root)
 	_build_boss_panel(root)
 	_build_overlay(root)
+
+	var um := get_node_or_null("/root/UpgradeManager")
+	if um != null:
+		um.qi_changed.connect(_on_qi_changed)
+		_on_qi_changed(um.qi)
 
 
 func _build_player_hp_bar(root: Control) -> void:
@@ -124,6 +131,25 @@ func _build_player_hp_bar(root: Control) -> void:
 
 	_player_hp_bg = _make_rect(container, BAR_BG_COLOR, Vector2.ZERO, container.size)
 	_player_hp_fill = _make_rect(container, PLAYER_HP_COLOR, Vector2.ZERO, container.size)
+
+
+func _build_qi_label(root: Control) -> void:
+	_qi_label = Label.new()
+	_qi_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_qi_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_qi_label.position = Vector2(-150, 20) * UI_SCALE
+	_qi_label.size = Vector2(130, 30) * UI_SCALE
+	_qi_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_qi_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_qi_label.add_theme_font_size_override("font_size", int(18 * UI_SCALE))
+	_qi_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	_qi_label.text = "Qi: 0"
+	root.add_child(_qi_label)
+
+
+func _on_qi_changed(new_total: float) -> void:
+	if _qi_label != null:
+		_qi_label.text = "Qi: %d" % int(new_total)
 
 
 func _build_slots(root: Control) -> void:

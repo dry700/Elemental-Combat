@@ -16,11 +16,32 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P6 — Loadout selection and pending-loadout consumption
 - [x] P7 — Run summary and finish-run transitions
 - [x] P8 — Main menu and startup scene
-- [ ] P9 — Room-pool expansion
+- [x] P9 — Room-pool expansion
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Final verification and documentation closeout
 
-## Current scope: P9
+## Current scope: P10a — Qi foundations and upgrade manager
+
+- [x] Register `UpgradeManager` as an autoload after `SaveManager`.
+- [x] Track per-run Qi and reset it at new-run and run-finish boundaries.
+- [x] Award Qi from enemy death rewards.
+- [x] Implement one-time Rank 1/Rank 2 reaction purchases.
+- [x] Implement repeatable Weapon Might and Vitality purchases with rising prices.
+- [x] Expose reaction and stat getter APIs without changing the reaction resolver.
+- [x] Add focused UpgradeManager coverage, including reset-state isolation.
+
+### P10a verification gate
+
+- [x] Full GUT suite: 215/215 tests passed, 460 assertions, 0 failures.
+- [x] Static diagnostics: no errors reported in the changed upgrade/run/player files.
+- [x] Fixed reset leakage by clearing favored Sinh elements with other per-run state.
+
+### Next P10 item
+
+- [ ] Start P10b: add the room-cleared upgrade menu/input flow and wire the
+	verified purchase state into the remaining player/reaction effect hooks.
+
+## Completed P5 scope
 
 ### Rune data
 
@@ -100,7 +121,8 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## Deferred phases
 
-P6 through P11 remain out of the current implementation scope until P5d is verified. Do not mark later phases complete based on planning work alone.
+P10b+ and P11 remain out of the current implementation scope until the P10a
+gate is complete. Do not mark later phases complete based on planning work alone.
 
 ## Decisions and blockers
 
@@ -118,6 +140,9 @@ P6 through P11 remain out of the current implementation scope until P5d is verif
 - RuneRoller refactored from static to instance-based (`RuneRoller.default().roll()`); production callers updated; test uses preload to instantiate.
 - Boss integration test guarded against rune drop spawning on empty catalogue during headless tests.
 - P5a gate: **closed**.
+- P9 map-generation and room-overhaul implementation: verified in the current
+	worktree; full-suite result recorded above.
+- P10a upgrade foundations: **closed**, 215/215 tests and 460 assertions.
 - P5b gate: **closed**. Player slot runes and persistence verified.
 - P5c gate: **closed**. HUD swap and inputs verified.
 - P6, P7, P8 features implemented (Loadout Select, Run Summary, Main Menu). Tutorial logic fixed. Drops parented to rooms for proper despawning.
