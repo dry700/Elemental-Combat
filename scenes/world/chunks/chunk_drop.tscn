@@ -2,10 +2,48 @@
 
 [ext_resource type="Script" uid="uid://damt7owqhg1gd" path="res://scripts/world/map_gen/chunk_base.gd" id="1_7dxbo"]
 [ext_resource type="TileSet" uid="uid://ctppkgnih0jyt" path="res://scenes/world/chunks/chunk_tileset.tres" id="2_y7jib"]
-[ext_resource type="PackedScene" path="res://scenes/world/one_way_platform.tscn" id="3_h77mo"]
+[ext_resource type="PackedScene" uid="uid://dtgj2pfdruvq3" path="res://scenes/world/one_way_platform.tscn" id="3_h77mo"]
 [ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="5_iyhi1"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="6_dds26"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_s1x1j"]
+[ext_resource type="Resource" uid="uid://bitv2472u7lf0" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_s1x1j"]
+
+[sub_resource type="Animation" id="Animation_kga0h"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(128, 224)]
+}
+
+[sub_resource type="Animation" id="Animation_7dxbo"]
+resource_name = "move"
+length = 10.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(6, 240), Vector2(360, 240)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_y7jib"]
+_data = {
+&"RESET": SubResource("Animation_kga0h"),
+&"move": SubResource("Animation_7dxbo")
+}
 
 [node name="Node2D" type="Node2D" unique_id=803151355]
 script = ExtResource("1_7dxbo")
@@ -27,9 +65,9 @@ width_tiles = 4
 position = Vector2(128, 224)
 width_tiles = 4
 
-[node name="_StaticBody2D_15" parent="@StaticBody2D@15" unique_id=1812458691 instance=ExtResource("3_h77mo")]
-position = Vector2(55, 89)
-width_tiles = 4
+[node name="AnimationPlayer" type="AnimationPlayer" parent="@StaticBody2D@15" unique_id=1853037060]
+libraries/ = SubResource("AnimationLibrary_y7jib")
+autoplay = &"move"
 
 [node name="SpawnPoint_530" type="Node2D" parent="." unique_id=292733420]
 position = Vector2(88, 48)
@@ -44,3 +82,7 @@ script = ExtResource("5_iyhi1")
 enemy_scene = ExtResource("6_dds26")
 enemy_stats = ExtResource("7_s1x1j")
 starting_element = &"kim"
+
+[node name="_StaticBody2D_15" parent="." unique_id=1812458691 instance=ExtResource("3_h77mo")]
+position = Vector2(183, 313)
+width_tiles = 4

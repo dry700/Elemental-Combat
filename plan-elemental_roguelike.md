@@ -1,6 +1,6 @@
 # Elemental Roguelike Plan
 
-This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The current implementation boundary is P10a; P10b remains deferred until the upgrade-menu scope is started.
+This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). Procedural map snapshot persistence is complete; the current implementation boundary is P10b.
 
 ## Current status
 
@@ -29,6 +29,28 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - Qi and upgrade ranks never enter `SaveManager`.
 - P10a exposes data and purchase APIs; UI/input and remaining effect hooks are
 	P10b+ work.
+
+## P10b playtest tools (implemented)
+
+- F12 opens a debug-build-only panel with invincibility, procedural map
+	regeneration, start/finish/any-chunk teleport, Qi grants, and upgrade buys.
+- Panel-open state blocks voluntary Player actions but does not pause the run.
+- Cheat Qi/ranks do not enter persistent save data; Vitality bonus is excluded
+	from the saved base max-health value.
+- Remaining: resolve D3/D4 and implement the normal room-cleared upgrade UI and
+	remaining combat effect hooks.
+- Verification: playtest unit tests 3/3 (13 assertions), room/save integration
+	tests 8/8 (21 assertions), player save-state tests 5/5 (22 assertions), and
+	full suite 224/224 (492 assertions, 2 expected warnings).
+
+## Procedural map save contract (verified)
+
+- The in-progress snapshot contains the current procedural grid, door masks,
+	start/finish cells, and chosen chunk scene paths.
+- Resume restores the structure before room entry, so neither topology nor
+	chunk art is rerolled.
+- Enemy state remains intentionally fresh on resume; legacy snapshots without
+	a map structure continue to load and generate a layout.
 
 ## P5 design contract
 
@@ -81,13 +103,15 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 - P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
 - P5a–P5d gates are closed; P6–P9 implementation is complete in the current worktree.
-- P10a full-suite verification: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
+- P10a baseline: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
+- Map snapshot focused tests: 2/2 passed, 7 assertions; RunManager persistence: 6/6 passed, 12 assertions.
+- Current full suite: 219/219 tests passed, 470 assertions, 0 failures, 2 expected warnings.
 - Static diagnostics report no errors in the changed upgrade/run/player files.
-- A reset-state regression was fixed and covered for favored Sinh elements.
+- Map resume integration confirms identical cell/chunk assignments after reconstruction.
 
 ## Deferred phases
 
-P10b+ and final closeout remain deferred. P9 and P10a are verified; loadout
+P10b and final closeout remain deferred. P9, P10a, and map snapshot persistence are verified; loadout
 selection, run summary, main menu, and procedural room generation are implemented.
 
 ## Open decisions
@@ -101,5 +125,5 @@ selection, run summary, main menu, and procedural room generation are implemente
 
 ## Exact next item
 
-Start P10b: implement the room-cleared upgrade menu/input flow and connect
+Continue P10b: implement the room-cleared upgrade menu/input flow and connect
 the P10a purchase APIs to the remaining player and reaction effect hooks.

@@ -123,7 +123,11 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] P10a — Implement reaction mastery and repeatable stat-upgrade purchase logic.
 - [x] P10a — Enforce specialization rules without mutating raw charge values in the resolver.
 - [ ] Finish remaining effect hooks and upgrade-related side effects.
+- [x] P10b playtest harness — F12 debug panel for invincibility, map regeneration, teleport, Qi grants, and upgrade purchases.
+- [x] Playtest verification: 224/224 full-suite tests passed, 492 assertions, 0 failures, 2 expected warnings; no static errors in touched scripts.
 - [x] P10a verification: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
+- [x] P10a follow-up — save procedural map structure (grid, masks, start/finish, selected chunk paths) and restore it before room entry.
+- [x] Map snapshot verification: 219/219 full-suite tests passed, 470 assertions, 0 failures, 2 expected warnings; focused map and resume tests passed.
 - [ ] P10b verification: upgrade-menu/input and remaining effect-hook tests.
 
 ### P11 — Final verification and closeout
@@ -173,6 +177,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P9 verified in the current worktree: procedural room generation, chunk variants, platform collision/drop-through behavior, and related combat tests are covered by the green full suite.
 - P10a verified 2026-09-29: `UpgradeManager` is registered after `SaveManager`; enemy Qi rewards, reset boundaries, one-time reaction ranks, and repeatable Weapon Might/Vitality purchases are implemented. Reset now clears favored Sinh elements as well as ranks.
 - P10b remains blocked on the unresolved upgrade-menu input and room-state gating decision (D3), plus the player-owned-hit policy (D4).
+- PlaytestMode is debug-build-only. It is a development tool, not the normal upgrade menu, and does not resolve D3/D4.
+- Vitality cheat increases runtime max HP but `Player.to_save_state()` removes the UpgradeManager bonus so per-run ranks remain non-persistent.
+- Save/resume now preserves the current procedural layout and selected chunk scenes; enemy state remains fresh. Legacy snapshots without `map_structure` remain compatible.
 
 ## Current active scope
 
@@ -182,8 +189,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] P7 — run summary (**verified**)
 - [x] P8 — main menu (**verified**)
 - [x] P9 — procedural map generation & room overhaul (**verified**)
-- [ ] P10b — Qi upgrade menu, input, and remaining effect hooks
+- [ ] P10b — Qi upgrade menu and remaining effect hooks (playtest harness implemented)
 
 ## Immediate next action
 
-- Start P10b: implement the room-cleared upgrade menu/input flow and connect the P10a purchase APIs to the remaining player and reaction effect hooks.
+- Continue P10b: resolve D3/D4, then implement the normal room-cleared upgrade menu and connect the P10a purchase APIs to remaining player/reaction effect hooks.

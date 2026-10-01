@@ -24,14 +24,10 @@ The `Player.State` enum will be expanded to include:
 - **Plunge Physics**: Horizontal velocity is zeroed out. Downward gravity is multiplied (`plunge_gravity_multiplier`) to make the fall feel heavy and fast.
 
 ### The Scaling System
-As the player falls in the `PLUNGE` state, we track the total distance fallen from their initial plunge height (`_plunge_start_y`). When `is_on_floor()` becomes true, we calculate an `impact_intensity` from `0.0` to `1.0`.
-- `min_plunge_height = 40.0` (Minimum distance required to scale impact)
-- `max_plunge_height = 200.0` (Distance for maximum impact)
-- `height_fallen = max(0.0, global_position.y - _plunge_start_y)`
-- `impact_intensity = clamp((height_fallen - min_plunge_height) / (max_plunge_height - min_plunge_height), 0.0, 1.0)`
-
-### Prevention & Edge Cases
-To prevent awkward short-plunges, a `RayCast2D` (`PlungeRaycast`) points downwards exactly `min_plunge_height` pixels. If it hits the ground when the player attempts to plunge, the plunge is denied and a regular aerial attack executes instead. The RayCast dynamically ignores one-way platforms when the player is dropping through them to avoid false-positives. Walking off a ledge transitions the player immediately to `State.FALL` to ensure the plunge is responsive.
+As the player falls in the `PLUNGE` state, we track their `velocity.y`. When `is_on_floor()` becomes true, we calculate an `impact_intensity` from `0.0` to `1.0`.
+- `min_plunge_speed = 250.0` (Short hop)
+- `max_plunge_speed = 800.0` (Max fall speed)
+- `impact_intensity = clamp((velocity.y - min) / (max - min), 0.0, 1.0)`
 
 ### Impact Resolution
 Upon hitting the ground, we execute an AoE burst:

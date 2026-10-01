@@ -8,10 +8,13 @@
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="5_vpfk0"]
 [ext_resource type="Resource" uid="uid://ck7psobfj0h6l" path="res://scripts/resources/skills/ignite_dart.tres" id="6_skill1"]
 [ext_resource type="Resource" uid="uid://bitv2472u7lf0" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="8_enemystats1"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
+[ext_resource type="Resource" uid="uid://dtq8vxadaw86v" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_enemystats2"]
 [ext_resource type="Script" uid="uid://b2nqw7d1ejgkl" path="res://scripts/items/weapon_pickup.gd" id="10_pickup"]
 [ext_resource type="Resource" uid="uid://bc7olf67v3v54" path="res://scripts/resources/weapons/training_greatsword.tres" id="11_greatsword"]
 [ext_resource type="Resource" uid="uid://dwwgfkhfq14ht" path="res://scripts/resources/weapons/training_hammer.tres" id="12_hammer"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/flying_enemy.tscn" id="13_gghxo"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy_still.tscn" id="14_mpvex"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy.tscn" id="15_mgvey"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(400, 20)
@@ -86,3 +89,12 @@ starting_element = &"none"
 starting_charge = 1
 starting_armor = 10.0
 enemy_stats = ExtResource("9_enemystats2")
+
+[node name="FlyingEnemy" parent="." unique_id=414185328 instance=ExtResource("13_gghxo")]
+position = Vector2(19, 56)
+
+[node name="ShooterEnemyStill" parent="." unique_id=1875240014 instance=ExtResource("14_mpvex")]
+position = Vector2(-8, 93)
+
+[node name="ShooterEnemy" parent="." unique_id=1815582713 instance=ExtResource("15_mgvey")]
+position = Vector2(-189, 93)

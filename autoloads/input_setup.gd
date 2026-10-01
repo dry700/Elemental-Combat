@@ -29,6 +29,7 @@ const MENU_UP_KEYS: Array[Key] = [KEY_W, KEY_UP]
 const MENU_DOWN_KEYS: Array[Key] = [KEY_S, KEY_DOWN]
 const MENU_CANCEL_KEYS: Array[Key] = [KEY_ESCAPE]
 const DEBUG_TEST_EFFECTS_KEYS: Array[Key] = [KEY_T]
+const PLAYTEST_TOGGLE_KEYS: Array[Key] = [KEY_F12]
 
 
 func _init() -> void:
@@ -40,6 +41,7 @@ func _init() -> void:
 	_register_mouse_action("attack", ATTACK_KEYS)
 	_register_mouse_action("attack_secondary", ATTACK_SECONDARY_BUTTONS)
 	_register_action("debug_test_effects", DEBUG_TEST_EFFECTS_KEYS)
+	_register_action("playtest_toggle", PLAYTEST_TOGGLE_KEYS)
 	_register_action("skill_1", SKILL_1_KEYS)
 	_register_action("skill_2", SKILL_2_KEYS)
 	_register_action("pickup", PICKUP_KEYS)

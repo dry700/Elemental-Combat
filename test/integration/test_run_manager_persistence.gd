@@ -39,6 +39,9 @@ func after_each():
 	RunManager._run_active = false
 	RunManager.skip_scene_transitions = false
 	RunManager.set_process(false)
+	RunManager._current_room = null
+	RunManager._room_container = null
+	RunManager._player = null
 
 func test_finish_run_win_records_history_and_clears_save():
 	RunManager._sequence = ["res://a.tscn", "res://b.tscn"]
@@ -84,3 +87,66 @@ func test_resume_from_save_restores_sequence_and_player_state():
 	assert_eq(RunManager._sequence, saved_sequence)
 	assert_almost_eq(RunManager._elapsed_sec, 88.0, 0.01)
 	assert_eq(player.current_health, 17.0)
+
+func test_save_snapshot_round_trips_map_structure():
+	var map_structure := {
+		"grid_w": 4,
+		"grid_h": 3,
+		"start_cell": [0, 1],
+		"finish_cell": [3, 1],
+		"cells": [{"x": 0, "y": 1, "mask": 2, "chunk_path": "res://scenes/world/chunks/chunk_start.tscn"}],
+	}
+	SaveManager.save_in_progress_run(["res://scenes/world/rooms/procedural_room.tscn"], 0, {}, 12.0, map_structure)
+	var saved: Dictionary = SaveManager.load_in_progress_run()
+	assert_eq(saved["map_structure"], map_structure)
+
+func test_resume_rebuilds_the_saved_procedural_map_structure():
+	var source_generator := MapGenerator.new(4, 3)
+	source_generator.load_pool_from_dir("res://scenes/world/chunks")
+	source_generator.generate()
+	var source_root := Node2D.new()
+	source_generator.build_map(source_root)
+	add_child_autofree(source_root)
+	var map_structure := source_generator.to_dict()
+	var room_container := Node2D.new()
+	add_child_autofree(room_container)
+	RunManager._room_container = room_container
+	var saved := {
+		"sequence": ["res://scenes/world/rooms/procedural_room.tscn"],
+		"current_index": 0,
+		"elapsed_sec": 23.0,
+		"player": {"current_health": 25.0},
+		"map_structure": map_structure,
+	}
+	RunManager._resume_from_save(saved)
+	var resumed_room := RunManager._current_room as ProceduralRoomController
+	assert_not_null(resumed_room)
+	assert_eq(resumed_room.map_gen.to_dict(), map_structure)
+
+func test_playtest_teleports_to_start_finish_and_any_chunk():
+	var room := load("res://scenes/world/rooms/procedural_room.tscn").instantiate() as ProceduralRoomController
+	add_child_autofree(room)
+	RunManager._current_room = room
+	var start_position := room.get_player_spawn_position()
+	assert_true(RunManager.teleport_player_to_playtest_target("start"))
+	assert_eq(player.global_position, start_position)
+	assert_true(RunManager.teleport_player_to_playtest_target("finish"))
+	var cell: Vector2i = room.get_playtest_cells()[0]
+	var chunk_position: Vector2 = room.get_playtest_teleport_position(cell)
+	assert_true(RunManager.teleport_player_to_playtest_target(cell))
+	assert_eq(player.global_position, chunk_position)
+
+func test_playtest_regenerates_current_procedural_room():
+	var room_container := Node2D.new()
+	add_child_autofree(room_container)
+	var room := load("res://scenes/world/rooms/procedural_room.tscn").instantiate() as ProceduralRoomController
+	room_container.add_child(room)
+	RunManager._room_container = room_container
+	RunManager._current_room = room
+	RunManager._sequence = ["res://scenes/world/rooms/procedural_room.tscn"]
+	RunManager._current_index = 0
+	assert_true(RunManager.regenerate_current_room())
+	await get_tree().process_frame
+	assert_not_null(RunManager._current_room)
+	assert_ne(RunManager._current_room, room)
+	assert_true(RunManager._current_room is ProceduralRoomController)

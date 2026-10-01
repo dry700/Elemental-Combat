@@ -26,6 +26,7 @@ SaveManager="*res://autoloads/save_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 RunManager="*res://autoloads/run_manager.gd"
 Hud="*res://autoloads/hud.gd"
+PlaytestMode="*res://autoloads/playtest_mode.gd"
 
 [display]
 

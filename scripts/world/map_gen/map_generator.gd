@@ -15,6 +15,7 @@ var grid: Dictionary # Vector2i -> int (mask)
 
 var start_cell: Vector2i
 var finish_cell: Vector2i
+var chunk_paths: Dictionary = {} # Vector2i -> String; empty means generated fallback chunk.
 
 # A dictionary mapping mask (int) -> Array[PackedScene]
 var chunk_pool: Dictionary = {}
@@ -47,6 +48,7 @@ func load_pool_from_dir(path: String) -> void:
 
 func generate() -> void:
 	grid.clear()
+	chunk_paths.clear()
 	var current := Vector2i(0, randi() % grid_h)
 	start_cell = current
 	grid[current] = 0
@@ -126,11 +128,21 @@ func build_map(parent: Node2D) -> void:
 	for cell in grid:
 		var mask: int = grid[cell]
 		var chunk_node: Node2D = null
-		
-		if chunk_pool.has(mask) and chunk_pool[mask].size() > 0:
-			var scene: PackedScene = chunk_pool[mask][randi() % chunk_pool[mask].size()]
+		var has_saved_assignment: bool = chunk_paths.has(cell)
+		var scene_path := str(chunk_paths.get(cell, ""))
+		var scene: PackedScene
+		if scene_path != "" and ResourceLoader.exists(scene_path):
+			scene = load(scene_path) as PackedScene
+		if scene == null and has_saved_assignment and scene_path != "":
+			push_warning("MapGenerator: saved chunk '%s' is unavailable; using fallback" % scene_path)
+		if scene == null and not has_saved_assignment and chunk_pool.has(mask) and chunk_pool[mask].size() > 0:
+			var candidates: Array = chunk_pool[mask]
+			scene = candidates[randi() % candidates.size()]
+			chunk_paths[cell] = scene.resource_path
+		if scene != null:
 			chunk_node = scene.instantiate() as Node2D
 		else:
+			chunk_paths[cell] = ""
 			chunk_node = _build_fallback_chunk(mask)
 			
 		chunk_node.position = Vector2(cell.x * CHUNK_W, cell.y * CHUNK_H)
@@ -140,6 +152,61 @@ func build_map(parent: Node2D) -> void:
 			chunk_node.add_to_group("start_chunk")
 		if cell == finish_cell:
 			chunk_node.add_to_group("finish_chunk")
+
+
+func to_dict() -> Dictionary:
+	var cells: Array[Dictionary] = []
+	for y in range(grid_h):
+		for x in range(grid_w):
+			var cell := Vector2i(x, y)
+			if not grid.has(cell):
+				continue
+			cells.append({
+				"x": x,
+				"y": y,
+				"mask": int(grid[cell]),
+				"chunk_path": str(chunk_paths.get(cell, "")),
+			})
+	return {
+		"grid_w": grid_w,
+		"grid_h": grid_h,
+		"start_cell": [start_cell.x, start_cell.y],
+		"finish_cell": [finish_cell.x, finish_cell.y],
+		"cells": cells,
+	}
+
+
+func load_layout(data: Dictionary) -> bool:
+	var saved_width := int(data.get("grid_w", 0))
+	var saved_height := int(data.get("grid_h", 0))
+	var saved_cells: Variant = data.get("cells", [])
+	var saved_start: Variant = data.get("start_cell", [])
+	var saved_finish: Variant = data.get("finish_cell", [])
+	if saved_width != grid_w or saved_height != grid_h:
+		return false
+	if not saved_cells is Array or not saved_start is Array or not saved_finish is Array:
+		return false
+	if saved_start.size() != 2 or saved_finish.size() != 2:
+		return false
+	var restored_grid: Dictionary = {}
+	var restored_paths: Dictionary = {}
+	for entry in saved_cells:
+		if not entry is Dictionary:
+			return false
+		var cell := Vector2i(int(entry.get("x", -1)), int(entry.get("y", -1)))
+		if cell.x < 0 or cell.x >= grid_w or cell.y < 0 or cell.y >= grid_h or restored_grid.has(cell):
+			return false
+		restored_grid[cell] = int(entry.get("mask", 0))
+		restored_paths[cell] = str(entry.get("chunk_path", ""))
+	var restored_start := Vector2i(int(saved_start[0]), int(saved_start[1]))
+	var restored_finish := Vector2i(int(saved_finish[0]), int(saved_finish[1]))
+	if not restored_grid.has(restored_start) or not restored_grid.has(restored_finish):
+		return false
+	grid = restored_grid
+	chunk_paths = restored_paths
+	start_cell = restored_start
+	finish_cell = restored_finish
+	return true
 
 func _build_fallback_chunk(mask: int) -> Node2D:
 	var root := Node2D.new()

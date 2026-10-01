@@ -4,6 +4,7 @@ extends RoomController
 var map_gen: MapGenerator
 var start_chunk: Node2D
 var finish_chunk: Node2D
+var saved_map_structure: Dictionary = {}
 
 func _init() -> void:
 	pass
@@ -11,7 +12,10 @@ func _init() -> void:
 func _enter_tree() -> void:
 	map_gen = MapGenerator.new(4, 3)
 	map_gen.load_pool_from_dir("res://scenes/world/chunks")
-	map_gen.generate()
+	if saved_map_structure.is_empty() or not map_gen.load_layout(saved_map_structure):
+		if not saved_map_structure.is_empty():
+			push_warning("ProceduralRoomController: saved map structure is invalid; generating a new layout")
+		map_gen.generate()
 	map_gen.build_map(self)
 	
 	# Find start and finish chunks among immediate children
@@ -85,3 +89,27 @@ func get_player_spawn_position() -> Vector2:
 			if child.is_in_group("player_spawn"):
 				return child.global_position
 	return Vector2.ZERO
+
+
+func get_playtest_cells() -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	if map_gen == null:
+		return cells
+	for cell in map_gen.grid:
+		cells.append(cell)
+	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.y < b.y or (a.y == b.y and a.x < b.x)
+	)
+	return cells
+
+
+func get_playtest_teleport_position(target: Variant) -> Variant:
+	if target is String and target == "start":
+		return get_player_spawn_position()
+	var floor_y := MapGenerator.CHUNK_H - (2 * 16) - 15
+	if target is String and target == "finish" and finish_chunk != null:
+		return finish_chunk.to_global(Vector2(MapGenerator.CHUNK_W / 2.0 - 35.0, floor_y))
+	if target is Vector2i and map_gen != null and map_gen.grid.has(target):
+		var local_position := Vector2(target.x * MapGenerator.CHUNK_W + MapGenerator.CHUNK_W / 2.0, target.y * MapGenerator.CHUNK_H + floor_y)
+		return to_global(local_position)
+	return null

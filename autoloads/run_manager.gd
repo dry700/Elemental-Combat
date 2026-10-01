@@ -39,6 +39,7 @@ var _room_container: Node = null
 var _player: Player = null
 var _elapsed_sec: float = 0.0
 var _run_active: bool = false
+var _map_structure_to_restore: Dictionary = {}
 
 var pending_weapon_path: String = ""
 var pending_secondary_weapon_path: String = ""
@@ -118,6 +119,8 @@ func _resume_from_save(saved: Dictionary) -> void:
 	for path in loaded_sequence:
 		_sequence.append(str(path))
 	_elapsed_sec = saved.get("elapsed_sec", 0.0)
+	var saved_map_structure: Variant = saved.get("map_structure", {})
+	_map_structure_to_restore = saved_map_structure.duplicate(true) if saved_map_structure is Dictionary else {}
 	_player.apply_save_state(saved.get("player", {}))
 	_current_index = int(saved.get("current_index", -1)) - 1
 	_advance()
@@ -135,6 +138,38 @@ func advance_room() -> void:
 	call_deferred("_advance")
 
 
+func regenerate_current_room() -> bool:
+	if not OS.is_debug_build() or not _current_room is ProceduralRoomController or _current_index < 0:
+		return false
+	call_deferred("_regenerate_current_room")
+	return true
+
+
+func _regenerate_current_room() -> void:
+	if not _current_room is ProceduralRoomController:
+		return
+	var old_room: Node = _current_room
+	var old_parent := old_room.get_parent()
+	_current_room = null
+	_map_structure_to_restore.clear()
+	if old_parent != null:
+		old_parent.remove_child(old_room)
+	old_room.queue_free()
+	_current_index -= 1
+	_advance()
+
+
+func teleport_player_to_playtest_target(target: Variant) -> bool:
+	if not OS.is_debug_build() or _player == null or not _current_room is ProceduralRoomController:
+		return false
+	var destination: Variant = _current_room.get_playtest_teleport_position(target)
+	if not destination is Vector2:
+		return false
+	_player.global_position = destination
+	_player.velocity = Vector2.ZERO
+	return true
+
+
 func _advance() -> void:
 	_current_index += 1
 	if _current_room != null:
@@ -148,6 +183,9 @@ func _advance() -> void:
 
 	var room_scene: PackedScene = load(_sequence[_current_index])
 	_current_room = room_scene.instantiate()
+	if _current_room is ProceduralRoomController and not _map_structure_to_restore.is_empty():
+		_current_room.saved_map_structure = _map_structure_to_restore.duplicate(true)
+	_map_structure_to_restore.clear()
 	_room_container.add_child(_current_room)
 
 	var controller := _current_room as RoomController
@@ -212,4 +250,7 @@ func start_next_loop() -> void:
 func _autosave() -> void:
 	if _player == null or _current_room == null:
 		return
-	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec)
+	var map_structure: Dictionary = {}
+	if _current_room is ProceduralRoomController and _current_room.map_gen != null:
+		map_structure = _current_room.map_gen.to_dict()
+	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure)

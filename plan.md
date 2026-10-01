@@ -20,7 +20,35 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [ ] P10 — Qi and upgrade system
 - [ ] P11 — Final verification and documentation closeout
 
-## Current scope: P10a — Qi foundations and upgrade manager
+## Completed current task: P10a follow-up — Persist procedural map layout
+
+- [x] Serialize generated grid cells, door masks, start/finish cells, and chosen chunk scene paths.
+- [x] Store the map structure in `in_progress_run` without changing the existing player/enemy snapshot boundary.
+- [x] Restore the saved structure before the procedural room enters the tree; keep legacy saves compatible.
+- [x] Add generator round-trip and RunManager resume integration tests.
+
+### Verification gate
+
+- [x] Focused map snapshot tests: 2/2 passed, 7 assertions.
+- [x] RunManager persistence tests: 6/6 passed, 12 assertions.
+- [x] Full GUT suite: 219/219 tests passed, 470 assertions, 0 failures, 2 expected warnings.
+- [x] Static diagnostics: no errors in the changed scripts/tests.
+
+## Current scope: P10b — Upgrade menu, input, and remaining effect hooks
+
+### P10b playtest tools (implemented)
+
+- [x] Add debug-build-only `PlaytestMode`, toggled with F12.
+- [x] Add full-hit Player invincibility and freeze voluntary input while the panel is open.
+- [x] Add current procedural map regeneration and start/finish/any-chunk teleport targets.
+- [x] Add Qi grants and purchase controls for Vitality, Weapon Might, and selected reaction ranks.
+- [x] Keep Qi, ranks, and Vitality bonuses out of persistent run snapshots.
+- [x] Add unit and integration coverage for panel actions, cheat grants, teleport, and regeneration.
+- [x] Verification: 224/224 full-suite tests passed, 492 assertions, 0 failures, 2 expected warnings; touched scripts have no static errors.
+
+### Remaining P10b scope
+
+- [ ] Resolve D3/D4 and implement the normal room-cleared upgrade menu and remaining combat effect hooks.
 
 - [x] Register `UpgradeManager` as an autoload after `SaveManager`.
 - [x] Track per-run Qi and reset it at new-run and run-finish boundaries.
