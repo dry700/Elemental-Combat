@@ -5,6 +5,9 @@
 [ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="4_dummy"]
 [ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/flying_enemy.tscn" id="6_flying"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy.tscn" id="7_shooter"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy_still.tscn" id="8_shooter_still"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(350, 20)
@@ -35,6 +38,24 @@ position = Vector2(0, 93.5)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_dummy")
 enemy_stats = ExtResource("5_stats")
+starting_element = &"kim"
+
+[node name="FlyingEnemySpawn" type="Node2D" parent="."]
+position = Vector2(100, 40)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("6_flying")
+starting_element = &"hoa"
+
+[node name="ShooterMovingSpawn" type="Node2D" parent="."]
+position = Vector2(130, 93.5)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("7_shooter")
+starting_element = &"thuy"
+
+[node name="ShooterStillSpawn" type="Node2D" parent="."]
+position = Vector2(-100, 93.5)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("8_shooter_still")
 starting_element = &"kim"
 
 [node name="Exit" type="Area2D" parent="." unique_id=661309711]

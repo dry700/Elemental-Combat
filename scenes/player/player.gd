@@ -7,7 +7,7 @@ extends CharacterBody2D
 ## weight — tune these starting numbers via actual playtesting (Section 8),
 ## don't take them as final.
 
-enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED }
+enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED, WALL_SLIDE, PLUNGE }
 
 ## Emitted whenever a weapon slot changes — currently only WeaponPickup
 ## calls swap_weapon() below, but this is exposed generally in case
@@ -38,6 +38,23 @@ const DamagePopup = preload("res://scripts/ui/damage_number.gd")
 @export var coyote_time: float = 0.1
 @export var jump_buffer_time: float = 0.1
 @export var max_air_jumps: int = 1
+
+## --- Wall Slide / Jump tuning ---
+@export var wall_slide_speed: float = 80.0
+@export var wall_jump_push_force: float = 100.0
+@export var wall_jump_up_force: float = 250.0
+
+## --- Plunge Attack tuning ---
+@export var min_plunge_height: float = 40.0:
+	set(val):
+		min_plunge_height = val
+		if is_inside_tree() and plunge_raycast != null:
+			plunge_raycast.target_position = Vector2(0, min_plunge_height)
+@export var max_plunge_height: float = 200.0
+@export var plunge_gravity_multiplier: float = 2.5
+var _plunge_start_y: float = 0.0
+
+@onready var plunge_raycast: RayCast2D = $PlungeRaycast
 
 ## --- Dodge tuning ---
 @export var dodge_speed: float = 210.0
@@ -77,6 +94,7 @@ var facing: int = 1  ## 1 = right, -1 = left
 var elemental := ElementalCombatant.new()
 var _active_weapon: WeaponStats
 var _is_dead: bool = false
+var playtest_invincible: bool = false
 
 var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
@@ -113,8 +131,13 @@ const ONE_WAY_PLATFORM_LAYER: int = 3  ## Must match Platform's Collision Layer 
 @export var drop_through_duration: float = 0.25  ## Long enough to fall clear of the platform.
 
 func _ready() -> void:
+	if plunge_raycast != null:
+		plunge_raycast.target_position = Vector2(0, min_plunge_height)
+		plunge_raycast.add_exception(self)
+		
 	add_to_group("player")  # Lets VisionBlocker (Douse's steam cloud, A.2) find the player generically.
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
+	max_health += UpgradeManager.vitality_hp_bonus()
 	current_health = max_health
 	if weapon == null:
 		weapon = WeaponStats.new()  # Fallback so the scene still runs unassigned.
@@ -147,7 +170,7 @@ func _physics_process(delta: float) -> void:
 	# gravity and elemental.tick() (already run via _update_timers above)
 	# keep ticking normally, so opening the menu doesn't feel like the
 	# whole game paused.
-	if Hud.is_overlay_active():
+	if Hud.is_overlay_active() or PlaytestMode.is_panel_open():
 		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 		move_and_slide()
 		_update_facing()
@@ -155,6 +178,9 @@ func _physics_process(delta: float) -> void:
 
 	_try_debug_test_effects()
 	_try_start_drop_through()
+	
+	if not is_on_floor() and state in [State.IDLE, State.RUN]:
+		state = State.FALL
 
 	if elemental.is_disabled() and state not in [State.DODGE, State.ATTACK]:
 		if state != State.DISABLED:
@@ -183,6 +209,12 @@ func _physics_process(delta: float) -> void:
 			_try_cast_skill(skill_2, "skill_2")
 			if state == State.JUMP or state == State.FALL:
 				state = State.JUMP if velocity.y < 0.0 else State.FALL
+		State.WALL_SLIDE:
+			_process_wall_slide(delta)
+			_try_start_dodge()
+			_try_start_attack()
+		State.PLUNGE:
+			_process_plunge(delta)
 		State.DODGE:
 			_process_dodge(delta)
 		State.ATTACK:
@@ -209,6 +241,8 @@ func _update_timers(delta: float) -> void:
 		_drop_through_timer -= delta
 		if _drop_through_timer <= 0.0:
 			set_collision_mask_value(ONE_WAY_PLATFORM_LAYER, true)
+			if plunge_raycast != null:
+				plunge_raycast.set_collision_mask_value(ONE_WAY_PLATFORM_LAYER, true)
 
 	# Capturing the jump press here — unconditionally, every frame,
 	# regardless of state — rather than inside _handle_move_and_jump()
@@ -248,8 +282,8 @@ func _update_timers(delta: float) -> void:
 
 
 func _apply_gravity(delta: float) -> void:
-	if state == State.DODGE:
-		return  # Dodge overrides normal vertical movement entirely.
+	if state in [State.DODGE, State.WALL_SLIDE, State.PLUNGE]:
+		return  # Handled locally or overrides vertical movement
 	if not is_on_floor():
 		var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 		velocity.y += gravity * delta
@@ -281,9 +315,134 @@ func _handle_move_and_jump(delta: float) -> void:
 			_air_jumps_used += 1
 			state = State.JUMP
 			
+	if is_on_wall_only() and velocity.y > 0.0 and input_dir != 0.0:
+		var wall_normal := get_wall_normal().x
+		if (wall_normal < 0 and input_dir > 0) or (wall_normal > 0 and input_dir < 0):
+			state = State.WALL_SLIDE
+			_air_jumps_used = 0
+			velocity.y = minf(velocity.y, wall_slide_speed)
+			
+
+func _process_wall_slide(delta: float) -> void:
+	var input_dir := Input.get_axis("move_left", "move_right")
+	var wall_normal := get_wall_normal().x
+	
+	if not is_on_wall() or is_on_floor() or (wall_normal < 0 and input_dir < 0) or (wall_normal > 0 and input_dir > 0):
+		state = State.FALL
+		return
+	
+	velocity.y = minf(velocity.y + ProjectSettings.get_setting("physics/2d/default_gravity") * delta, wall_slide_speed)
+	
+	if _jump_buffer_timer > 0.0:
+		velocity.x = wall_normal * wall_jump_push_force
+		velocity.y = -wall_jump_up_force
+		_jump_buffer_timer = 0.0
+		state = State.JUMP
+		facing = int(sign(wall_normal)) if wall_normal != 0.0 else facing
+		visuals.scale.x = absf(visuals.scale.x) * facing
+
+
+func _start_plunge(weapon_to_use: WeaponStats) -> void:
+	if weapon_to_use == null:
+		return
+	_active_weapon = weapon_to_use
+	state = State.PLUNGE
+	velocity.x = 0.0
+	_plunge_start_y = global_position.y
+	
+	weapon_sprite.texture = _active_weapon.weapon_texture
+	weapon_sprite.visible = weapon_sprite.texture != null
+	weapon_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	weapon_sprite.position = Vector2.ZERO
+	
+	var actual_reach := _active_weapon.reach
+	if _active_weapon.weapon_texture != null:
+		actual_reach = float(_active_weapon.weapon_texture.get_width())
+	weapon_sprite.offset = Vector2(actual_reach / 2.0, 0.0)
+	
+	hitbox.position.x = WEAPON_GRIP_OFFSET
+	hitbox.rotation = deg_to_rad(90)  # Point straight down
+
+
+func _process_plunge(delta: float) -> void:
+	if is_on_floor():
+		var height_fallen = maxf(0.0, global_position.y - _plunge_start_y)
+		var impact_intensity = clamp((height_fallen - min_plunge_height) / (max_plunge_height - min_plunge_height), 0.0, 1.0)
+		_trigger_plunge_impact(impact_intensity)
+		
+		weapon_sprite.visible = false
+		hitbox.rotation = 0.0
+		
+		state = State.IDLE
+		return
+	velocity.y += ProjectSettings.get_setting("physics/2d/default_gravity") * plunge_gravity_multiplier * delta
+
+func _trigger_plunge_impact(intensity: float) -> void:
+	var radius = 40.0 + (60.0 * intensity)
+	var plunge_charge = 2 if intensity >= 0.6 else 1
+	var dmg = (_active_weapon.damage if _active_weapon else 10.0) * UpgradeManager.weapon_might_multiplier() * (1.0 + intensity)
+	var active_rune = weapon_rune if _active_weapon == weapon else secondary_weapon_rune
+	var swing = _active_weapon.resolve_swing(active_rune) if _active_weapon else null
+	var element = swing.element if swing else Elements.NONE
+	var weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower()) if _active_weapon else &"none"
+	var knockback = 150.0 * (1.0 + intensity)
+	
+	HitStop.freeze_for_weight(weight)
+	ScreenShake.shake_for_weight(weight)
+	
+	# Spawn splash particles along the ground horizontally to match the blast radius
+	var scene_root := get_tree().current_scene
+	if scene_root != null:
+		var center_particles := HitParticles.new()
+		center_particles.global_position = global_position + Vector2(0, 8)
+		center_particles.away_direction = Vector2.UP
+		center_particles.element = element
+		center_particles.scale = Vector2.ONE * (1.0 + (intensity * 1.5))
+		scene_root.add_child(center_particles)
+		
+		var num_side_splashes = int(radius / 25.0)
+		for i in range(1, num_side_splashes + 1):
+			var offset_x = i * 25.0
+			for dir in [-1, 1]:
+				var side_particles := HitParticles.new()
+				side_particles.global_position = global_position + Vector2(offset_x * dir, 8)
+				side_particles.away_direction = Vector2(dir * 0.5, -1).normalized()
+				side_particles.element = element
+				side_particles.scale = Vector2.ONE * (0.5 + intensity)
+				scene_root.add_child(side_particles)
+	
+	for node in get_tree().get_nodes_in_group(ElementalCombatant.ALL_COMBATANTS_GROUP):
+		if node.get_parent() == self:
+			continue
+		var dist = node.global_position.distance_to(global_position)
+		if dist <= radius:
+			var owner_node = node.get_parent()
+			if owner_node and owner_node.has_node("Hurtbox"):
+				var target_hurtbox = owner_node.get_node("Hurtbox")
+				if target_hurtbox:
+					var direction = (target_hurtbox.global_position - global_position).normalized()
+					if direction.is_zero_approx():
+						direction = Vector2.RIGHT
+					
+					var specific_hit_data = HitData.new(dmg, direction * knockback, self)
+					specific_hit_data.element = element
+					specific_hit_data.charge = plunge_charge
+					specific_hit_data.weapon_weight = weight
+					
+					target_hurtbox.take_hit(specific_hit_data)
+					
+					if hitbox.has_method("_spawn_hit_spark"):
+						hitbox._spawn_hit_spark(target_hurtbox.global_position)
+					if hitbox.has_method("_spawn_hit_particles"):
+						hitbox._spawn_hit_particles(target_hurtbox.global_position, direction)
+
+
+
 func _try_start_drop_through() -> void:
 	if Input.is_action_just_pressed("drop_down") and is_on_floor():
 		set_collision_mask_value(ONE_WAY_PLATFORM_LAYER, false)
+		if plunge_raycast != null:
+			plunge_raycast.set_collision_mask_value(ONE_WAY_PLATFORM_LAYER, false)
 		_drop_through_timer = drop_through_duration
 
 
@@ -315,11 +474,21 @@ func _process_dodge(delta: float) -> void:
 
 
 func _try_start_attack() -> void:
+	if plunge_raycast != null:
+		plunge_raycast.force_raycast_update()
+		
 	if Input.is_action_just_pressed("attack"):
-		_start_attack(weapon)
+		var can_plunge_state = state in [State.JUMP, State.FALL, State.WALL_SLIDE] or _drop_through_timer > 0.0
+		if can_plunge_state and Input.is_action_pressed("drop_down") and plunge_raycast != null and not plunge_raycast.is_colliding():
+			_start_plunge(weapon)
+		else:
+			_start_attack(weapon)
 	elif Input.is_action_just_pressed("attack_secondary") and secondary_weapon != null:
-		_start_attack(secondary_weapon)
-
+		var can_plunge_state = state in [State.JUMP, State.FALL, State.WALL_SLIDE] or _drop_through_timer > 0.0
+		if can_plunge_state and Input.is_action_pressed("drop_down") and plunge_raycast != null and not plunge_raycast.is_colliding():
+			_start_plunge(secondary_weapon)
+		else:
+			_start_attack(secondary_weapon)
 
 ## Starts a fresh swing, OR — same weapon, still inside its post-swing
 ## combo_window, and the combo hasn't already hit its weapon-defined cap
@@ -469,7 +638,7 @@ func _end_or_chain_attack() -> void:
 ## while the hitbox sat still.
 func _configure_hitbox_for_current_swing() -> void:
 	_shot_fired = false
-	hitbox.damage = _active_weapon.damage * _combo_damage_multiplier()
+	hitbox.damage = _active_weapon.damage * UpgradeManager.weapon_might_multiplier() * _combo_damage_multiplier()
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
 	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune
 	var swing := _active_weapon.resolve_swing(active_rune)
@@ -712,6 +881,8 @@ func _on_disabled_expired() -> void:
 
 
 func _on_hurtbox_hit(hit_data: HitData) -> void:
+	if playtest_invincible:
+		return
 	_apply_damage(hit_data.damage)
 	velocity += hit_data.knockback
 	HitStop.freeze_for_weight(hit_data.weapon_weight)
@@ -733,7 +904,7 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 ## falling health float) since Player's health model has always been
 ## different from the dummies' own damage-counter approach.
 func _apply_damage(amount: float) -> void:
-	if _is_dead:
+	if _is_dead or playtest_invincible:
 		return
 	var mitigated = elemental.mitigate_damage(amount)
 	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
@@ -762,7 +933,7 @@ func _die() -> void:
 func to_save_state() -> Dictionary:
 	return {
 		"current_health": current_health,
-		"max_health": max_health,
+		"max_health": max_health - UpgradeManager.vitality_hp_bonus(),
 		"armor": elemental.armor,
 		"weapon_path": weapon.resource_path if weapon != null else "",
 		"weapon_rune": weapon_rune.to_dict() if weapon_rune != null else null,
@@ -782,8 +953,8 @@ func to_save_state() -> Dictionary:
 ## run must not re-trigger a meta-progression unlock for something that
 ## was already unlocked the first time it was ever picked up.
 func apply_save_state(saved_state: Dictionary) -> void:
-	current_health = saved_state.get("current_health", current_health)
-	max_health = saved_state.get("max_health", max_health)
+	max_health = saved_state.get("max_health", max_health) + UpgradeManager.vitality_hp_bonus()
+	current_health = minf(saved_state.get("current_health", current_health), max_health)
 	elemental.armor = saved_state.get("armor", elemental.armor)
 	_load_weapon_path(saved_state.get("weapon_path", ""), true)
 	_load_weapon_path(saved_state.get("secondary_weapon_path", ""), false)

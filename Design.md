@@ -69,10 +69,10 @@ changes needed there for the Final Report beyond good writing.
 | Projectiles | `scripts/combat/base_projectile.gd` + `fragment_projectile.gd` (Ore Surge) + `skill_projectile.gd` (Ignite Dart) | Travel/lifetime/collision, per-type hit resolution |
 | Skills | `scripts/resources/skills/skill_data.gd` + `.tres` assets | A.5 function dispatch, called from `player.gd._try_cast_skill` |
 | Enemy AI | `scenes/enemies/enemy_combat_ai.gd`, `scenes/enemies/enemy_stats.gd` | Aggro/telegraph/attack/cooldown state machine, shared by all enemy types |
-| Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss}.gd` | Health/death/flash, wires `ElementalCombatant` + `EnemyCombatAI` together |
+| Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss,flying_enemy,shooter_enemy}.gd` | Health/death/flash, wires `ElementalCombatant` + `EnemyCombatAI` together |
 | Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
 | Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, room lifecycle, run sequencing, autosave hook |
-| Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume — local JSON |
+| Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume including procedural map layout — local JSON |
 | HUD | `autoloads/hud.gd`, `assets/ui/hud_theme.tres` | HP/boss bar, equip slots, pickup swap chooser (§8.1) — code-built, no `.tscn` |
 | Pickups | `scripts/items/{weapon_pickup,skill_pickup,rune_pickup}.gd` | Proximity tracking + in-world prompt only; all chooser input lives on `Hud` |
 | Runes | `scripts/resources/runes/{rune_data,rune_modifier_def,rune_roller}.gd` | Rolled runes, modifier catalogue, save serialization (§16) |
@@ -870,7 +870,9 @@ opened only when a run weapon or skill pickup requires the player to
 choose its destination slot; ordinary room transitions preserve the
 current loadout. Autosaves after every room transition via `SaveManager`,
 deliberately **not** mid-room precise (enemies always respawn fresh — see
-`run_manager.gd`'s own header for the reasoning).
+`run_manager.gd`'s own header for the reasoning). The current procedural
+room's complete generated layout is saved with the snapshot so resuming
+rebuilds the same map, including its per-cell chunk scene choices.
 ---
 
 ## 7. Save System
@@ -879,7 +881,15 @@ One JSON file at `user://save_data.json`, three independent concerns:
 meta-progression (`unlocked_weapons`/`unlocked_skills`, by resource path,
 recorded in `Player.swap_weapon`/`swap_skill`), run history (capped at 50,
 oldest dropped), and a single mid-run snapshot (room sequence + index +
-elapsed time + `Player.to_save_state()`). Test isolation via
+elapsed time + `Player.to_save_state()` + the current procedural map
+structure). The map structure stores grid dimensions, occupied cell
+coordinates and door masks, start/finish cells, and the selected chunk
+scene resource path for each cell. A saved fallback chunk remains a
+fallback; unavailable saved chunk resources fall back safely with a
+warning. Legacy snapshots without `map_structure` remain loadable and
+generate a fresh layout. Enemy health/status and other mid-room combat
+state are still deliberately not saved; enemies respawn fresh in the same
+map. Test isolation via
 `test/helpers/save_test_isolation.gd` — **always use this in any new test
 that touches `SaveManager`**, never the real save path.
 
@@ -909,6 +919,19 @@ the per-element pixel values.
 `InputSetup` (autoload) defines every input action in code
 (`InputMap.add_action`), not via Project Settings, specifically so a
 malformed `project.godot` can't break input configuration.
+
+`PlaytestMode` is a `CanvasLayer` autoload enabled only when
+`OS.is_debug_build()` is true. **F12** toggles its playtest panel. Opening
+the panel freezes voluntary Player actions but does not pause physics or
+timed effects. The panel can toggle full Player hit immunity, regenerate
+the current procedural room (new map and fresh enemies, same run index),
+teleport to the start, finish, or any generated chunk, grant 1000 Qi, and
+purchase the repeatable stat or selected reaction upgrades. Regeneration
+and teleport controls are disabled outside procedural rooms. These tools
+do not create a new save category: Qi and upgrade ranks remain per-run,
+and saved max health excludes the active Vitality bonus. Release builds
+do not construct the panel or accept the playtest actions.
+
 ### 8.1 Pickup Swap HUD
 
 Replaces the single-key "F opens the overlay" flow. Keyboard only.
@@ -1622,13 +1645,13 @@ extends Control
 func _ready() -> void:
 	var won := RunManager._last_run_outcome == "win"
 	outcome_label.text = "Run Complete!" if won else "You Died"
-    outcome_label.modulate = Color(0.4, 0.9, 0.45) if won else Color(0.85, 0.3, 0.3)
+	outcome_label.modulate = Color(0.4, 0.9, 0.45) if won else Color(0.85, 0.3, 0.3)
 	rooms_label.text = "Rooms Cleared: %d" % RunManager._last_run_rooms_cleared
 	duration_label.text = "Time: %s" % _format_duration(RunManager._last_run_duration_sec)
-    continue_button.pressed.connect(_on_continue_pressed)
+	continue_button.pressed.connect(_on_continue_pressed)
 
 func _format_duration(seconds: float) -> String:
-    var total := int(seconds)
+	var total := int(seconds)
 	return "%d:%02d" % [total / 60, total % 60]
 
 func _on_continue_pressed() -> void:
@@ -1662,18 +1685,18 @@ One primary button, not two — text and action both decided by
 func _refresh_ui() -> void:
     var has_resume := SaveManager.has_in_progress_run()
 	primary_button.text = "Continue" if has_resume else "New Run"
-    abandon_button.visible = has_resume  # only exists when there's something to abandon
+	abandon_button.visible = has_resume  # only exists when there's something to abandon
 
 func _on_primary_button_pressed() -> void:
-    if SaveManager.has_in_progress_run():
+	if SaveManager.has_in_progress_run():
 		get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
-    else:
-        _start_new_run()
+	else:
+		_start_new_run()
 
 func _start_new_run() -> void:
-    if not SaveManager.has_completed_tutorial():
+	if not SaveManager.has_completed_tutorial():
 		get_tree().change_scene_to_file("res://scenes/world/tutorial_room.tscn")
-    else:
+	else:
 		get_tree().change_scene_to_file("res://scenes/ui/loadout_select.tscn")
 ```
 
