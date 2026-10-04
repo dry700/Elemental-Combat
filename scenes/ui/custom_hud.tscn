@@ -1,0 +1,155 @@
+[gd_scene format=3 uid="uid://bo4j5pql1r10"]
+[ext_resource type="Script" uid="uid://cx6y8v2q2s1p" path="res://autoloads/hud.gd" id="1_hud"]
+
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_boss_hp"]
+bg_color = Color(0.85, 0.2, 0.2, 1.0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.35, 0.85, 0.4, 1.0)
+
+[node name="CustomHud" type="CanvasLayer" unique_id=12608230]
+script = ExtResource("1_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=120330605]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="PlayerStats" type="VBoxContainer" parent="MarginContainer" unique_id=1389111428]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+mouse_filter = 2
+
+[node name="QiLabel" type="Label" parent="MarginContainer/PlayerStats" unique_id=1966891629]
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Qi: 0"
+
+[node name="HealthBar" type="ProgressBar" parent="MarginContainer/PlayerStats" unique_id=43051005]
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
+custom_minimum_size = Vector2(250, 24)
+layout_mode = 2
+mouse_filter = 2
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="MarginContainer/PlayerStats/HealthBar" unique_id=1995685575]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 16
+text = "100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EquipSlots" type="HBoxContainer" parent="MarginContainer" unique_id=1454538351]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Weapon1" type="ColorRect" parent="MarginContainer/EquipSlots" unique_id=1636747427]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/EquipSlots/Weapon1" unique_id=1347226619]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Weapon2" type="ColorRect" parent="MarginContainer/EquipSlots" unique_id=1201117983]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/EquipSlots/Weapon2" unique_id=1271313915]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Skill1" type="ColorRect" parent="MarginContainer/EquipSlots" unique_id=2073167757]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/EquipSlots/Skill1" unique_id=118190352]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Skill2" type="ColorRect" parent="MarginContainer/EquipSlots" unique_id=1336740442]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/EquipSlots/Skill2" unique_id=641497045]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BossUI" type="VBoxContainer" parent="MarginContainer" unique_id=2043163611]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="BossName" type="Label" parent="MarginContainer/BossUI" unique_id=1575070389]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Boss Name"
+horizontal_alignment = 1
+
+[node name="BossHealthBar" type="ProgressBar" parent="MarginContainer/BossUI" unique_id=623123148]
+theme_override_styles/fill = SubResource("StyleBoxFlat_boss_hp")
+custom_minimum_size = Vector2(450, 8)
+layout_mode = 2
+mouse_filter = 2
+value = 100.0
+show_percentage = false

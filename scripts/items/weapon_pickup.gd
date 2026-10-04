@@ -111,9 +111,22 @@ func _spawn_dropped(old_weapon: WeaponStats, from_slot_primary: bool, old_rune: 
 func _draw() -> void:
 	var color := PRIMARY_COLOR if slot == Slot.PRIMARY else SECONDARY_COLOR
 	var s := HALF_SIZE
-	draw_rect(Rect2(Vector2(-s, -s), Vector2(s, s) * 2.0), color)
-	draw_rect(Rect2(Vector2(-s, -s), Vector2(s, s) * 2.0), Color.BLACK, false, 1.5)
-	var label := "1" if slot == Slot.PRIMARY else "2"
-	draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
+	
+	var display_tex = weapon.weapon_icon if weapon.weapon_icon != null else weapon.weapon_texture
+	if weapon != null and display_tex != null:
+		# Draw the actual weapon icon!
+		var tex_size = display_tex.get_size()
+		var dest_rect = Rect2(-tex_size / 2.0, tex_size)
+		draw_texture_rect(display_tex, dest_rect, false)
+		
+		# Draw a colored outline or underlay to still show primary/secondary slot
+		draw_rect(dest_rect.grow(1.0), color, false, 1.0)
+	else:
+		# Fallback to the old colored square if no icon is set
+		draw_rect(Rect2(Vector2(-s, -s), Vector2(s, s) * 2.0), color)
+		draw_rect(Rect2(Vector2(-s, -s), Vector2(s, s) * 2.0), Color.BLACK, false, 1.5)
+		var label := "1" if slot == Slot.PRIMARY else "2"
+		draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
+		
 	if _player_in_range != null:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -s - 6), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)
+		draw_string(ThemeDB.fallback_font, Vector2(-30, -s - 14), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)

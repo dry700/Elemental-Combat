@@ -25,7 +25,7 @@ VisionBlocker="*res://autoloads/vision_blocker.gd"
 SaveManager="*res://autoloads/save_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 RunManager="*res://autoloads/run_manager.gd"
-Hud="*res://autoloads/hud.gd"
+Hud="*res://scenes/ui/custom_hud.tscn"
 PlaytestMode="*res://autoloads/playtest_mode.gd"
 
 [display]
@@ -42,12 +42,15 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [gui]
 
-theme/custom_font="res://assets/fonts/monogram.ttf"
+theme/custom_font="res://assets/fonts/madspixel.ttf"
 
 [physics]
 
 2d/default_gravity=700
 
 [rendering]
+
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
 
 textures/canvas_textures/default_texture_filter=0

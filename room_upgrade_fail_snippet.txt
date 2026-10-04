@@ -1,0 +1,49 @@
+﻿khac_2v3_is_partial
+* test_khac_3v1_is_thua_overwhelm
+* test_khac_3v2_is_full_clear
+* test_khac_3v3_is_full_clear
+* test_resolution_result_carries_the_correct_pair
+[1m14/14 passed.
+[0m[4m
+
+res://test/unit/test_room_clear_upgrade_menu.gd
+[0m* test_room_clear_upgrade_menu_opens_and_purchases_weapon_might
+[31m    [Failed] [0m
+      at line 30
+[1m0/1 passed.
+[0m[4m
+
+res://test/unit/test_run_manager_sequence.gd
+[0m* test_sequence_always_ends_with_the_boss_room
+* test_sequence_length_is_normal_rooms_plus_one_boss_room
+* test_normal_room_slots_never_include_the_boss_path
+* test_normal_rooms_still_avoid_immediate_repeats
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_rune_data.gd
+[0m* test_rune_data_round_trips_to_dictionary
+* test_invalid_rune_data_returns_null
+* test_empty_rune_describes_no_modifiers
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_rune_roller.gd
+[0m* test_roll_filters_by_target_and_element
+* test_roll_does_not_repeat_modifier_ids
+* test_single_matching_definition_returns_one_modifier
+* test_empty_pool_returns_rune_without_modifiers
+Godot_v4.7.1-stable_win64_console.exe : WARNING: No rune modifiers available 
+for tho/1
+At line:1 char:1
++ & 'E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_w ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: No run...lable for tho/1 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] roll (res://scripts/resources/runes/rune_roller.gd:36)
+       [1] test_empty_pool_returns_rune_without_modifiers 
+(res://test/unit/test_rune_roller

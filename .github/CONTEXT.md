@@ -117,13 +117,12 @@
 > Gate: P8 verified. Start P9.
 
 ### Files to create/modify
-- `scenes/world/rooms/` — add 2 new room templates (e.g. `room_d.tscn`, `room_e.tscn`)
-- `autoloads/run_manager.gd` — update pool if necessary (or verify it auto-detects)
-- `test/unit/test_run_manager_sequence.gd` — update tests if room counts or expectations change
-- `scripts/world/room_controller.gd` — verify drops or mechanics in new rooms
+- `scripts/world/map_gen/` — procedural layouts are generated from chunk scenes.
+- `scenes/world/rooms/procedural_room.tscn` — active normal-room shell used by run progression.
+- `scenes/world/rooms/room_boss.tscn` — retained final boss room.
 
 ### Key tasks for P9 (from AGENT_PLAN.md)
-- Add the extra room templates and integrate them into the room pool.
+- Static hand-placed normal-room templates were superseded by procedural map generation; do not recreate the retired room_a through room_e scenes.
 - Validate each room against the room controller contract.
 - Ensure spirit stats keep innate element and drop element aligned.
 - Verify room generation still respects the intended layout and spawn rules.
@@ -208,7 +207,7 @@ elemental_roguelike/
 │   ├── enemies/                     <- boss.gd, patrol_dummy.gd, test_dummy.gd
 │   ├── player/player.gd             <- Player (CharacterBody2D)
 │   └── world/
-│       ├── rooms/                   <- room_a, room_b, room_c, room_boss
+│       ├── rooms/                   <- procedural_room, room_boss
 │       ├── tutorial_room.tscn
 │       └── procedural_run.tscn
 ├── scripts/

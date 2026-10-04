@@ -49,26 +49,27 @@ const OVERLAY_BG_COLOR := Color(0.08, 0.08, 0.1, 0.92)
 const OVERLAY_SELECTED_COLOR := Color(0.35, 0.55, 0.85, 0.9)
 
 
-var _player_hp_bg: ColorRect
-var _player_hp_fill: ColorRect
+var _player_hp_bg: Control
+var _player_hp_fill: Control
+var _player_hp_label: Label
 var _qi_label: Label
 
 var _boss_panel: Control
 var _boss_name_label: Label
-var _boss_hp_bg: ColorRect
-var _boss_hp_fill: ColorRect
-var _boss_phase_tick: ColorRect
+var _boss_hp_bg: Control
+var _boss_hp_fill: Control
+var _boss_phase_tick: Control
 
-var _weapon_1_box: ColorRect
+var _weapon_1_box: Control
 var _weapon_1_label: Label
 var _weapon_1_prompt: Label
-var _weapon_2_box: ColorRect
+var _weapon_2_box: Control
 var _weapon_2_label: Label
 var _weapon_2_prompt: Label
-var _skill_1_box: ColorRect
+var _skill_1_box: Control
 var _skill_1_label: Label
 var _skill_1_prompt: Label
-var _skill_2_box: ColorRect
+var _skill_2_box: Control
 var _skill_2_label: Label
 var _skill_2_prompt: Label
 
@@ -100,8 +101,21 @@ var _overlay_selected_primary: bool = true
 var _inspect_pane: PickupCard
 var _inspect_active: bool = false
 
+var _upgrade_panel: CenterContainer
+var _upgrade_title: Label
+var _upgrade_options: Array = []
+var _upgrade_cards: Array[PanelContainer] = []
+var _upgrade_card_style: StyleBoxFlat
+var _upgrade_card_selected_style: StyleBoxFlat
+var _upgrade_option_types: Array[String] = []
+var _upgrade_menu_active: bool = false
+var _upgrade_menu_selected_index: int = 0
+var _debug_room_clear_state: bool = false
+const ROOM_CLEAR_REFRESH_COST: float = 10.0
+
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 110  # Above VisionBlocker's own darkness overlay (layer 100) — HUD chrome stays visible even inside a steam cloud's blackout.
 
 	var root := Control.new()
@@ -114,6 +128,7 @@ func _ready() -> void:
 	_build_slots(root)
 	_build_boss_panel(root)
 	_build_overlay(root)
+	_build_upgrade_menu(root)
 
 	var um := get_node_or_null("/root/UpgradeManager")
 	if um != null:
@@ -122,18 +137,26 @@ func _ready() -> void:
 
 
 func _build_player_hp_bar(root: Control) -> void:
+	var custom_bar = get_node_or_null("MarginContainer/PlayerStats/HealthBar")
+	if custom_bar != null:
+		_player_hp_fill = custom_bar
+		_player_hp_label = custom_bar.get_node_or_null("HealthLabel")
+		return
 	var container := Control.new()
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	container.position = Vector2(20, -40) * UI_SCALE
 	container.size = Vector2(180, 20) * UI_SCALE
 	root.add_child(container)
-
 	_player_hp_bg = _make_rect(container, BAR_BG_COLOR, Vector2.ZERO, container.size)
 	_player_hp_fill = _make_rect(container, PLAYER_HP_COLOR, Vector2.ZERO, container.size)
 
 
 func _build_qi_label(root: Control) -> void:
+	var custom_qi = get_node_or_null("MarginContainer/PlayerStats/QiLabel")
+	if custom_qi != null:
+		_qi_label = custom_qi
+		return
 	_qi_label = Label.new()
 	_qi_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_qi_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -153,6 +176,13 @@ func _on_qi_changed(new_total: float) -> void:
 
 
 func _build_slots(root: Control) -> void:
+	var c_w1 = get_node_or_null("MarginContainer/EquipSlots/Weapon1")
+	if c_w1 != null:
+		_weapon_1_box = c_w1; _weapon_1_label = Label.new(); _weapon_1_prompt = Label.new()
+		_weapon_2_box = get_node("MarginContainer/EquipSlots/Weapon2"); _weapon_2_label = Label.new(); _weapon_2_prompt = Label.new()
+		_skill_1_box = get_node("MarginContainer/EquipSlots/Skill1"); _skill_1_label = Label.new(); _skill_1_prompt = Label.new()
+		_skill_2_box = get_node("MarginContainer/EquipSlots/Skill2"); _skill_2_label = Label.new(); _skill_2_prompt = Label.new()
+		return
 	var total_width := SLOT_SIZE * 4 + SLOT_SEPARATION * 3
 	var container := HBoxContainer.new()
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -205,6 +235,12 @@ func _make_slot(parent: Control, prompt_text: String) -> Array:
 
 
 func _build_boss_panel(root: Control) -> void:
+	var custom_boss = get_node_or_null("MarginContainer/BossUI")
+	if custom_boss != null:
+		_boss_panel = custom_boss
+		_boss_name_label = custom_boss.get_node("BossName")
+		_boss_hp_fill = custom_boss.get_node("BossHealthBar")
+		return
 	var panel_width := 440.0 * UI_SCALE
 	_boss_panel = Control.new()
 	_boss_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -296,7 +332,7 @@ func _build_overlay(root: Control) -> void:
 	
 	_overlay_card_2 = _make_overlay_option(row2, false)
 	
-	_ground_item_card = PickupCard.new()
+	_ground_item_card = preload("res://scenes/ui/swap_card.tscn").instantiate()
 	_ground_item_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ground_container_1.add_child(_ground_item_card)
 	
@@ -307,7 +343,7 @@ func _build_overlay(root: Control) -> void:
 	hint.add_theme_font_size_override("font_size", 14)
 	main_vbox.add_child(hint)
 	
-	_inspect_pane = PickupCard.new()
+	_inspect_pane = preload("res://scenes/ui/swap_card.tscn").instantiate()
 	_inspect_pane.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_inspect_pane.set_anchors_preset(Control.PRESET_CENTER)
 	_inspect_pane.visible = false
@@ -321,7 +357,7 @@ func _build_overlay(root: Control) -> void:
 ## while the overlay itself is visible (Godot skips input on hidden
 ## Controls entirely), actually need to receive one.
 func _make_overlay_option(parent: Control, is_primary: bool) -> PickupCard:
-	var option := PickupCard.new()
+	var option := preload("res://scenes/ui/swap_card.tscn").instantiate()
 	option.mouse_filter = Control.MOUSE_FILTER_STOP
 	option.gui_input.connect(_on_overlay_option_gui_input.bind(is_primary))
 	parent.add_child(option)
@@ -341,7 +377,11 @@ func _make_rect(parent: Control, color: Color, pos: Vector2, size: Vector2) -> C
 func _process(_delta: float) -> void:
 	_refresh_player_ref()
 	_refresh_boss_ref()
+	
+	self.visible = (_player != null) or _upgrade_menu_active or _overlay_active
+	
 	_refresh_active_pickups()
+	_handle_room_clear_upgrade_input()
 	_handle_pickup_overlay_input()
 	_update_player_hp()
 	_update_boss_panel()
@@ -349,12 +389,19 @@ func _process(_delta: float) -> void:
 	_update_skill_slots()
 	_update_pickup_prompts()
 	_update_overlay_visuals()
+	_update_upgrade_menu_visuals()
 
 
 func _refresh_player_ref() -> void:
 	if _player != null and is_instance_valid(_player):
 		return
-	_player = get_tree().get_first_node_in_group("player") as Player
+	if RunManager != null and RunManager._player != null and is_instance_valid(RunManager._player):
+		_player = RunManager._player
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
+	_player = tree.get_first_node_in_group("player") as Player
 
 
 func _refresh_boss_ref() -> void:
@@ -394,22 +441,35 @@ func _refresh_active_pickups() -> void:
 
 func _update_player_hp() -> void:
 	if _player == null:
-		_player_hp_fill.size.x = 0.0
+		if _player_hp_fill is ProgressBar:
+			_player_hp_fill.value = 0.0
+		elif _player_hp_fill != null:
+			_player_hp_fill.size.x = 0.0
 		return
 	var ratio: float = clampf(_player.current_health / _player.max_health, 0.0, 1.0)
-	_player_hp_fill.size.x = _player_hp_bg.size.x * ratio
+	if _player_hp_fill is ProgressBar:
+		_player_hp_fill.value = ratio * 100.0
+		if _player_hp_label != null:
+			_player_hp_label.text = "%d / %d" % [int(_player.current_health), int(_player.max_health)]
+	else:
+		_player_hp_fill.size.x = _player_hp_bg.size.x * ratio
 
 
 func _update_boss_panel() -> void:
 	if _boss == null:
-		_boss_panel.visible = false
+		if _boss_panel != null:
+			_boss_panel.visible = false
 		return
-	_boss_panel.visible = true
-	_boss_name_label.text = _boss.boss_stats.boss_name
-	var ratio := _boss.get_health_ratio()
-	_boss_hp_fill.size.x = _boss_hp_bg.size.x * ratio
-	_boss_phase_tick.position.x = _boss_hp_bg.size.x * _boss.boss_stats.phase_transition_health_ratio
-
+	if _boss_panel != null:
+		_boss_panel.visible = true
+		_boss_name_label.text = _boss.boss_stats.boss_name
+		var ratio: float = _boss.get_health_ratio()
+		if _boss_hp_fill is ProgressBar:
+			_boss_hp_fill.value = ratio * 100.0
+		else:
+			_boss_hp_fill.size.x = _boss_hp_bg.size.x * ratio
+			if _boss_phase_tick != null:
+				_boss_phase_tick.position.x = _boss_hp_bg.size.x * _boss.boss_stats.phase_transition_health_ratio
 
 func _update_weapon_slots() -> void:
 	_fill_weapon_slot(_weapon_1_box, _weapon_1_label, _player.weapon if _player != null else null)
@@ -421,21 +481,44 @@ func _update_skill_slots() -> void:
 	_fill_skill_slot(_skill_2_box, _skill_2_label, _player.skill_2 if _player != null else null)
 
 
-func _fill_weapon_slot(box: ColorRect, label: Label, weapon: WeaponStats) -> void:
+func _fill_weapon_slot(box: Control, label: Label, weapon: WeaponStats) -> void:
+	# Find or create a TextureRect inside the box
+	var tex_rect: TextureRect = null
+	for child in box.get_children():
+		if child is TextureRect:
+			tex_rect = child
+			break
+	if tex_rect == null:
+		tex_rect = TextureRect.new()
+		tex_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(tex_rect)
+
 	if weapon == null:
-		box.color = SLOT_EMPTY_COLOR
+		if box is ColorRect: box.color = SLOT_EMPTY_COLOR
 		label.text = ""
+		tex_rect.texture = null
 		return
-	box.color = ElementIndicator.ELEMENT_COLOR.get(weapon.innate_element, SLOT_EMPTY_COLOR)
-	label.text = weapon.weapon_name.substr(0, 1)
+		
+	if box is ColorRect: box.color = ElementIndicator.ELEMENT_COLOR.get(weapon.innate_element, SLOT_EMPTY_COLOR)
+	
+	var display_tex = weapon.weapon_icon if weapon.weapon_icon != null else weapon.weapon_texture
+	if display_tex != null:
+		tex_rect.texture = display_tex
+		label.text = ""  # Hide the initial if we have an icon
+	else:
+		tex_rect.texture = null
+		label.text = weapon.weapon_name.substr(0, 1)
 
 
-func _fill_skill_slot(box: ColorRect, label: Label, skill: SkillData) -> void:
+func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 	if skill == null:
-		box.color = SLOT_EMPTY_COLOR
+		if box is ColorRect: box.color = SLOT_EMPTY_COLOR
 		label.text = ""
 		return
-	box.color = ElementIndicator.ELEMENT_COLOR.get(skill.element, SLOT_EMPTY_COLOR)
+	if box is ColorRect: box.color = ElementIndicator.ELEMENT_COLOR.get(skill.element, SLOT_EMPTY_COLOR)
 	label.text = skill.skill_name.substr(0, 1)
 
 
@@ -564,6 +647,204 @@ func _on_overlay_option_gui_input(event: InputEvent, is_primary: bool) -> void:
 		else:
 			_overlay_selected_primary = is_primary
 			_update_overlay_visuals()
+
+func _build_upgrade_menu(root: Control) -> void:
+	_upgrade_panel = CenterContainer.new()
+	_upgrade_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_upgrade_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_upgrade_panel.visible = false
+	root.add_child(_upgrade_panel)
+
+	var bg_panel := PanelContainer.new()
+	bg_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg_panel.custom_minimum_size = Vector2(1040.0 * UI_SCALE, 480.0 * UI_SCALE)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.07, 0.09, 0.97)
+	style.border_color = Color(0.55, 0.8, 1.0, 0.85)
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.content_margin_left = int(32 * UI_SCALE)
+	style.content_margin_right = int(32 * UI_SCALE)
+	style.content_margin_top = int(24 * UI_SCALE)
+	style.content_margin_bottom = int(20 * UI_SCALE)
+	bg_panel.add_theme_stylebox_override("panel", style)
+	_upgrade_panel.add_child(bg_panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", int(14 * UI_SCALE))
+	bg_panel.add_child(vbox)
+
+	_upgrade_title = Label.new()
+	_upgrade_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_upgrade_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_upgrade_title.add_theme_font_size_override("font_size", int(32 * UI_SCALE))
+	_upgrade_title.text = "Room Clear Upgrade"
+	vbox.add_child(_upgrade_title)
+
+	var card_row := HBoxContainer.new()
+	card_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	card_row.add_theme_constant_override("separation", int(16 * UI_SCALE))
+	vbox.add_child(card_row)
+
+	_upgrade_card_style = _make_upgrade_card_style(Color(0.12, 0.14, 0.18), Color(0.34, 0.39, 0.46))
+	_upgrade_card_selected_style = _make_upgrade_card_style(Color(0.12, 0.22, 0.3), Color(0.45, 0.82, 1.0))
+	for index in 3:
+		var card = preload("res://scenes/ui/upgrade_card.tscn").instantiate()
+		card.mouse_filter = Control.MOUSE_FILTER_STOP
+		card.gui_input.connect(_on_upgrade_option_gui_input.bind(index))
+		card_row.add_child(card)
+		_upgrade_cards.append(card)
+		_upgrade_options.append(card)
+		_upgrade_option_types.append("weapon")
+		if index == 1:
+			_upgrade_option_types[index] = "vitality"
+		elif index == 2:
+			_upgrade_option_types[index] = "refresh"
+
+
+	var hint := Label.new()
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", int(20 * UI_SCALE))
+	hint.text = "W / S to move  •  F to buy  •  Esc / Tab to close"
+	vbox.add_child(hint)
+
+	_update_upgrade_menu_visuals()
+
+func _on_upgrade_option_gui_input(event: InputEvent, index: int) -> void:
+	if not _upgrade_menu_active:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _upgrade_menu_selected_index == index:
+			_confirm_upgrade_selection()
+		else:
+			_set_upgrade_selection(index)
+
+func _make_upgrade_card_style(background: Color, border: Color) -> StyleBoxFlat:
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = background
+	card_style.border_color = border
+	card_style.set_border_width_all(2)
+	card_style.set_content_margin_all(int(16 * UI_SCALE))
+	return card_style
+
+func _handle_room_clear_upgrade_input() -> void:
+	if not _upgrade_menu_active:
+		if _can_open_upgrade_menu() and Input.is_action_just_pressed("swap"):
+			_open_upgrade_menu()
+		return
+
+	if Input.is_action_just_pressed("menu_cancel") or Input.is_action_just_pressed("swap"):
+		_close_upgrade_menu()
+		return
+	if Input.is_action_just_pressed("menu_up"):
+		_set_upgrade_selection(_upgrade_menu_selected_index - 1)
+		return
+	if Input.is_action_just_pressed("menu_down"):
+		_set_upgrade_selection(_upgrade_menu_selected_index + 1)
+		return
+	if Input.is_action_just_pressed("pickup"):
+		_confirm_upgrade_selection()
+
+func _set_debug_room_clear_state(enabled: bool) -> void:
+	_debug_room_clear_state = enabled
+
+func _can_open_upgrade_menu() -> bool:
+	var player := _player
+	if player == null and RunManager != null and RunManager._player != null:
+		player = RunManager._player
+	if player == null:
+		return false
+	if player.state in [Player.State.ATTACK, Player.State.DODGE, Player.State.DISABLED]:
+		return false
+	if _overlay_active:
+		return false
+	return _is_room_cleared_for_upgrade()
+
+func _is_room_cleared_for_upgrade() -> bool:
+	if _debug_room_clear_state:
+		return true
+	var tree := get_tree()
+	if tree == null:
+		return false
+	return tree.get_nodes_in_group("enemies").is_empty()
+
+func is_upgrade_menu_active() -> bool:
+	return _upgrade_menu_active
+
+func _open_upgrade_menu() -> void:
+	_upgrade_menu_active = true
+	_upgrade_menu_selected_index = 0
+	PlaytestMode.close_panel()
+	if get_tree() != null:
+		get_tree().paused = true
+	_update_upgrade_menu_visuals()
+
+func _close_upgrade_menu() -> void:
+	_upgrade_menu_active = false
+	if get_tree() != null:
+		get_tree().paused = false
+	_update_upgrade_menu_visuals()
+
+func _set_upgrade_selection(index: int) -> void:
+	_upgrade_menu_selected_index = posmod(index, _upgrade_options.size())
+	_update_upgrade_menu_visuals()
+
+func _confirm_upgrade_selection() -> void:
+	if not _upgrade_menu_active:
+		return
+	var selected_type: String = ""
+	if _upgrade_menu_selected_index >= 0 and _upgrade_menu_selected_index < _upgrade_option_types.size():
+		selected_type = _upgrade_option_types[_upgrade_menu_selected_index]
+	var purchased := false
+	if selected_type == "weapon":
+		purchased = UpgradeManager.purchase_weapon_might()
+	elif selected_type == "vitality":
+		purchased = UpgradeManager.purchase_vitality()
+	elif selected_type == "refresh":
+		if UpgradeManager.qi >= ROOM_CLEAR_REFRESH_COST:
+			UpgradeManager.qi -= ROOM_CLEAR_REFRESH_COST
+			UpgradeManager.qi_changed.emit(UpgradeManager.qi)
+			_update_upgrade_menu_visuals()
+		return
+	if purchased:
+		_update_upgrade_menu_visuals()
+		return
+
+	_update_upgrade_menu_visuals()
+
+func _update_upgrade_menu_visuals() -> void:
+	_upgrade_panel.visible = _upgrade_menu_active
+	if not _upgrade_menu_active:
+		return
+
+	var weapon_cost: float = UpgradeManager.WEAPON_MIGHT_BASE_COST
+	var vitality_cost: float = UpgradeManager.VITALITY_BASE_COST
+	var weapon_rank: int = int(maxf(0.0, (UpgradeManager.weapon_might_multiplier() - 1.0) * 10.0))
+	var vitality_rank: int = int(maxf(0.0, UpgradeManager.vitality_hp_bonus() / 10.0))
+	weapon_cost += weapon_rank * 10.0
+	vitality_cost += vitality_rank * 10.0
+	_upgrade_title.text = "Room Clear Upgrade — Qi: %d" % int(UpgradeManager.qi)
+
+	if _upgrade_options.size() >= 3:
+		_upgrade_options[0].set_upgrade("WEAPON MIGHT", "+10%% weapon damage\n\nCost: %d Qi" % int(weapon_cost))
+		_upgrade_options[1].set_upgrade("VITALITY", "+10 maximum HP\n\nCost: %d Qi" % int(vitality_cost))
+		_upgrade_options[2].set_upgrade("REFRESH SHOP", "Show new shop offers\n\nCost: %d Qi" % int(ROOM_CLEAR_REFRESH_COST))
+		_upgrade_option_types[0] = "weapon"
+		_upgrade_option_types[1] = "vitality"
+		_upgrade_option_types[2] = "refresh"
+
+	for index in _upgrade_options.size():
+		if _upgrade_options[index].has_method("set_selected"):
+			_upgrade_options[index].set_selected(index == _upgrade_menu_selected_index)
+
+
+
 
 
 ## If the player is somehow in range of both a weapon AND a skill pickup

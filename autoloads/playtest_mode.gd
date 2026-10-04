@@ -34,6 +34,11 @@ func is_panel_open() -> bool:
 	return _panel != null and _panel.visible
 
 
+func close_panel() -> void:
+	if _panel != null:
+		_panel.hide()
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not OS.is_debug_build() or not event.is_action_pressed("playtest_toggle", false):
 		return
@@ -46,7 +51,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if not OS.is_debug_build():
 		return
-	var player := RunManager._player as Player
+	var player := _get_live_player()
 	if player != null and player.playtest_invincible != _invincibility_enabled:
 		player.playtest_invincible = _invincibility_enabled
 
@@ -128,7 +133,7 @@ func _refresh_teleport_targets() -> void:
 	_teleport_target.set_item_metadata(0, "start")
 	_teleport_target.add_item("Finish")
 	_teleport_target.set_item_metadata(1, "finish")
-	var room := RunManager._current_room as ProceduralRoomController
+	var room := _get_live_room()
 	if room == null:
 		_teleport_target.disabled = true
 		return
@@ -141,7 +146,7 @@ func _refresh_teleport_targets() -> void:
 func _on_invincibility_toggled(enabled: bool) -> void:
 	_invincibility_enabled = enabled
 	_invincibility_button.text = "Invincibility: ON" if enabled else "Invincibility: OFF"
-	var player := RunManager._player as Player
+	var player := _get_live_player()
 	if player != null:
 		player.playtest_invincible = enabled
 
@@ -164,7 +169,7 @@ func _on_grant_qi_pressed() -> void:
 
 
 func _on_buy_vitality_pressed() -> void:
-	var player := RunManager._player as Player
+	var player := _get_live_player()
 	if not UpgradeManager.purchase_vitality():
 		_set_status("Not enough Qi for Vitality.")
 		return
@@ -177,6 +182,19 @@ func _on_buy_vitality_pressed() -> void:
 func _on_buy_damage_pressed() -> void:
 	_set_status("Damage increased." if UpgradeManager.purchase_weapon_might() else "Not enough Qi for Weapon Might.")
 
+func _get_live_player() -> Player:
+	if RunManager == null:
+		return null
+	if RunManager._player == null or not is_instance_valid(RunManager._player):
+		return null
+	return RunManager._player as Player
+
+func _get_live_room() -> ProceduralRoomController:
+	if RunManager == null:
+		return null
+	if RunManager._current_room == null or not is_instance_valid(RunManager._current_room):
+		return null
+	return RunManager._current_room as ProceduralRoomController
 
 func _on_buy_rank1_pressed() -> void:
 	var reaction: Dictionary = REACTIONS[_reaction_target.selected]

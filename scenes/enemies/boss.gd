@@ -175,7 +175,7 @@ func _die() -> void:
 	visual.set_tint(DEATH_TINT)
 	health_bar.visible = false
 	if boss_stats != null:
-		UpgradeManager.award_qi(boss_stats.qi_reward)
+		QiOrb.spawn_burst(get_parent(), global_position, boss_stats.qi_reward)
 		if boss_stats.element != Elements.NONE:
 			var rune := RunePickup.new()
 			rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))

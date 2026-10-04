@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
 [ext_resource type="Script" uid="uid://0fjribao1my8" path="res://scripts/resources/weapons/combo_step_data.gd" id="1_jgmth"]
+[ext_resource type="Texture2D" uid="uid://dyjxypr8186cg" path="res://assets/sprites/weapons/icons/hammer_icon.tres" id="3_ha6lf"]
 
 [sub_resource type="Resource" id="Resource_042vn"]
 script = ExtResource("1_jgmth")
@@ -21,6 +22,7 @@ load_path = "res://.godot/imported/tho_hammer.png-a476fa3f7a6e0c70597a3ca43227ce
 script = ExtResource("1")
 weapon_name = "Training Hammer"
 weapon_texture = SubResource("CompressedTexture2D_jgmth")
+weapon_icon = ExtResource("3_ha6lf")
 weight = 2
 damage = 18.0
 attack_duration = 0.5

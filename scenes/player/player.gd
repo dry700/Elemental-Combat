@@ -378,7 +378,7 @@ func _process_plunge(delta: float) -> void:
 	velocity.y += ProjectSettings.get_setting("physics/2d/default_gravity") * plunge_gravity_multiplier * delta
 
 func _trigger_plunge_impact(intensity: float) -> void:
-	var radius = 40.0 + (60.0 * intensity)
+	var radius = 20.0 + (40.0 * intensity)
 	var plunge_charge = 2 if intensity >= 0.6 else 1
 	var dmg = (_active_weapon.damage if _active_weapon else 10.0) * UpgradeManager.weapon_might_multiplier() * (1.0 + intensity)
 	var active_rune = weapon_rune if _active_weapon == weapon else secondary_weapon_rune

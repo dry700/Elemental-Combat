@@ -1,6 +1,6 @@
 # Elemental Roguelike Plan
 
-This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). Procedural map snapshot persistence is complete; the current implementation boundary is P10b.
+This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The verified implementation boundary is P10b complete; final project closeout now sits in P11.
 
 ## Current status
 
@@ -16,114 +16,38 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P6 — Loadout selection and pending-loadout consumption
 - [x] P7 — Run summary and finish-run transitions
 - [x] P8 — Main menu and startup scene update
-- [x] P9 — Room-pool expansion
-- [ ] P10 — Qi and upgrade system
-- [ ] P11 — Closeout documentation and final verification
+- [x] P9 — Procedural room generation and room-system overhaul
+- [x] P10a — Qi economy and upgrade-manager foundations
+- [x] P10b — Room-cleared upgrade menu, input flow, and HUD purchase path
+- [ ] P11 — Final verification and documentation closeout
 
 ## P10a design contract
 
 - `UpgradeManager` is a script-only autoload and owns per-run Qi/rank state.
 - Reaction specializations are one-time Rank 1/Rank 2 purchases.
-- Weapon Might and Vitality are repeatable purchases with category-local
-	escalating prices.
-- Qi and upgrade ranks never enter `SaveManager`.
-- P10a exposes data and purchase APIs; UI/input and remaining effect hooks are
-	P10b+ work.
+- Weapon Might and Vitality are repeatable purchases with category-local escalating prices.
+- Qi and upgrade ranks remain out of `SaveManager` and persistent save data.
+- The remaining P10b work is the normal room-cleared UI and the effect hookups, not a second pass on P10a itself.
 
-## P10b playtest tools (implemented)
+## P10b active scope
 
-- F12 opens a debug-build-only panel with invincibility, procedural map
-	regeneration, start/finish/any-chunk teleport, Qi grants, and upgrade buys.
-- Panel-open state blocks voluntary Player actions but does not pause the run.
-- Cheat Qi/ranks do not enter persistent save data; Vitality bonus is excluded
-	from the saved base max-health value.
-- Remaining: resolve D3/D4 and implement the normal room-cleared upgrade UI and
-	remaining combat effect hooks.
-- Verification: playtest unit tests 3/3 (13 assertions), room/save integration
-	tests 8/8 (21 assertions), player save-state tests 5/5 (22 assertions), and
-	full suite 224/224 (492 assertions, 2 expected warnings).
+- [x] Resolve D3 and D4: the active room-cleared upgrade flow uses the Tab-based HUD menu, and upgrades remain scoped to the player-owned run state.
+- [x] Implement the normal room-cleared upgrade screen and input gating.
+- [x] Connect the verified purchase APIs to the HUD purchase path.
+- [x] Add focused tests for the room-cleared menu flow and purchase behavior.
 
-## Procedural map save contract (verified)
+## Verification and blockers
 
-- The in-progress snapshot contains the current procedural grid, door masks,
-	start/finish cells, and chosen chunk scene paths.
-- Resume restores the structure before room entry, so neither topology nor
-	chunk art is rerolled.
-- Enemy state remains intentionally fresh on resume; legacy snapshots without
-	a map structure continue to load and generate a layout.
+- Full-suite verification: 225/225 tests passed, 501 assertions, 0 failures, 2 expected warnings.
+- Static diagnostics: no errors found in the workspace.
+- Blockers: none in the active P10b scope; P11 is now the final verification/documentation closeout pass.
 
-## P5 design contract
+## Procedural map save contract
 
-- Runes are rolled at drop time, carry one or two modifiers, and are stored on Player slots rather than weapon Resources.
-- `RuneData`, `RuneModifierDef`, and `RuneRoller` own rune data, catalogue definitions, and deterministic roll behavior.
-- A single `RunePickup` supports weapon and skill targets. Weapon frames are square; skill frames are circular.
-- Weapon Resources are never duplicated. Save state keeps `weapon_path` and stores rune dictionaries separately.
-- Missing rune keys in older saves mean no rune. Unknown modifier ids warn and are skipped.
-- F equips only an empty valid slot. Tab opens the chooser. Overwrite is chooser-only and drops the replaced rune with its rolled data.
-- Hud owns all pickup chooser input. Pickup scripts only track proximity and expose prompt state.
-- Same-element rune Charge bonuses remain the only Charge change; modifiers act at the effect layer and never mutate raw Charge in the resolver.
-- Monogram is the project UI font, applied through the HUD theme and project default theme.
-
-## P5 execution order
-
-### P5a — Data and pickup foundation
-
-- [x] Implement `RuneData` serialization and validation.
-- [x] Implement `RuneModifierDef` and `RuneRoller` filtering, distinct modifier selection, and empty-pool behavior.
-- [x] Implement `RunePickup` target framing, glyph, group, and proximity behavior.
-- [x] Roll full weapon runes for spirit, boss, and room-clear baseline drops.
-- [x] Add unit and integration coverage.
-- [x] Observe the focused suite result before advancing to P5b.
-
-### P5b — Player slots and persistence (complete)
-
-- [x] Add primary and secondary weapon rune slots and the public rune APIs.
-- [x] Carry runes through weapon swaps and dropped weapon pickups.
-- [x] Resolve slot rune elements with authored weapon fallback for existing fixtures.
-- [x] Save and restore rune dictionaries with missing-key and unknown-id tolerance.
-- [x] Add overwrite pickup behavior and verify focused save/swap tests.
-
-### P5c — HUD and input
-
-- [x] Add Tab chooser and I inspect actions through `InputSetup`.
-- [x] Keep F direct-equip behavior non-destructive.
-- [x] Implement valid-slot hiding, no-op suppression, cards, badges, and plain DPS.
-- [x] Implement the rune inspect pane and two-step Esc handling.
-- [x] Import and apply Monogram through `hud_theme.tres` and project defaults.
-- [x] Preserve existing tested Hud method names and signatures.
-
-### P5d — Charge and Vũ readability
-
-- [x] Add charge setter/signal and route Khắc partial reduction through it.
-- [x] Render one to three Charge pips in `ElementIndicator`.
-- [x] Add the reversed-hit signal and “Reversed!” popup.
-- [x] Complete the Charge 3 playtest checkpoint and record any resulting decision.
-
-## Progress and verification
-
-- P4 baseline: 191/191 tests passed, 359 assertions, no IDE errors reported.
-- P5a–P5d gates are closed; P6–P9 implementation is complete in the current worktree.
-- P10a baseline: 215/215 tests passed, 460 assertions, 0 failures, 2 expected warnings.
-- Map snapshot focused tests: 2/2 passed, 7 assertions; RunManager persistence: 6/6 passed, 12 assertions.
-- Current full suite: 219/219 tests passed, 470 assertions, 0 failures, 2 expected warnings.
-- Static diagnostics report no errors in the changed upgrade/run/player files.
-- Map resume integration confirms identical cell/chunk assignments after reconstruction.
-
-## Deferred phases
-
-P10b and final closeout remain deferred. P9, P10a, and map snapshot persistence are verified; loadout
-selection, run summary, main menu, and procedural room generation are implemented.
-
-## Open decisions
-
-- [ ] D15 — Confirm F direct-equips only into an empty slot and Tab opens the chooser.
-- [ ] D16 — Confirm rune travel with a weapon on swap and drop.
-- [ ] D17 — Confirm one target-aware `RunePickup` script remains the chosen shape.
-- [ ] D18 — Tune the two-modifier chance after the first playable rune pass.
-- [ ] D19 — Define the initial modifier catalogue and pool scope.
-- [ ] D20 — Reconcile the stray enemy-stats fragment and duplicate training-staff resource.
+- The in-progress snapshot contains the current procedural grid, door masks, start/finish cells, and chosen chunk scene paths.
+- Resume restores the structure before room entry so the room topology is not rerolled.
+- Enemy state remains intentionally fresh on resume; legacy snapshots without `map_structure` still load properly.
 
 ## Exact next item
 
-Continue P10b: implement the room-cleared upgrade menu/input flow and connect
-the P10a purchase APIs to the remaining player and reaction effect hooks.
+Advance to P11 closeout: finish the final documentation pass and any repo polish after the verified room-cleared upgrade-menu implementation.

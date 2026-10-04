@@ -25,7 +25,8 @@ func _resolve_hit(hurtbox: Hurtbox) -> void:
 	if _spent:
 		return
 	_spent = true
-	var hit_data := HitData.new(damage, direction.normalized() * knockback_strength, attacker)
+	var safe_attacker = attacker if is_instance_valid(attacker) else null
+	var hit_data := HitData.new(damage, direction.normalized() * knockback_strength, safe_attacker)
 	hit_data.weapon_weight = weapon_weight
 	hit_data.element = element
 	hit_data.charge = charge

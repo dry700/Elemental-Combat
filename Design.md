@@ -76,7 +76,7 @@ changes needed there for the Final Report beyond good writing.
 | HUD | `autoloads/hud.gd`, `assets/ui/hud_theme.tres` | HP/boss bar, equip slots, pickup swap chooser (§8.1) — code-built, no `.tscn` |
 | Pickups | `scripts/items/{weapon_pickup,skill_pickup,rune_pickup}.gd` | Proximity tracking + in-world prompt only; all chooser input lives on `Hud` |
 | Runes | `scripts/resources/runes/{rune_data,rune_modifier_def,rune_roller}.gd` | Rolled runes, modifier catalogue, save serialization (§16) |
-| Fonts | `assets/fonts/monogram.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
+| Fonts | `assets/fonts/madspixel.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
 | Visuals | `scripts/visuals/sprite_visual.gd`, `scripts/ui/element_indicator.gd`, `scripts/combat/{slash_vfx,hit_spark}.gd` | Sprite/placeholder swap, A.1 pattern glyphs, one-shot VFX |
 | Input | `autoloads/input_setup.gd` | All input actions defined in code, not Project Settings |
 | Upgrade system | `autoloads/upgrade_manager.gd` | Qi economy and per-run upgrade state — P10a foundations implemented; purchase UI/effect hooks remain, see §4.8 |
@@ -907,14 +907,9 @@ catalogue is dropped with a `push_warning`, never a crash.
 
 ## 8. HUD & Input
 
-`Hud` (autoload, `CanvasLayer`, layer 110) is entirely code-built —
-deliberate, avoids the `.tscn` NodePath-drop bug class this project has
-hit more than once (see `RoomController._ready()`'s own defensive
-`find_child` fallback, same root cause). Owns **all** pickup input now;
-`WeaponPickup`/`SkillPickup` only track proximity. `UI_SCALE = 0.5`
-compensates for the project's viewport-stretch display settings — retune
-this one constant if `project.godot`'s stretch ratio ever changes, not
-the per-element pixel values.
+`Hud` (autoload, `CanvasLayer`, layer 110) has transitioned to a **hybrid** approach. The autoload uses `scenes/ui/custom_hud.tscn` (with `hud.gd` attached) as its root. Code-built fallback generation still exists for backward compatibility, but the system now prioritizes `.tscn` nodes (via `get_node_or_null`). This resolves the NodePath-drop bug class by combining visual `.tscn` authoring with graceful degradation. 
+It instantiates `swap_card.tscn` and `upgrade_card.tscn` for dynamic menus.
+Owns **all** pickup input now; `WeaponPickup`/`SkillPickup` only track proximity. `UI_SCALE = 0.5` compensates for the project's viewport-stretch display settings for any remaining code-built elements.
 
 `InputSetup` (autoload) defines every input action in code
 (`InputMap.add_action`), not via Project Settings, specifically so a
@@ -1013,7 +1008,7 @@ will hook into `damage` later.
 
 One font, everywhere: **Monogram** (CC0 pixel font — verify the licence and its
 native pixel size on the download page before committing it).
-- File: `assets/fonts/monogram.ttf`. Import with antialiasing off, hinting off,
+- File: `assets/fonts/madspixel.ttf`. Import with antialiasing off, hinting off,
   subpixel positioning off. Use only integer multiples of the native size,
   never fractional scaling.
 - `assets/ui/hud_theme.tres` sets the default font and size; applied on the Hud

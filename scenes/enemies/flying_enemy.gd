@@ -1,7 +1,7 @@
 class_name FlyingEnemy
 extends CharacterBody2D
 
-@export var max_health: float = 20.0
+@export var max_health: float = 10.0
 @export var float_speed: float = 40.0
 @export var aggro_range: float = 180.0
 @export var attack_range: float = 120.0
@@ -12,7 +12,7 @@ extends CharacterBody2D
 @export var starting_element: StringName = Elements.NONE
 @export var starting_charge: int = 1
 @export var qi_reward: float = 5.0
-@export var starting_armor: float = 5.0
+@export var starting_armor: float = 0.0
 
 const SLOWED_TINT: Color = Color(0.55, 0.75, 1.0)
 const DISABLED_TINT: Color = Color(1.0, 0.55, 0.25)
@@ -73,13 +73,23 @@ func _physics_process(delta: float) -> void:
 		var sight_blocked := SteamCloud.blocks_vision(global_position, player.global_position)
 		
 		if not sight_blocked and dist <= aggro_range:
-			if dist <= attack_range:
-				velocity = Vector2.ZERO
-				if _cooldown_timer <= 0.0:
-					_start_attack(player)
-			else:
-				var dir = (player.global_position - global_position).normalized()
+			# Determine which side of the player we are on (left or right)
+			var side = sign(global_position.x - player.global_position.x)
+			if side == 0: side = 1
+			
+			# Hover in front/behind the player horizontally, leveled with the player
+			var hover_target = player.global_position + Vector2(side * (attack_range * 0.8), -5)
+			var dist_to_hover = global_position.distance_to(hover_target)
+			
+			# If off cooldown and roughly in position, stop and shoot
+			if _cooldown_timer <= 0.0 and dist_to_hover < 40.0:
+				velocity = velocity.move_toward(Vector2.ZERO, float_speed * delta * 10.0)
+				_start_attack(player)
+			elif dist_to_hover > 10.0:
+				var dir = (hover_target - global_position).normalized()
 				velocity = dir * float_speed * elemental.get_speed_multiplier()
+			else:
+				velocity = velocity.move_toward(Vector2.ZERO, float_speed * delta * 5.0)
 		else:
 			velocity = velocity.move_toward(Vector2.ZERO, float_speed * delta * 5.0)
 	else:
@@ -95,7 +105,8 @@ func _start_attack(player: Node2D) -> void:
 		return
 		
 	if is_instance_valid(player):
-		var dir = (player.global_position - global_position).normalized()
+		var raw_dir_x = player.global_position.x - global_position.x
+		var dir = Vector2.RIGHT if raw_dir_x >= 0 else Vector2.LEFT
 		_shoot(dir)
 		
 	_is_telegraphing = false
@@ -146,7 +157,7 @@ func _die() -> void:
 	hurtbox.invulnerable = true
 	visual.set_tint(DEATH_TINT)
 	health_bar.visible = false
-	UpgradeManager.award_qi(qi_reward)
+	QiOrb.spawn_burst(get_parent(), global_position, qi_reward)
 	if starting_element != Elements.NONE:
 		var rune := RunePickup.new()
 		rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(starting_element), RuneData.Target.WEAPON))

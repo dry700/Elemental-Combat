@@ -17,6 +17,10 @@ func _update_shape() -> void:
 	var w = width_tiles * 16.0
 	var rect = col.shape as RectangleShape2D
 	if rect != null:
+		# Important: Duplicate the shape so modifying one platform's size
+		# doesn't change the collision size of every other platform in the level!
+		rect = rect.duplicate()
+		col.shape = rect
 		rect.size = Vector2(w, 8.0)
 	col.position = Vector2(w / 2.0, 4.0)
 	vis.polygon = PackedVector2Array([Vector2(0,0), Vector2(w,0), Vector2(w,8), Vector2(0,8)])

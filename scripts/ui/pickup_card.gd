@@ -1,108 +1,84 @@
 class_name PickupCard
-extends MarginContainer
-
-## A code-built UI component for displaying Weapon, Skill, or Rune data in 
-## the HUD overlay and inspect panes.
+extends PanelContainer
 
 const CARD_WIDTH := 260.0
-const CARD_HEIGHT := 48.0
-const CARD_BG_COLOR := Color(0.12, 0.12, 0.15, 0.9)
+const CARD_HEIGHT := 56.0
 
-var _bg: ColorRect
-var _vbox: VBoxContainer
-var _title_label: Label
-var _details_label: Label
-var _dps_label: Label
 
-func _init() -> void:
-	custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-	
-	_bg = ColorRect.new()
-	_bg.color = CARD_BG_COLOR
-	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_bg)
-	
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	add_child(margin)
-	
-	_vbox = VBoxContainer.new()
-	_vbox.add_theme_constant_override("separation", 2)
-	margin.add_child(_vbox)
-	
-	var header := HBoxContainer.new()
-	_vbox.add_child(header)
-	
-	_title_label = Label.new()
-	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title_label.add_theme_color_override("font_color", Color.WHITE)
-	header.add_child(_title_label)
-	
-	_dps_label = Label.new()
-	_dps_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	header.add_child(_dps_label)
-	
-	_details_label = Label.new()
-	_details_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	_details_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_vbox.add_child(_details_label)
+@onready var _title_label: Label = $MarginContainer/HBox/VBox/Title
+@onready var _stats_label: Label = $MarginContainer/HBox/VBox/Stats
+@onready var _desc_label: Label = $MarginContainer/HBox/VBox/Description
+@onready var _icon_tex: TextureRect = $MarginContainer/HBox/IconBackground/Icon
+
+var default_bg_color = Color(0.12, 0.12, 0.15, 0.9)
+var selected_bg_color = Color(0.2, 0.35, 0.6, 0.9)
 
 func set_empty(slot_name: String) -> void:
-	_title_label.text = "Empty %s" % slot_name
-	_details_label.text = "Nothing equipped."
-	_dps_label.text = ""
+	_title_label.text = "Empty " + slot_name
+	_stats_label.text = ""
+	_desc_label.text = "Nothing equipped."
+	_icon_tex.texture = null
 
-func set_weapon(weapon: WeaponStats, slot_rune: RuneData = null, is_equipped: bool = false) -> void:
+func set_weapon(weapon, slot_rune = null, is_equipped: bool = false) -> void:
 	if weapon == null:
 		set_empty("Weapon")
 		return
 	
-	var text := weapon.weapon_name
+	var text: String = weapon.weapon_name
 	if is_equipped:
 		text += " (EQUIPPED)"
 	_title_label.text = text
 	
-	_dps_label.text = "%.1f DPS" % weapon.get_display_dps()
-	
-	# Badges (element)
 	var active_element: StringName = weapon.innate_element
 	if slot_rune != null:
 		active_element = slot_rune.element
 	
-	var details := "Weight: Medium  ·  Elem: %s" % active_element
+	_stats_label.text = "DPS: %.1f | Elem: %s" % [weapon.get_display_dps(), active_element]
+	
+	var details := "A weapon."
 	if slot_rune != null:
 		details += " (+%d mods)" % slot_rune.modifiers.size()
-	_details_label.text = details
+	_desc_label.text = details
+	
+	if "weapon_icon" in weapon and weapon.weapon_icon != null:
+		_icon_tex.texture = weapon.weapon_icon
+	elif "weapon_texture" in weapon and weapon.weapon_texture != null:
+		_icon_tex.texture = weapon.weapon_texture
 
-func set_skill(skill: SkillData, slot_rune: RuneData = null) -> void:
+func set_skill(skill, slot_rune = null) -> void:
 	if skill == null:
 		set_empty("Skill")
 		return
 		
 	_title_label.text = skill.skill_name
-	_dps_label.text = "%.1fs CD" % skill.cooldown
 	
 	var active_element: StringName = skill.element
-	if slot_rune != null and slot_rune.element != Elements.NONE:
+	if slot_rune != null:
 		active_element = slot_rune.element
 	
-	_details_label.text = "Elem: %s  ·  %s" % [active_element, skill.description]
+	_stats_label.text = "CD: %.1fs | Elem: %s" % [skill.cooldown, active_element]
+	_desc_label.text = skill.description
+	_icon_tex.texture = null
 
-func set_rune_inspect(rune: RuneData, target_weapon: WeaponStats, target_slot_rune: RuneData) -> void:
-	_title_label.text = "Rune of %s" % rune.element
-	_dps_label.text = ""
-	var details := "Modifiers: %d\n" % rune.modifiers.size()
+func set_rune_inspect(rune, target_weapon, target_slot_rune) -> void:
+	_title_label.text = "Rune of " + str(rune.element)
+	_stats_label.text = "Modifiers: %d" % rune.modifiers.size()
+	var details := ""
 	if target_weapon == null:
 		details += "Target: Empty"
 	else:
-		details += "Target: %s" % target_weapon.weapon_name
-	_details_label.text = details
+		details += "Target: " + target_weapon.weapon_name
+	_desc_label.text = details
+	_icon_tex.texture = null
 
 func set_selected(selected: bool) -> void:
-	if selected:
-		_bg.color = Color(0.2, 0.35, 0.6, 0.9)
-	else:
-		_bg.color = CARD_BG_COLOR
+	if not has_theme_stylebox_override("panel"):
+		var base_style = get_theme_stylebox("panel")
+		if base_style != null:
+			add_theme_stylebox_override("panel", base_style.duplicate())
+	
+	var style = get_theme_stylebox("panel")
+	if style is StyleBoxFlat:
+		style.bg_color = selected_bg_color if selected else default_bg_color
+	elif style is StyleBoxTexture:
+		style.modulate_color = selected_bg_color if selected else Color.WHITE

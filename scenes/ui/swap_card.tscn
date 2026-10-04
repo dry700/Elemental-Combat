@@ -1,0 +1,60 @@
+[gd_scene format=3]
+[ext_resource type="Script" uid="uid://cp3e2y7x8h2l" path="res://scripts/ui/pickup_card.gd" id="1_script"]
+
+[node name="SwapCard" type="PanelContainer"]
+script = ExtResource("1_script")
+custom_minimum_size = Vector2(260, 56)
+offset_right = 260.0
+offset_bottom = 56.0
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IconBackground" type="ColorRect" parent="MarginContainer/HBox"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+color = Color(0.15, 0.15, 0.15, 1)
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/HBox/IconBackground"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="MarginContainer/HBox/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Weapon Name"
+autowrap_mode = 3
+
+[node name="Stats" type="Label" parent="MarginContainer/HBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 10
+text = "Damage: 10 | Element: Fire"
+autowrap_mode = 3
+
+[node name="Description" type="Label" parent="MarginContainer/HBox/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 10
+text = "A basic starting weapon."
+autowrap_mode = 3
+

@@ -161,7 +161,7 @@ func _die() -> void:
 	visual.set_tint(DEATH_TINT)
 	health_bar.visible = false
 	if enemy_stats != null:
-		UpgradeManager.award_qi(enemy_stats.qi_reward)
+		QiOrb.spawn_burst(get_parent(), global_position, enemy_stats.qi_reward)
 		if enemy_stats.element != Elements.NONE:
 			var rune := RunePickup.new()
 			rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(enemy_stats.element), RuneData.Target.WEAPON))

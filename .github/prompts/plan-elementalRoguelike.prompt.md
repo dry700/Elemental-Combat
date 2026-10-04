@@ -108,13 +108,8 @@ TL;DR: Build the project in ordered, reviewable phases that match the dependency
 - [ ] Validate the fresh-save flow through tutorial, loadout, run, summary, and menu transitions.
 - [ ] Run final verification after menu changes.
 
-### P9 — Room pool expansion to six rooms
-- [ ] Create room_d, room_e, and room_f from the approved template.
-- [ ] Extend RunManager room paths without changing ROOMS_PER_RUN.
-- [ ] Confirm enemy element consistency for all spirit templates.
-- [ ] Add room template validation tests for root type, exit presence, and spawn layout.
-- [ ] Confirm the room pool still yields valid progression and boss-room integration.
-- [ ] Run the relevant integration tests and full GUT suite.
+### P9 — Static room pool expansion (superseded)
+The static room-template expansion was replaced by procedural room generation. Do not recreate the retired hand-placed normal-room scenes; see the current `plan.md` for active scope.
 
 ### P10a — Qi foundations and upgrade manager setup
 - [ ] Add UpgradeManager as a persistent autoload near SaveManager.

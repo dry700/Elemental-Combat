@@ -102,8 +102,15 @@ func _start_attack(player: Node2D) -> void:
 		return
 		
 	if is_instance_valid(player):
-		var dir = (player.global_position - global_position).normalized()
-		_shoot(dir)
+		var raw_dir = player.global_position - global_position
+		var snapped_dir: Vector2
+		# Snap to 4-way cardinal direction
+		if abs(raw_dir.x) > abs(raw_dir.y):
+			snapped_dir = Vector2(sign(raw_dir.x), 0)
+		else:
+			snapped_dir = Vector2(0, sign(raw_dir.y))
+			
+		_shoot(snapped_dir)
 		
 	_is_telegraphing = false
 	_cooldown_timer = attack_cooldown_moving if can_move else attack_cooldown_still
@@ -153,7 +160,7 @@ func _die() -> void:
 	hurtbox.invulnerable = true
 	visual.set_tint(DEATH_TINT)
 	health_bar.visible = false
-	UpgradeManager.award_qi(qi_reward)
+	QiOrb.spawn_burst(get_parent(), global_position, qi_reward)
 	if starting_element != Elements.NONE:
 		var rune := RunePickup.new()
 		rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(starting_element), RuneData.Target.WEAPON))

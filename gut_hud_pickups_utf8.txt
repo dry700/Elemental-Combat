@@ -1,0 +1,835 @@
+﻿Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+Godot_v4.7.1-stable_win64_console.exe : SCRIPT ERROR: Parse Error: Too many 
+arguments for "get()" call. Expected at most 1 but received 2.
+At line:1 char:1
++ & 'E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_w ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (SCRIPT ERROR: P...but received 2. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at: GDScript::reload (res://autoloads/hud.gd:718)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant 
+value, so it will be typed as Variant. (Warning treated as error.)
+   at: GDScript::reload (res://autoloads/hud.gd:718)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://scenes/player/player.gd:0)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://autoloads/run_manager.gd:0)
+ERROR: Failed to load script "res://autoloads/run_manager.gd" with error 
+"Compilation failed".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://autoloads/hud.gd' does 
+not inherit from 'Node'.
+   at: start (main/main.cpp:4535)
+---  GUT  ---
+[1m[INFO]:  [0musing [C:/Users/DELL/AppData/Roaming/Godot/app_userdata/Elemental Roguelike (Working Title)] for temporary output.
+Godot version:  4.7.1
+GUT version:  9.7.1
+[4m
+
+res://test/unit/test_armor_buff_effect.gd
+[0m* test_inactive_by_default_bonus_is_zero
+* test_apply_activates_with_given_bonus
+* test_tick_expires_and_returns_bonus_to_zero
+* test_apply_refreshes_without_stacking
+* test_tick_does_not_expire_before_duration_elapses
+[1m5/5 passed.
+[0m[4m
+
+res://test/unit/test_armor_mitigation.gd
+[0m* test_zero_armor_is_identity
+* test_ten_armor_reduces_damage_by_expected_ratio
+* test_one_hundred_armor_halves_damage
+* test_active_armor_buff_adds_to_base_armor
+* test_expired_armor_buff_no_longer_mitigates_damage
+* test_sever_shreds_base_armor_but_preserves_active_buff
+[1m6/6 passed.
+[0m[4m
+
+res://test/unit/test_cc_resistance.gd
+[0m* test_free_hits_are_full_duration_then_half_then_immune
+* test_window_reset_clears_the_shared_counter
+[1m2/2 passed.
+[0m[4m
+
+res://test/unit/test_disable_effect.gd
+[0m* test_inactive_by_default
+* test_apply_activates_with_duration
+* test_tick_expires_and_emits_when_duration_runs_out
+* test_reduce_duration_removes_a_fixed_chunk
+* test_reduce_duration_clamps_at_the_floor_not_below
+* test_reduce_duration_does_not_snap_upward_once_already_below_floor
+* test_reduce_duration_past_zero_ends_the_lock_and_emits_expired
+* test_reduce_duration_on_inactive_effect_is_a_no_op
+[1m8/8 passed.
+[0m[4m
+
+res://test/unit/test_dot_effect.gd
+[0m* test_inactive_by_default
+* test_apply_activates_and_sets_parameters
+* test_tick_returns_zero_damage_before_interval_elapses
+* test_tick_returns_damage_once_interval_elapses
+* test_tick_resets_interval_after_a_tick_lands
+* test_expires_and_emits_after_duration_elapses
+* test_apply_while_active_is_refresh_not_stack
+[1m7/7 passed.
+[0m[4m
+
+res://test/unit/test_elemental_status.gd
+[0m* test_starts_empty
+* test_apply_sets_element_and_charge_and_emits_status_applied
+* test_apply_is_refresh_only_not_stacking
+* test_apply_overwrites_a_different_element_entirely
+* test_clear_resets_and_emits_status_cleared
+* test_clear_on_already_empty_status_does_not_emit
+* test_tick_decays_to_empty_after_default_duration
+* test_tick_does_not_decay_before_duration_elapses
+* test_apply_respects_a_custom_duration_override
+[1m9/9 passed.
+[0m[4m
+
+res://test/unit/test_elements.gd
+[0m* test_sinh_cycle_all_five_pairs_match_both_directions
+* test_sinh_pair_rejects_non_adjacent_elements
+* test_khac_cycle_all_five_pairs_match_both_directions
+* test_sinh_generated_element_is_direction_locked
+* test_sinh_generated_element_returns_none_for_invalid_pair
+* test_pair_is_matches_either_order
+[1m6/6 passed.
+[0m[4m
+
+res://test/unit/test_map_generator_snapshot.gd
+[0m* test_snapshot_restores_grid_markers_and_exact_chunk_choices
+* test_snapshot_rejects_wrong_dimensions_without_mutating_generator
+[1m2/2 passed.
+[0m[4m
+
+res://test/unit/test_player_death.gd
+[0m* test_damage_below_max_health_does_not_die
+* test_lethal_damage_triggers_death
+Player died
+* test_died_signal_fires_only_once
+[33m    --- Awaiting signal died or 1.0s  ---
+[0mPlayer died
+* test_further_damage_after_death_does_not_reduce_health_further
+* test_current_health_never_goes_negative
+[1m5/5 passed.
+[0m[4m
+
+res://test/unit/test_player_rune_slots.gd
+[0m* test_apply_rune_sets_weapon_rune_and_returns_old
+* test_can_apply_rune_checks_for_weapon_presence
+* test_swap_weapon_updates_rune
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_player_save_state.gd
+[0m* test_to_save_state_captures_health_armor_and_equipped_paths
+* test_to_save_state_uses_empty_string_for_an_unset_slot
+* test_apply_save_state_restores_health_armor_and_weapon
+* test_apply_save_state_leaves_a_slot_untouched_when_path_is_empty
+* test_save_then_apply_round_trips_correctly
+[1m5/5 passed.
+[0m[4m
+
+res://test/unit/test_player_skill_swap.gd
+[0m* test_swap_primary_replaces_skill_1_and_returns_the_old_one
+* test_swap_secondary_replaces_skill_2_only
+* test_swap_emits_skill_changed_signal
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_player_weapon_swap.gd
+[0m* test_swap_primary_replaces_weapon_and_returns_the_old_one
+* test_swap_secondary_replaces_secondary_only
+* test_swap_emits_weapon_changed_signal
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_playtest_mode.gd
+[0m* test_f12_toggles_the_playtest_panel
+* test_invincibility_blocks_all_player_health_damage
+* test_panel_grants_qi_and_purchases_player_and_reaction_upgrades
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_reaction_resolver.gd
+[0m* test_no_reaction_when_target_has_no_status
+* test_no_reaction_when_same_element_reapplied
+* test_sinh_tier_1_when_min_charge_is_1
+* test_sinh_tier_2_when_min_charge_is_2_or_more
+* test_khac_1v1_is_full_clear
+* test_khac_1v2_is_partial
+* test_khac_1v3_is_vu_rebel
+* test_khac_2v1_is_full_clear
+* test_khac_2v2_is_full_clear
+* test_khac_2v3_is_partial
+* test_khac_3v1_is_thua_overwhelm
+* test_khac_3v2_is_full_clear
+* test_khac_3v3_is_full_clear
+* test_resolution_result_carries_the_correct_pair
+[1m14/14 passed.
+[0m[4m
+
+res://test/unit/test_room_clear_upgrade_menu.gd
+[0m* test_room_clear_upgrade_menu_opens_on_room_clear_and_purchases_weapon_might
+ERROR: Hud autoload was not available for the room-clear upgrade test
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/unit/test_room_clear_upgrade_menu.gd:10)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mExpected [<null>] to be anything but NULL:  
+      at line 26
+SCRIPT ERROR: Cannot call method 'has_method' on a null value.
+   at: 
+test_room_clear_upgrade_menu_opens_on_room_clear_and_purchases_weapon_might 
+(res://test/unit/test_room_clear_upgrade_menu.gd:28)
+   GDScript backtrace (most recent call first):
+       [0] 
+test_room_clear_upgrade_menu_opens_on_room_clear_and_purchases_weapon_might 
+(res://test/unit/test_room_clear_upgrade_menu.gd:28)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Cannot call method 'has_method' on a null value.
+      at line -1
+* test_room_clear_shop_allows_multiple_purchases_and_refresh
+ERROR: Hud autoload was not available for the room-clear upgrade test
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/unit/test_room_clear_upgrade_menu.gd:10)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mExpected [<null>] to be anything but NULL:  
+      at line 43
+Room cleared ΓÇö exit unlocked
+SCRIPT ERROR: Attempt to call function 'is_upgrade_menu_active' in base 'null 
+instance' on a null instance.
+   at: test_room_clear_shop_allows_multiple_purchases_and_refresh 
+(res://test/unit/test_room_clear_upgrade_menu.gd:47)
+   GDScript backtrace (most recent call first):
+       [0] test_room_clear_shop_allows_multiple_purchases_and_refresh 
+(res://test/unit/test_room_clear_upgrade_menu.gd:47)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Attempt to call function 'is_upgrade_menu_active' in base 'null instance' on a null instance.
+      at line -1
+[33m    1 Orphans[0m
+[33m        * [<Node2D#202702326734>(room_controller.gd)][0m
+[33m1 orphans[0m
+[1m0/2 passed.
+[0m[4m
+
+res://test/unit/test_run_manager_sequence.gd
+[0m* test_sequence_always_ends_with_the_boss_room
+* test_sequence_length_is_normal_rooms_plus_one_boss_room
+* test_normal_room_slots_never_include_the_boss_path
+* test_normal_rooms_still_avoid_immediate_repeats
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_rune_data.gd
+[0m* test_rune_data_round_trips_to_dictionary
+* test_invalid_rune_data_returns_null
+* test_empty_rune_describes_no_modifiers
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_rune_roller.gd
+[0m* test_roll_filters_by_target_and_element
+* test_roll_does_not_repeat_modifier_ids
+* test_single_matching_definition_returns_one_modifier
+* test_empty_pool_returns_rune_without_modifiers
+WARNING: No rune modifiers available for tho/1
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] roll (res://scripts/resources/runes/rune_roller.gd:36)
+       [1] test_empty_pool_returns_rune_without_modifiers 
+(res://test/unit/test_rune_roller.gd:57)
+       [2] _run_test (res://addons/gut/gut.gd:622)
+       [3] _test_the_scripts (res://addons/gut/gut.gd:835)
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_save_manager.gd
+[0m* test_default_data_starts_empty
+* test_tutorial_completion_persists_and_is_idempotent
+* test_record_weapon_unlock_adds_a_new_path
+* test_record_weapon_unlock_does_not_duplicate
+* test_record_weapon_unlock_ignores_an_empty_path
+* test_record_skill_unlock_adds_a_new_path
+* test_record_run_result_appends_an_entry
+* test_run_history_caps_at_the_maximum_and_drops_the_oldest
+* test_save_and_load_in_progress_run_round_trips
+* test_clear_in_progress_run_removes_it
+* test_data_actually_persists_to_and_reloads_from_disk
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_slow_effect.gd
+[0m* test_inactive_by_default_multiplier_is_neutral
+* test_apply_activates_with_given_multiplier
+* test_tick_expires_and_returns_multiplier_to_neutral
+* test_tick_does_not_expire_before_duration_elapses
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_sprite_visual.gd
+[0m* test_missing_sprite_keeps_the_placeholder_visible
+* test_missing_sprite_set_tint_writes_to_the_placeholder
+* test_empty_entity_id_never_attempts_a_load
+* test_no_fallback_assigned_does_not_crash
+ERROR: SpriteVisual on @Node@255:<Node#208423357103> has no fallback_polygon 
+(and no sibling named "PlaceholderVisual" to recover it from)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _ready (res://scripts/visuals/sprite_visual.gd:33)
+       [1] add_child_autofree (res://addons/gut/test.gd:2784)
+       [2] test_no_fallback_assigned_does_not_crash 
+(res://test/unit/test_sprite_visual.gd:38)
+       [3] _run_test (res://addons/gut/gut.gd:622)
+       [4] _test_the_scripts (res://addons/gut/gut.gd:835)
+[34m[ExpectedError][0mExpected push_error error containing 'has no fallback_polygon'.  
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_upgrade_manager.gd
+[0m* test_award_qi_accumulates
+* test_award_qi_ignores_zero_or_negative
+* test_reset_clears_all_per_run_state
+* test_weapon_might_multiplier_scales_with_purchases
+* test_vitality_hp_bonus_scales_with_purchases
+* test_reaction_mastery_sorting_ensures_order_independence
+* test_sinh_mastery_ranks_and_favored_element
+* test_khac_mastery_ranks
+* test_purchase_checks_fail_if_already_purchased
+* test_purchase_rank2_fails_if_rank1_not_owned
+[1m10/10 passed.
+[0m[4m
+
+res://test/unit/test_weapon_stats.gd
+[0m* test_light_weapon_no_rune_base_charge_is_1
+* test_heavy_weapon_no_rune_base_charge_is_2
+* test_same_element_rune_adds_plus_one_to_light_weapon
+* test_same_element_rune_on_heavy_weapon_reaches_charge_ceiling_of_3
+* test_different_element_rune_grants_no_charge_bonus
+* test_different_element_rune_alternates_starting_with_innate
+* test_new_weapon_stats_have_sane_lunge_range_and_combo_defaults
+[1m7/7 passed.
+[0m[4m
+
+res://test/integration/test_boss_phase_transition.gd
+[0m* test_starts_in_phase_1_with_phase_1_element
+* test_damage_above_threshold_does_not_trigger_phase_2
+* test_damage_crossing_threshold_triggers_phase_2
+Boss enters Phase 2 ΓÇö element shifts to hoa
+* test_phase_transition_only_fires_once
+Boss enters Phase 2 ΓÇö element shifts to hoa
+* test_combat_ai_element_override_updates_on_phase_change
+Boss enters Phase 2 ΓÇö element shifts to hoa
+* test_death_at_zero_health_still_works_after_phase_2
+Boss enters Phase 2 ΓÇö element shifts to hoa
+[1m6/6 passed.
+[0m[4m
+
+res://test/integration/test_elemental_combatant_reactions.gd
+[0m* test_condensation_tier1_slows_and_leaves_generated_water
+Sinh: [&"kim", &"thuy"] -> SINH_TIER_1
+* test_condensation_tier2_slows_more_at_charge_2
+Sinh: [&"kim", &"thuy"] -> SINH_TIER_2
+* test_overgrowth_roots_dots_and_tags_self
+Sinh: [&"thuy", &"moc"] -> SINH_TIER_1
+* test_overgrowth_spreads_to_a_nearby_combatant
+Sinh: [&"thuy", &"moc"] -> SINH_TIER_1
+* test_overgrowth_excludes_the_attacker_as_a_bystander
+Sinh: [&"thuy", &"moc"] -> SINH_TIER_1
+* test_wildfire_chains_to_an_overgrowth_linked_combatant
+Sinh: [&"hoa", &"moc"] -> SINH_TIER_1
+* test_cinder_bloom_applies_earth_and_burns_nearby
+Sinh: [&"hoa", &"tho"] -> SINH_TIER_1
+* test_ore_surge_applies_generated_metal_status
+Sinh: [&"tho", &"kim"] -> SINH_TIER_1
+* test_molten_full_clear_applies_base_dot
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+* test_molten_thua_applies_stronger_dot
+Khß║»c: [&"hoa", &"kim"] -> KHAC_THUA
+* test_silt_full_clear_applies_base_slow
+Khß║»c: [&"tho", &"thuy"] -> KHAC_FULL_CLEAR
+* test_silt_thua_applies_stronger_slow
+Khß║»c: [&"tho", &"thuy"] -> KHAC_THUA
+* test_root_break_full_clear_applies_base_stagger
+Khß║»c: [&"moc", &"tho"] -> KHAC_FULL_CLEAR
+* test_root_break_thua_applies_longer_stagger
+Khß║»c: [&"moc", &"tho"] -> KHAC_THUA
+* test_root_break_burst_staggers_a_nearby_combatant_too
+Khß║»c: [&"moc", &"tho"] -> KHAC_FULL_CLEAR
+* test_sever_full_clear_shreds_base_armor
+Khß║»c: [&"kim", &"moc"] -> KHAC_FULL_CLEAR
+* test_sever_thua_shreds_more_armor
+Khß║»c: [&"kim", &"moc"] -> KHAC_THUA
+* test_sever_armor_never_goes_below_zero
+Khß║»c: [&"kim", &"moc"] -> KHAC_THUA
+* test_sever_burst_shreds_a_nearby_combatant_too
+Khß║»c: [&"kim", &"moc"] -> KHAC_FULL_CLEAR
+* test_sever_burst_excludes_the_attacker_as_a_bystander
+Khß║»c: [&"kim", &"moc"] -> KHAC_FULL_CLEAR
+* test_douse_clears_the_burn_status
+Khß║»c: [&"thuy", &"hoa"] -> KHAC_FULL_CLEAR
+* test_khac_partial_reduces_charge_and_grazes_without_clearing
+Khß║»c partial: [&"hoa", &"kim"]
+* test_khac_vu_reverses_the_graze_onto_the_attacker
+V┼⌐! Reversed ΓÇö attacker takes the graze instead.
+* test_icd_blocks_a_second_hit_of_the_same_element_within_the_window
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+ICD: hoa from @Node2D@488 blocked ΓÇö still on cooldown
+* test_icd_does_not_block_a_different_element_from_the_same_attacker
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+Khß║»c: [&"tho", &"moc"] -> KHAC_FULL_CLEAR
+* test_break_free_press_reduces_an_active_disable
+[1m26/26 passed.
+[0m[4m
+
+res://test/integration/test_elemental_combatant_skills.gd
+[0m* test_stoneguard_applies_self_status_without_reaction_resolution
+* test_cleansing_tide_clears_then_applies_bypassing_charge
+* test_ignite_dart_routes_through_the_full_reaction_pipeline
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+* test_ignite_dart_bypasses_icd_on_repeated_casts
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+* test_rending_edge_strips_status_bypassing_charge_entirely
+* test_overgrowth_snare_does_not_error_without_a_current_scene
+[1m6/6 passed.
+[0m[4m
+
+res://test/integration/test_hud_pickup_overlay.gd
+[0m* test_opening_overlay_sets_active_and_targets_the_pickup
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+   at: test_opening_overlay_sets_active_and_targets_the_pickup 
+(res://test/integration/test_hud_pickup_overlay.gd:39)
+   GDScript backtrace (most recent call first):
+       [0] test_opening_overlay_sets_active_and_targets_the_pickup 
+(res://test/integration/test_hud_pickup_overlay.gd:39)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_confirm_equips_the_selected_slot_and_closes_overlay
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+   at: test_confirm_equips_the_selected_slot_and_closes_overlay 
+(res://test/integration/test_hud_pickup_overlay.gd:45)
+   GDScript backtrace (most recent call first):
+       [0] test_confirm_equips_the_selected_slot_and_closes_overlay 
+(res://test/integration/test_hud_pickup_overlay.gd:45)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_confirm_targeting_secondary_leaves_primary_untouched
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+   at: test_confirm_targeting_secondary_leaves_primary_untouched 
+(res://test/integration/test_hud_pickup_overlay.gd:54)
+   GDScript backtrace (most recent call first):
+       [0] test_confirm_targeting_secondary_leaves_primary_untouched 
+(res://test/integration/test_hud_pickup_overlay.gd:54)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_mouse_click_on_an_option_selects_and_confirms_immediately
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+   at: test_mouse_click_on_an_option_selects_and_confirms_immediately 
+(res://test/integration/test_hud_pickup_overlay.gd:61)
+   GDScript backtrace (most recent call first):
+       [0] test_mouse_click_on_an_option_selects_and_confirms_immediately 
+(res://test/integration/test_hud_pickup_overlay.gd:61)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_close_overlay_does_not_equip_anything
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+   at: test_close_overlay_does_not_equip_anything 
+(res://test/integration/test_hud_pickup_overlay.gd:71)
+   GDScript backtrace (most recent call first):
+       [0] test_close_overlay_does_not_equip_anything 
+(res://test/integration/test_hud_pickup_overlay.gd:71)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_cannot_open_overlay_while_player_is_attacking
+SCRIPT ERROR: Invalid assignment of property or key '_player' with value of 
+type 'CharacterBody2D (Player)' on a base object of type 'Nil'.
+   at: before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] before_each (res://test/integration/test_hud_pickup_overlay.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:612)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+SCRIPT ERROR: Invalid call. Nonexistent function '_can_open_overlay' in base 
+'Nil'.
+   at: test_cannot_open_overlay_while_player_is_attacking 
+(res://test/integration/test_hud_pickup_overlay.gd:78)
+   GDScript backtrace (most recent call first):
+       [0] test_cannot_open_overlay_while_player_is_attacking 
+(res://test/integration/test_hud_pickup_overlay.gd:78)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_can_open_overlay' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid call. Nonexistent function '_close_overlay' in base 
+'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_overlay.gd:33)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[1m0/6 passed.
+[0m[4m
+
+res://test/integration/test_hud_pickup_prompts.gd
+[0m* test_refresh_finds_a_pickup_the_player_is_standing_near
+SCRIPT ERROR: Invalid call. Nonexistent function '_refresh_active_pickups' in 
+base 'Nil'.
+   at: test_refresh_finds_a_pickup_the_player_is_standing_near 
+(res://test/integration/test_hud_pickup_prompts.gd:25)
+   GDScript backtrace (most recent call first):
+       [0] test_refresh_finds_a_pickup_the_player_is_standing_near 
+(res://test/integration/test_hud_pickup_prompts.gd:25)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_refresh_active_pickups' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid assignment of property or key '_active_weapon_pickup' 
+with value of type 'Nil' on a base object of type 'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_prompts.gd:21)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_prompts.gd:21)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_refresh_clears_once_the_player_leaves_range
+SCRIPT ERROR: Invalid call. Nonexistent function '_refresh_active_pickups' in 
+base 'Nil'.
+   at: test_refresh_clears_once_the_player_leaves_range 
+(res://test/integration/test_hud_pickup_prompts.gd:30)
+   GDScript backtrace (most recent call first):
+       [0] test_refresh_clears_once_the_player_leaves_range 
+(res://test/integration/test_hud_pickup_prompts.gd:30)
+       [1] _run_test (res://addons/gut/gut.gd:622)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_refresh_active_pickups' in base 'Nil'.
+      at line -1
+SCRIPT ERROR: Invalid assignment of property or key '_active_weapon_pickup' 
+with value of type 'Nil' on a base object of type 'Nil'.
+   at: after_each (res://test/integration/test_hud_pickup_prompts.gd:21)
+   GDScript backtrace (most recent call first):
+       [0] after_each (res://test/integration/test_hud_pickup_prompts.gd:21)
+       [1] _run_test (res://addons/gut/gut.gd:636)
+       [2] _test_the_scripts (res://addons/gut/gut.gd:835)
+[1m0/2 passed.
+[0m[4m
+
+res://test/integration/test_player_combo.gd
+[0m* test_fresh_attack_starts_at_combo_step_1
+* test_buffered_press_chains_to_the_next_combo_step
+* test_combo_does_not_exceed_weapon_combo_length
+* test_no_buffered_press_ends_the_attack_and_starts_the_grace_window
+* test_pressing_again_within_the_grace_window_continues_the_combo
+* test_pressing_after_the_grace_window_expires_resets_to_step_1
+* test_combo_damage_multiplier_compounds_per_step
+* test_configure_hitbox_applies_weapon_reach_and_radius
+* test_configure_hitbox_scales_damage_by_combo_step
+* test_switching_weapon_forces_a_fresh_combo_not_a_chain
+[1m10/10 passed.
+[0m[4m
+
+res://test/integration/test_player_skill_charge.gd
+[0m* test_matching_same_element_rune_reaches_charge_3
+* test_no_matching_rune_stays_at_base_charge_2
+* test_rune_element_matching_a_different_skill_element_gives_no_bonus
+[1m3/3 passed.
+[0m[4m
+
+res://test/integration/test_run_manager_persistence.gd
+[0m* test_finish_run_win_records_history_and_clears_save
+* test_player_death_triggers_a_loss_record
+Run failed ΓÇö you died. (1/3 rooms reached, 0.0s)
+Player died
+* test_death_after_run_already_finished_does_not_double_record
+[33m    --- Awaiting signal died or 1.0s  ---
+[0mPlayer died
+* test_resume_from_save_restores_sequence_and_player_state
+Run complete!
+Resumed run at room 4/3
+* test_save_snapshot_round_trips_map_structure
+* test_resume_rebuilds_the_saved_procedural_map_structure
+Resumed run at room 1/1
+* test_playtest_teleports_to_start_finish_and_any_chunk
+* test_playtest_regenerates_current_procedural_room
+SCRIPT ERROR: Invalid call. Nonexistent function 'is_overlay_active' in base 
+'Nil'.
+   at: Player._physics_process (res://scenes/player/player.gd:173)
+   GDScript backtrace (most recent call first):
+       [0] _physics_process (res://scenes/player/player.gd:173)
+SCRIPT ERROR: Invalid call. Nonexistent function 'is_overlay_active' in base 
+'Nil'.
+   at: Player._physics_process (res://scenes/player/player.gd:173)
+   GDScript backtrace (most recent call first):
+       [0] _physics_process (res://scenes/player/player.gd:173)
+SCRIPT ERROR: Invalid call. Nonexistent function 'is_overlay_active' in base 
+'Nil'.
+   at: Player._physics_process (res://scenes/player/player.gd:173)
+   GDScript backtrace (most recent call first):
+       [0] _physics_process (res://scenes/player/player.gd:173)
+SCRIPT ERROR: Invalid call. Nonexistent function 'is_overlay_active' in base 
+'Nil'.
+   at: Player._physics_process (res://scenes/player/player.gd:173)
+   GDScript backtrace (most recent call first):
+       [0] _physics_process (res://scenes/player/player.gd:173)
+SCRIPT ERROR: Invalid call. Nonexistent function 'is_overlay_active' in base 
+'Nil'.
+   at: Player._physics_process (res://scenes/player/player.gd:173)
+   GDScript backtrace (most recent call first):
+       [0] _physics_process (res://scenes/player/player.gd:173)
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [2] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [3] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [4] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [5] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+      at line 152
+[1m7/8 passed.
+[0m[4m
+
+res://test/integration/test_rune_pickup.gd
+[0m* test_pickup_joins_rune_group_after_ready
+* test_pickup_tracks_player_proximity_without_equipping
+* test_leaving_range_clears_player_proximity
+* test_spirit_roll_can_return_own_element
+[1m4/4 passed.
+[0m[4m
+
+res://test/integration/test_skill_pickup.gd
+[0m* test_entering_range_does_not_equip_by_itself
+* test_explicit_choice_of_slot_1_equips_skill_1_regardless_of_pickups_default
+* test_explicit_choice_of_slot_2_equips_skill_2_regardless_of_pickups_default
+* test_quick_pickup_defaults_to_an_empty_slot_over_the_pickups_own_default
+* test_quick_pickup_falls_back_to_the_pickups_own_slot_when_both_full
+* test_leaving_range_clears_the_prompt_target
+* test_a_second_pickup_call_after_pickup_does_nothing
+* test_contact_from_a_non_player_body_is_ignored
+[1m8/8 passed.
+[0m[4m
+
+res://test/integration/test_skill_projectile.gd
+[0m* test_hit_resolves_through_the_full_reaction_pipeline
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+* test_hit_bypasses_icd
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+Khß║»c: [&"hoa", &"kim"] -> KHAC_FULL_CLEAR
+* test_never_hits_its_own_wielder
+* test_a_spent_dart_does_not_resolve_a_second_hit
+* test_cast_apply_projectile_does_not_error_without_a_current_scene
+[1m5/5 passed.
+[0m[4m
+
+res://test/integration/test_vision_block.gd
+[0m* test_no_active_clouds_never_blocks_vision
+* test_target_inside_cloud_observer_outside_is_blocked
+* test_target_outside_any_cloud_is_never_blocked
+* test_observer_inside_the_same_cloud_is_not_blocked
+[1m4/4 passed.
+[0m[4m
+
+res://test/integration/test_weapon_pickup.gd
+[0m* test_entering_range_does_not_equip_by_itself
+* test_explicit_choice_of_slot_1_equips_primary_regardless_of_pickups_default
+* test_explicit_choice_of_slot_2_equips_secondary_regardless_of_pickups_default
+* test_quick_pickup_defaults_to_an_empty_slot_over_the_pickups_own_default
+* test_quick_pickup_falls_back_to_the_pickups_own_slot_when_both_full
+* test_leaving_range_clears_the_prompt_target
+* test_a_second_pickup_call_after_pickup_does_nothing
+* test_contact_from_a_non_player_body_is_ignored
+[33m[GUT WARNING]:  [0mTest script has 3 unfreed children.  Increase log level for more details.
+[1m8/8 passed.
+[0m
+
+
+
+[33m==============================================[0m
+[33m= 1 Orphans[0m
+[33m==============================================[0m
+test_room_clear_upgrade_menu.gd
+    - test_room_clear_shop_allows_multiple_purchases_and_refresh
+[33m        * [<Node2D#202702326734>(room_controller.gd)][0m
+
+
+[33m==============================================
+[0m[33m= Run Summary
+[0m[33m==============================================
+[0m[4m
+res://test/unit/test_room_clear_upgrade_menu.gd
+[0m- test_room_clear_upgrade_menu_opens_on_room_clear_and_purchases_weapon_might
+[31m    [Failed]:  [0mExpected [<null>] to be anything but NULL:  
+          at line 26
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Cannot call method 'has_method' on a null value.
+          at line -1
+- test_room_clear_shop_allows_multiple_purchases_and_refresh
+[31m    [Failed]:  [0mExpected [<null>] to be anything but NULL:  
+          at line 43
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Attempt to call function 'is_upgrade_menu_active' in base 'null instance' on a null instance.
+          at line -1
+[4m
+res://test/integration/test_hud_pickup_overlay.gd
+[0m- test_opening_overlay_sets_active_and_targets_the_pickup
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+          at line -1
+- test_confirm_equips_the_selected_slot_and_closes_overlay
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+          at line -1
+- test_confirm_targeting_secondary_leaves_primary_untouched
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+          at line -1
+- test_mouse_click_on_an_option_selects_and_confirms_immediately
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+          at line -1
+- test_close_overlay_does_not_equip_anything
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_open_overlay' in base 'Nil'.
+          at line -1
+- test_cannot_open_overlay_while_player_is_attacking
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_can_open_overlay' in base 'Nil'.
+          at line -1
+[4m
+res://test/integration/test_hud_pickup_prompts.gd
+[0m- test_refresh_finds_a_pickup_the_player_is_standing_near
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_refresh_active_pickups' in base 'Nil'.
+          at line -1
+- test_refresh_clears_once_the_player_leaves_range
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function '_refresh_active_pickups' in base 'Nil'.
+          at line -1
+[4m
+res://test/integration/test_run_manager_persistence.gd
+[0m- test_playtest_regenerates_current_procedural_room
+[31m    [Failed]:  [0mUnexpected Errors:
+    [1] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [2] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [3] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [4] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+    [5] <engine-2>Invalid call. Nonexistent function 'is_overlay_active' in base 'Nil'.
+          at line 152
+
+Totals
+------
+Warnings              1
+
+Scripts              37
+Tests               226
+Passing Tests       215
+Failing Tests        11
+Asserts           479/492
+Orphans               1
+Time              3.653s
+
+
+[31m---- 11 failing tests ----
+[0m
+WARNING: 1 RID of type "CanvasItem" was leaked.
+   at: _free_rids (servers/rendering/renderer_canvas_cull.cpp:2733)
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for 
+details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+

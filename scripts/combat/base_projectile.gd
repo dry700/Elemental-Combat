@@ -73,8 +73,15 @@ func _on_area_entered(area: Area2D) -> void:
 	if not (area is Hurtbox):
 		return
 	var hurtbox := area as Hurtbox
-	if hurtbox.owner == attacker:
-		return  # Never hit your own wielder.
+	# Guard: attacker may have been freed (e.g. enemy died while its arrow
+	# was still in flight). Skip the owner check if so — orphaned projectiles
+	# can hit anyone.
+	if attacker != null and is_instance_valid(attacker) and hurtbox.owner != null:
+		if hurtbox.owner == attacker:
+			return  # Never hit your own wielder.
+		if attacker.is_in_group("enemies") and hurtbox.owner.is_in_group("enemies"):
+			return  # Friendly fire prevention
+			
 	_resolve_hit(hurtbox)
 
 

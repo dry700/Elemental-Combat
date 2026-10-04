@@ -32,13 +32,14 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	var hurtbox := area as Hurtbox
 	if hurtbox.owner == owner:
-		# Never hit your own wielder. The player's melee hitbox (a radius-10
-		# circle at local offset 14 on a 12-wide body — see Visuals/Hitbox
-		# in player.tscn) geometrically overlaps the player's own Hurtbox
-		# by a couple of pixels at both facings, which without this guard
-		# lets every attack briefly apply its own element/knockback/
-		# reaction to the attacker as a side effect of their own swing.
+		# Never hit your own wielder.
 		return
+		
+	# Friendly fire prevention: enemies shouldn't hit other enemies
+	if owner != null and hurtbox.owner != null:
+		if owner.is_in_group("enemies") and hurtbox.owner.is_in_group("enemies"):
+			return
+
 	if hurtbox in _already_hit:
 		return  # One hit per active window, even if overlap persists across frames.
 	_already_hit.append(hurtbox)

@@ -1,10 +1,10 @@
-[gd_scene format=3 uid="uid://bqdhlcxwksg6n"]
+[gd_scene format=3 uid="uid://c38b457q1h63j"]
 
 [ext_resource type="Script" uid="uid://cehj7nvox6aaa" path="res://scripts/world/room_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
 [ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/test_dummy.tscn" id="4_dummy"]
-[ext_resource type="Resource" uid="uid://b8bhb0xhaxiha" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
+[ext_resource type="Resource" uid="uid://bitv2472u7lf0" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="5_stats"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/flying_enemy.tscn" id="6_flying"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy.tscn" id="7_shooter"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy_still.tscn" id="8_shooter_still"]
@@ -40,19 +40,19 @@ enemy_scene = ExtResource("4_dummy")
 enemy_stats = ExtResource("5_stats")
 starting_element = &"kim"
 
-[node name="FlyingEnemySpawn" type="Node2D" parent="."]
+[node name="FlyingEnemySpawn" type="Node2D" parent="." unique_id=1517128624]
 position = Vector2(100, 40)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("6_flying")
 starting_element = &"hoa"
 
-[node name="ShooterMovingSpawn" type="Node2D" parent="."]
+[node name="ShooterMovingSpawn" type="Node2D" parent="." unique_id=821988093]
 position = Vector2(130, 93.5)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("7_shooter")
 starting_element = &"thuy"
 
-[node name="ShooterStillSpawn" type="Node2D" parent="."]
+[node name="ShooterStillSpawn" type="Node2D" parent="." unique_id=1314831646]
 position = Vector2(-100, 93.5)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("8_shooter_still")

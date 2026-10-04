@@ -203,6 +203,10 @@ func _advance() -> void:
 
 func _on_room_cleared(_controller: RoomController) -> void:
 	print("Room cleared — exit unlocked")
+	var hud := get_node_or_null("/root/Hud")
+	if hud != null and hud.has_method("_can_open_upgrade_menu") and hud.has_method("_open_upgrade_menu"):
+		if hud._can_open_upgrade_menu():
+			hud._open_upgrade_menu()
 
 
 func _on_player_died() -> void:
