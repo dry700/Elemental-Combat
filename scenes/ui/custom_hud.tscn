@@ -153,3 +153,13 @@ layout_mode = 2
 mouse_filter = 2
 value = 100.0
 show_percentage = false
+
+[node name="UpgradePrompt" type="Label" parent="MarginContainer" unique_id=293847561]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+text = "Tab to Upgrade"
+horizontal_alignment = 2

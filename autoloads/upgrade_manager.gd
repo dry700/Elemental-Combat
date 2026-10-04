@@ -158,5 +158,39 @@ func purchase_vitality() -> bool:
 	qi_changed.emit(qi)
 	return true
 
+## ── Save / restore (mid-run resume) ──────────────────────────────────
+## Captures per-run upgrade state into a plain Dictionary suitable for
+## JSON serialization in SaveManager's in_progress_run snapshot.
+## Only used for mid-run quit/resume — never for cross-run persistence.
+## reset() is still called on run end; this merely survives a quit mid-run.
+
+func to_save_state() -> Dictionary:
+	return {
+		"qi": qi,
+		"weapon_might_rank": _weapon_might_rank,
+		"vitality_rank": _vitality_rank,
+		"sinh_ranks": _sinh_ranks.duplicate(),
+		"sinh_favored_elements": _sinh_favored_elements.duplicate(),
+		"khac_ranks": _khac_ranks.duplicate(),
+	}
+
+
+func apply_save_state(saved: Dictionary) -> void:
+	if saved.is_empty():
+		return
+	qi = float(saved.get("qi", 0.0))
+	_weapon_might_rank = int(saved.get("weapon_might_rank", 0))
+	_vitality_rank = int(saved.get("vitality_rank", 0))
+	_sinh_ranks = {}
+	for k in saved.get("sinh_ranks", {}):
+		_sinh_ranks[str(k)] = int(saved["sinh_ranks"][k])
+	_sinh_favored_elements = {}
+	for k in saved.get("sinh_favored_elements", {}):
+		_sinh_favored_elements[str(k)] = StringName(saved["sinh_favored_elements"][k])
+	_khac_ranks = {}
+	for k in saved.get("khac_ranks", {}):
+		_khac_ranks[str(k)] = int(saved["khac_ranks"][k])
+	qi_changed.emit(qi)
+
 ## ── Internal favored-element storage ─────────────────────────────────
 var _sinh_favored_elements: Dictionary = {}

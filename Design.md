@@ -79,7 +79,7 @@ changes needed there for the Final Report beyond good writing.
 | Fonts | `assets/fonts/madspixel.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
 | Visuals | `scripts/visuals/sprite_visual.gd`, `scripts/ui/element_indicator.gd`, `scripts/combat/{slash_vfx,hit_spark}.gd` | Sprite/placeholder swap, A.1 pattern glyphs, one-shot VFX |
 | Input | `autoloads/input_setup.gd` | All input actions defined in code, not Project Settings |
-| Upgrade system | `autoloads/upgrade_manager.gd` | Qi economy and per-run upgrade state — P10a foundations implemented; purchase UI/effect hooks remain, see §4.8 |
+| Upgrade system | `autoloads/upgrade_manager.gd`, `autoloads/hud.gd` | Per-run Qi and upgrade state with room-clear purchase UI; remaining combat effect hooks are tracked in §4.8 |
 ---
 
 ## 3. Core Combat Loop
@@ -539,8 +539,10 @@ Reaction specializations are different: each named reaction can be selected
 once at Rank 1 and once at Rank 2, after which it is fully specialized and
 cannot be purchased again. The reaction rank costs remain 20 Qi and 45 Qi;
 the repeatable HP and Damage curves are independent of those one-time
-reaction purchases. P10a exposes purchase methods and getters but does not
-yet provide upgrade-menu input or apply every effect hook in combat.
+reaction purchases. The room-clear upgrade menu exposes all available
+Weapon Might, Vitality, Sinh, and Khắc purchases as paged cards, including
+both favored-element choices for Sinh Rank 2. Remaining combat effect hooks
+are tracked in their respective §4.8 subsections.
 
 #### 4.8.3 Getter API (revised)
 

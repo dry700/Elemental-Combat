@@ -106,6 +106,9 @@ var slow_effect := SlowEffect.new()
 var disable_effect := DisableEffect.new()
 var armor_buff := ArmorBuffEffect.new()
 var cc_resistance = preload("res://scripts/reactions/cc_resistance.gd").new()
+## §4.8.7 — Wildfire Overload tracker. Only does anything when the player
+## has purchased favor-Hỏa for the Mộc+Hỏa (Wildfire) pair.
+var wildfire_overload := preload("res://scripts/reactions/wildfire_overload.gd").new()
 
 var _element_indicator: ElementIndicator
 var _dot_indicator: DotIndicator
@@ -122,6 +125,8 @@ func _ready() -> void:
 	status.charge_changed.connect(func(charge: int) -> void: _element_indicator.set_status(status.element, charge))
 	disable_effect.expired.connect(func() -> void: disabled_expired.emit())
 	reversed_hit_taken.connect(func(): _spawn_text_popup("Reversed!", Color(1.0, 0.8, 0.2)))
+	# §4.8.7 — when Overload reaches level 3 it fires this signal.
+	wildfire_overload.exploded.connect(_on_wildfire_overload_exploded)
 	reaction_triggered.connect(func(outcome: Reactions.Outcome, pair: Array[StringName]):
 		var r_name = Reactions.get_reaction_name(outcome, pair)
 		if r_name != "":
@@ -180,7 +185,9 @@ func tick(delta: float) -> float:
 	disable_effect.tick(delta)
 	armor_buff.tick(delta)
 	cc_resistance.tick(delta)
+	wildfire_overload.tick(delta)
 	_tick_icd(delta)
+	_tick_remnant_cooldowns(delta)
 	var dot_damage := dot_effect.tick(delta)
 	if show_debug_readout:
 		_update_debug_readout()
@@ -312,6 +319,36 @@ func _tick_icd(delta: float) -> void:
 		_icd_windows.erase(key)
 
 
+## §4.8.8 — Per-attacker cooldown for WildfireRemnant drops. Keyed by
+## attacker instance id. Distinct from _icd_windows (which is per
+## attacker+element and gates status application) — this gates world-
+## object spawning, not status, so it lives separately. 1.0s cooldown.
+const REMNANT_DROP_COOLDOWN: float = 1.0
+var _remnant_drop_cooldowns: Dictionary = {}  ## attacker instance id -> remaining seconds
+
+
+func _tick_remnant_cooldowns(delta: float) -> void:
+	var expired: Array = []
+	for key in _remnant_drop_cooldowns:
+		_remnant_drop_cooldowns[key] -= delta
+		if _remnant_drop_cooldowns[key] <= 0.0:
+			expired.append(key)
+	for key in expired:
+		_remnant_drop_cooldowns.erase(key)
+
+
+func _remnant_drop_on_cooldown(attacker: Node) -> bool:
+	if attacker == null:
+		return false
+	return _remnant_drop_cooldowns.has(attacker.get_instance_id())
+
+
+func _remnant_drop_start_cooldown(attacker: Node) -> void:
+	if attacker == null:
+		return
+	_remnant_drop_cooldowns[attacker.get_instance_id()] = REMNANT_DROP_COOLDOWN
+
+
 func _icd_key(attacker: Node, element: StringName) -> String:
 	return "%d:%s" % [attacker.get_instance_id(), element]
 
@@ -333,15 +370,51 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 		_icd_windows[icd_key] = ICD_DURATION
 
 	var result := Reactions.resolve(hit_data.element, hit_data.charge, status)
+
+	# §4.8.3 — Khắc graze erasure: if the player has specialized into this
+	# reaction pair at Rank 1, KHAC_PARTIAL is rewritten to KHAC_FULL_CLEAR
+	# before dispatch. Reactions.resolve() still returns PARTIAL honestly;
+	# only the caller's dispatch is upgraded. Never touches KHAC_VU.
+	if result.outcome == Reactions.Outcome.KHAC_PARTIAL \
+			and UpgradeManager.khac_graze_erased(result.reaction_pair):
+		result.outcome = Reactions.Outcome.KHAC_FULL_CLEAR
+
 	if result.outcome != Reactions.Outcome.NO_REACTION:
 		reaction_triggered.emit(result.outcome, result.reaction_pair)
-		
+
 	match result.outcome:
 		Reactions.Outcome.NO_REACTION:
 			status.apply(hit_data.element, hit_data.charge)
+			# §4.8.7 — if this is a Hỏa hit on a Hỏa-carrying target and
+			# Overload is active (favor-Hỏa purchased for Wildfire), increment
+			# the level. The check uses status.element BEFORE apply() here,
+			# but status.apply() refreshes same-element, so we check after:
+			# if the target was already Hỏa, this was same-element — NO_REACTION
+			# is the correct outcome. Increment only when overload is active.
+			if hit_data.element == Elements.HOA and status.element == Elements.HOA \
+					and wildfire_overload.active:
+				wildfire_overload.increment(hit_data.source)
+			# §4.8.8 — Mộc hit on a Hỏa-carrying target drops a WildfireRemnant
+			# when the player has purchased favor-Mộc for the Wildfire pair.
+			# Gated by per-attacker 1.0s cooldown (not the ICD — that gates
+			# status application; this gates world-object spawning separately).
+			if hit_data.element == Elements.MOC and status.element == Elements.HOA \
+					and not _remnant_drop_on_cooldown(hit_data.source):
+				var wildfire_pair: Array[StringName] = [Elements.MOC, Elements.HOA]
+				var wf_favored := UpgradeManager.sinh_favored_element(wildfire_pair)
+				# generated element for Wildfire is HOA; favor-Moc = the other element
+				var wf_generated := Elements.sinh_generated_element(wildfire_pair)
+				if wf_favored != &"" and wf_favored != wf_generated:
+					_remnant_drop_start_cooldown(hit_data.source)
+					var WildfireRemnantScript := load("res://scripts/reactions/wildfire_remnant.gd")
+					if WildfireRemnantScript:
+						WildfireRemnantScript.spawn(get_tree().current_scene, self)
 		Reactions.Outcome.SINH_TIER_1, Reactions.Outcome.SINH_TIER_2:
 			print("Sinh: ", result.reaction_pair, " -> ", Reactions.Outcome.keys()[result.outcome])
-			var sinh_tier2 := result.outcome == Reactions.Outcome.SINH_TIER_2
+			# §4.8.3 — force Tier 2 if the player has Rank 1 for this pair.
+			var sinh_tier2 := result.outcome == Reactions.Outcome.SINH_TIER_2 \
+					or UpgradeManager.sinh_tier2_forced(result.reaction_pair)
+			var favored := UpgradeManager.sinh_favored_element(result.reaction_pair)
 			# Every branch below applies the GENERATED element — fixed by
 			# the Ngũ Hành cycle direction (e.g. Thủy sinh Mộc always
 			# leaves Mộc behind) — rather than hit_data.element, whichever
@@ -358,6 +431,16 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# only — Sinh only ever has two tiers, no Thừa/Vũ equivalent.
 				status.apply(generated, hit_data.charge, ElementalStatus.DECAY_SECONDS * (1.6 if sinh_tier2 else 1.3))
 				apply_control_slow(0.5 if sinh_tier2 else 0.7, 3.5 if sinh_tier2 else 2.5)
+				# §4.8 Rank 2 — Tidal Wave (favor generated/Thủy): AoE burst at
+				# the reaction point: 10 damage + Condensation's Tier 2 slow to
+				# every combatant within 65px, bystander-excluded (§4.4).
+				if favored == generated:
+					_apply_condensation_tidal_wave(hit_data.source)
+				elif favored != &"":
+					# Rusted Chunk (favor-Kim) — §4.8.5.
+					var RustedChunkScript := load("res://scripts/reactions/rusted_chunk.gd")
+					if RustedChunkScript:
+						RustedChunkScript.spawn(get_tree().current_scene, self, hit_data)
 			elif Elements.pair_is(result.reaction_pair, Elements.THUY, Elements.MOC):
 				# Overgrowth: roots ENEMIES (plural, A.2's own wording) in
 				# place around wherever this triggered, with a DoT for as
@@ -373,7 +456,14 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				var base_root := 1.6
 				var root_duration := 2.5 if sinh_tier2 else base_root
 				var root_dot_dps := 2.5 if sinh_tier2 else 1.5
-				_apply_overgrowth_aoe(root_duration, base_root, root_dot_dps, generated, hit_data.charge, hit_data.source)
+				var rooted := _apply_overgrowth_aoe(root_duration, base_root, root_dot_dps, generated, hit_data.charge, hit_data.source)
+				# §4.8 Rank 2 — The Vine (both branches) — §4.8.6.
+				if favored != &"":
+					var VineScript := load("res://scripts/reactions/vine.gd")
+					if VineScript:
+						# explode_branch = true when the player favored the
+						# generated element (Mộc); false = favor-Thủy (water path).
+						VineScript.spawn(get_tree().current_scene, self, rooted, favored == generated)
 			elif Elements.pair_is(result.reaction_pair, Elements.MOC, Elements.HOA):
 				# Wildfire: applies its own (generated Hỏa) status, plus a
 				# DoT — A.2's table text only says "bonus damage" without
@@ -386,8 +476,25 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# did, not just takes a lump of damage. Attacker excluded
 				# from the chain as a bystander, same caveat as Overgrowth.
 				status.apply(generated, hit_data.charge)
-				dot_effect.apply(3.5 if sinh_tier2 else 2.5, 1.0, 4.5 if sinh_tier2 else 3.5, Elements.HOA)
+				# §4.8.7 — a fresh Wildfire trigger always resets Overload
+				# to 0 (§1 refresh-only: new base application wins over
+				# accumulated auxiliary state).
+				wildfire_overload.reset()
+				# DoT base magnitude; scaled by Overload level if favor-Hỏa.
+				var wf_base_dps := 3.5 if sinh_tier2 else 2.5
+				var wf_duration := 4.5 if sinh_tier2 else 3.5
+				if favored == generated:
+					# favor-Hỏa (Overload) — activate overload and scale DoT.
+					# Level is 0 after reset(), so dot_bonus() = 0 on the first
+					# trigger; it grows as subsequent Hỏa hits land.
+					wildfire_overload.active = true
+					wf_base_dps += wildfire_overload.dot_bonus()
+				dot_effect.apply(wf_base_dps, 1.0, wf_duration, Elements.HOA)
 				_propagate_wildfire(sinh_tier2, generated, hit_data.charge, hit_data.source)
+				# §4.8 Rank 2 — Remnant→Spiked Ground (favor-Mộc) — §4.8.8.
+				# No spawn on the Wildfire trigger itself — Remnants drop on
+				# *subsequent* Mộc hits against this target while it carries
+				# Hỏa status. That logic lives in the NO_REACTION path above.
 			elif Elements.pair_is(result.reaction_pair, Elements.HOA, Elements.THO):
 				# Cinder Bloom: "AoE burn; scorched terrain spreads Earth
 				# status to enemies who stand on it" (A.2) — two distinct
@@ -400,6 +507,15 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				status.apply(generated, hit_data.charge)
 				_apply_cinder_bloom_burn(sinh_tier2, hit_data.source)
 				spawn_zone(generated)
+				# §4.8 Rank 2 — Cinderstorm (favor-Hỏa) / Boulder (favor-Thổ) — §4.8.9.
+				if favored == generated:
+					# favor-Hỏa (Cinderstorm): motes at nearby enemies (not self).
+					_spawn_cinderstorm_motes(self, hit_data.source)
+				elif favored != &"":
+					# favor-Thổ (Boulder): delayed impact on this specific target.
+					var BoulderScript := load("res://scripts/reactions/boulder.gd")
+					if BoulderScript:
+						BoulderScript.spawn(get_tree().current_scene, self, hit_data.source)
 			elif Elements.pair_is(result.reaction_pair, Elements.THO, Elements.KIM):
 				# Ore Surge: "Armor-shredding projectiles pierce multiple
 				# enemies, spreading Metal status to each hit" (A.2) — a
@@ -412,12 +528,19 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				# the scattered debris left behind, distinct from the
 				# fragments themselves.
 				status.apply(generated, hit_data.charge)
-				_spawn_ore_surge_fragments(generated, hit_data.charge, hit_data.source)
+				# §4.8.10 — pass branch fields into fragments based on favored element.
+				# generated = Kim; favor-Kim = Armor Sunder, favor-Tho = Caltrops.
+				var ore_sunder := 6.0 if favored == generated else 0.0
+				var ore_caltrops := favored != &"" and favored != generated
+				_spawn_ore_surge_fragments(generated, hit_data.charge, hit_data.source,
+						ore_sunder, ore_caltrops)
 				spawn_zone(generated)
 		Reactions.Outcome.KHAC_FULL_CLEAR, Reactions.Outcome.KHAC_THUA:
 			print("Khắc: ", result.reaction_pair, " -> ", Reactions.Outcome.keys()[result.outcome])
 			status.clear()
-			var thua := result.outcome == Reactions.Outcome.KHAC_THUA
+			# §4.8.3 — force overwhelm-tier if the player has Rank 2 for this pair.
+			var thua := result.outcome == Reactions.Outcome.KHAC_THUA \
+					or UpgradeManager.khac_overwhelm_forced(result.reaction_pair)
 			if Elements.pair_is(result.reaction_pair, Elements.HOA, Elements.KIM):
 				# Molten: removes metal armor (status.clear() above) + DoT.
 				if thua:
@@ -481,6 +604,39 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 					attacker_elemental.apply_graze()
 
 
+## §4.8.7 — Overload explosion handler. Fired by wildfire_overload.exploded
+## when level reaches 3. Clears the Hỏa status entirely, then emits AoE
+## bonus damage in a ~55px burst. Deliberately includes _source (the attacker
+## who pushed it to 3) — §1's documented exception, not bystander-excluded.
+func _on_wildfire_overload_exploded(_source: Node) -> void:
+	status.clear()
+	wildfire_overload.reset()
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null:
+			continue
+		if global_position.distance_to(other.global_position) <= wildfire_overload.EXPLODE_RADIUS:
+			other.bonus_damage_dealt.emit(wildfire_overload.EXPLODE_DAMAGE)
+
+
+## Condensation Tidal Wave (§4.8 Rank 2, favor-Thủy): instant AoE burst at
+## the reaction point — 10 damage + Condensation Tier 2 slow (×0.5 for 3.5s)
+## to every combatant within 65px, bystander-excluded per §4.4.
+## Reuses bonus_damage_dealt (no new signal needed, same as Wildfire chain).
+const TIDAL_WAVE_RADIUS: float = 65.0
+const TIDAL_WAVE_DAMAGE: float = 10.0
+
+func _apply_condensation_tidal_wave(attacker: Node) -> void:
+	var bystander := _bystander_attacker(attacker)
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null or other == bystander:
+			continue
+		if global_position.distance_to(other.global_position) <= TIDAL_WAVE_RADIUS:
+			other.bonus_damage_dealt.emit(TIDAL_WAVE_DAMAGE)
+			other.apply_control_slow(0.5, 3.5)
+
+
 ## Overgrowth's AoE spread (A.2: "roots enemies in place" / "tags rooted
 ## enemies", both plural). Radius-queries every combatant in the scene
 ## (ALL_COMBATANTS_GROUP, not just already-tagged ones — that's the whole
@@ -490,8 +646,12 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 ## included without a separate special case. The attacker is excluded as
 ## a bystander — see _bystander_attacker for why a genuine self-inflicted
 ## case is never excluded even though it looks the same at first glance.
-func _apply_overgrowth_aoe(root_duration: float, base_root: float, dot_dps: float, generated_element: StringName, charge: int, attacker: Node) -> void:
+## Returns every combatant that was actually rooted — used by Vine (§4.8.6)
+## to know whose root it is authorized to release early. Existing callers
+## that don't need the Vine simply ignore the return value.
+func _apply_overgrowth_aoe(root_duration: float, base_root: float, dot_dps: float, generated_element: StringName, charge: int, attacker: Node) -> Array[ElementalCombatant]:
 	var bystander := _bystander_attacker(attacker)
+	var rooted: Array[ElementalCombatant] = []
 	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
 		var other := node as ElementalCombatant
 		if other == null or other == bystander:
@@ -501,6 +661,8 @@ func _apply_overgrowth_aoe(root_duration: float, base_root: float, dot_dps: floa
 			other.dot_effect.apply(dot_dps, 0.5, root_duration, Elements.MOC)
 			other.add_to_group(OVERGROWTH_GROUP)
 			other.status.apply(generated_element, charge)
+			rooted.append(other)
+	return rooted
 
 
 ## A.7 Link: radius-queries the Overgrowth tag group from wherever this
@@ -616,14 +778,20 @@ const ORE_SURGE_FRAGMENT_SPEED: float = 200.0
 const ORE_SURGE_FRAGMENT_LIFETIME: float = 0.8
 const ORE_SURGE_SHRED_PER_FRAGMENT: float = 2.0
 
-func _spawn_ore_surge_fragments(element: StringName, charge: int, attacker: Node) -> void:
+func _spawn_ore_surge_fragments(element: StringName, charge: int, attacker: Node,
+		p_sunder_bonus_damage: float = 0.0, p_leaves_hazard: bool = false) -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
 		return
 	for i in range(ORE_SURGE_FRAGMENT_COUNT):
 		var angle := (TAU / ORE_SURGE_FRAGMENT_COUNT) * i
 		var fragment := Projectile.new()
-		fragment.global_position = global_position
+		# Use local position (same fix as QiOrb.spawn_burst — global_position
+		# has no effect before the node enters the scene tree in Godot 4).
+		if scene_root is Node2D:
+			fragment.position = (scene_root as Node2D).to_local(global_position)
+		else:
+			fragment.position = global_position
 		fragment.direction = Vector2.RIGHT.rotated(angle)
 		fragment.speed = ORE_SURGE_FRAGMENT_SPEED
 		fragment.lifetime = ORE_SURGE_FRAGMENT_LIFETIME
@@ -631,7 +799,67 @@ func _spawn_ore_surge_fragments(element: StringName, charge: int, attacker: Node
 		fragment.charge = charge
 		fragment.shred_amount = ORE_SURGE_SHRED_PER_FRAGMENT
 		fragment.attacker = attacker
+		fragment.sunder_bonus_damage = p_sunder_bonus_damage
+		fragment.leaves_hazard_on_expiry = p_leaves_hazard
 		scene_root.add_child(fragment)
+
+
+## Cinderstorm (§4.8.9 Rank 2, favor-Hỏa): spawns up to 4 Projectile motes,
+## each aimed at a DIFFERENT nearby enemy within 90px, excluding the direct
+## Cinder Bloom target (already hit) and any enemy an earlier mote already
+## claimed. Smart-aim-at-spawn — same nearest-target resolution Player uses
+## for Ignite Dart — not true homing. Fewer eligible targets → fewer motes,
+## never a wasted aimless one.
+const CINDERSTORM_RANGE: float = 90.0
+const CINDERSTORM_MAX_MOTES: int = 4
+const CINDERSTORM_DAMAGE: float = 4.0
+const CINDERSTORM_SPEED: float = 220.0
+const CINDERSTORM_LIFETIME: float = 0.5
+
+func _spawn_cinderstorm_motes(direct_target: ElementalCombatant, attacker: Node) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+
+	# Build a sorted list of eligible targets — nearby, not the direct target,
+	# not the player, within range. Each mote claims one and removes it.
+	var eligible: Array[ElementalCombatant] = []
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var other := node as ElementalCombatant
+		if other == null or other == direct_target or other == self:
+			continue
+		if other.get_parent() is Player:
+			continue
+		if global_position.distance_to(other.global_position) <= CINDERSTORM_RANGE:
+			eligible.append(other)
+
+	# Sort by distance so closest enemies are claimed first.
+	eligible.sort_custom(func(a: ElementalCombatant, b: ElementalCombatant) -> bool:
+		return global_position.distance_to(a.global_position) \
+			< global_position.distance_to(b.global_position)
+	)
+
+	var spawn_count := mini(eligible.size(), CINDERSTORM_MAX_MOTES)
+	for i in spawn_count:
+		var target := eligible[i]
+		var dir := (target.global_position - global_position).normalized()
+		if dir.is_zero_approx():
+			dir = Vector2.RIGHT
+
+		var mote := Projectile.new()
+		mote.direction = dir
+		mote.speed = CINDERSTORM_SPEED
+		mote.lifetime = CINDERSTORM_LIFETIME
+		mote.element = Elements.HOA
+		mote.charge = 1
+		mote.shred_amount = 0.0
+		mote.damage_amount = CINDERSTORM_DAMAGE
+		mote.attacker = attacker
+		if scene_root is Node2D:
+			mote.position = (scene_root as Node2D).to_local(global_position)
+		else:
+			mote.position = global_position
+		scene_root.add_child(mote)
 
 
 ## Douse's steam cloud spawn. Radius/stun both scale on Thừa per A.2's

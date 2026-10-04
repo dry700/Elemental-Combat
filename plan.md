@@ -45,6 +45,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] Wire the verified purchase APIs into the HUD purchase path.
 - [x] Add focused coverage for the menu gating and weapon-might purchase flow.
 - [x] Expand the room-clear shop into a repeatable upgrade panel with a larger presentation and a Refresh Shop option.
+- [x] Expose Sinh and Khắc Rank 1/Rank 2 purchases in the paged room-clear UI, including both Sinh favored-element choices.
 
 ### Known blockers
 
@@ -53,7 +54,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## Verification gate
 
-- [x] Full GUT suite: 228/228 tests passed, 521 assertions, 0 failures, 2 warnings.
+- [x] Full GUT suite: 230/230 tests passed, 537 assertions, 0 failures, 2 warnings.
 - [x] Static diagnostics: no errors found in the workspace during the current check.
 - [x] The repo is consistent with the currently implemented code and the active design contract in [Design.md](Design.md).
 
@@ -71,5 +72,5 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- Result: 228 passing tests, 521 assertions, 0 failures, 2 warnings.
+- Result: 230 passing tests, 537 assertions, 0 failures, 2 warnings.
 - Static analysis: no errors found in the workspace.

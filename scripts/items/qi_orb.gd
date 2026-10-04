@@ -91,6 +91,13 @@ func _ready() -> void:
 	shape.shape = circle
 	add_child(shape)
 
+	# Initialize bob baseline from actual local position now that the node
+	# is in the scene tree. global_position was set before add_child, so
+	# Godot has already converted it to the correct local position here.
+	# Setting _bob_base_y at spawn time (before entering the tree) would use
+	# raw world-Y, which is wrong when scene_root has a non-zero global Y.
+	_bob_base_y = position.y
+
 	body_entered.connect(_on_body_entered)
 	queue_redraw()
 
@@ -244,16 +251,27 @@ static func spawn_burst(scene_root: Node, origin: Vector2, total_qi: float) -> v
 	var count := clampi(int(total_qi / 3.0), 2, 8)
 	var per_orb := total_qi / float(count)
 
+	# Convert world-space origin to scene_root's local space so we can assign
+	# position (not global_position) before the node enters the tree.
+	# global_position has no effect on a node that isn't in the scene tree yet,
+	# so we must use local position instead.
+	var local_origin: Vector2
+	if scene_root is Node2D:
+		local_origin = scene_root.to_local(origin)
+	else:
+		local_origin = origin  # Non-Node2D roots have no canvas transform.
+
 	for i in count:
 		var orb := QiOrb.new()
 		orb.qi_value = per_orb
-		orb.global_position = origin
+		orb.position = local_origin
 
 		# Random upward pop — spread horizontally, always upward.
 		var angle := randf_range(-PI * 0.75, -PI * 0.25)  # -135° to -45° (upward arc)
 		var speed := randf_range(60.0, 130.0)
 		orb._velocity = Vector2(cos(angle), sin(angle)) * speed
-		orb._bob_base_y = origin.y  # Ground level = enemy's feet
+		# _bob_base_y is initialized in _ready() from position.y once the node
+		# is in the scene tree.
 
 		scene_root.add_child.call_deferred(orb)
 

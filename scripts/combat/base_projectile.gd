@@ -66,7 +66,15 @@ func _process(delta: float) -> void:
 	position += direction.normalized() * speed * delta
 	_lifetime_timer += delta
 	if _lifetime_timer >= lifetime:
-		queue_free()
+		_on_expired()
+
+
+## Virtual — called when lifetime runs out. Default frees the node.
+## Override in subclasses to run cleanup before (or instead of) freeing.
+## SkillProjectile and un-branched Ore Surge fragments are unaffected —
+## neither overrides this, so they get the same queue_free() as before.
+func _on_expired() -> void:
+	queue_free()
 
 
 func _on_area_entered(area: Area2D) -> void:

@@ -122,6 +122,8 @@ func _resume_from_save(saved: Dictionary) -> void:
 	var saved_map_structure: Variant = saved.get("map_structure", {})
 	_map_structure_to_restore = saved_map_structure.duplicate(true) if saved_map_structure is Dictionary else {}
 	_player.apply_save_state(saved.get("player", {}))
+	# Restore upgrade state — Qi and purchased ranks from before the quit.
+	UpgradeManager.apply_save_state(saved.get("upgrade_state", {}))
 	_current_index = int(saved.get("current_index", -1)) - 1
 	_advance()
 	print("Resumed run at room %d/%d" % [_current_index + 1, _sequence.size()])
@@ -257,4 +259,4 @@ func _autosave() -> void:
 	var map_structure: Dictionary = {}
 	if _current_room is ProceduralRoomController and _current_room.map_gen != null:
 		map_structure = _current_room.map_gen.to_dict()
-	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure)
+	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure, UpgradeManager.to_save_state())

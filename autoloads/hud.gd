@@ -112,6 +112,11 @@ var _upgrade_menu_active: bool = false
 var _upgrade_menu_selected_index: int = 0
 var _debug_room_clear_state: bool = false
 const ROOM_CLEAR_REFRESH_COST: float = 10.0
+## Reaction upgrade menu state — paged list of all available options.
+## Each entry is a Dictionary: {type, label, desc, cost, pair, favored}
+var _all_upgrade_options: Array[Dictionary] = []
+var _upgrade_page_offset: int = 0  ## First visible option index.
+const UPGRADE_CARDS_VISIBLE: int = 3  ## Physical card count — unchanged.
 
 
 func _ready() -> void:
@@ -716,14 +721,17 @@ func _build_upgrade_menu(root: Control) -> void:
 
 	_update_upgrade_menu_visuals()
 
-func _on_upgrade_option_gui_input(event: InputEvent, index: int) -> void:
+func _on_upgrade_option_gui_input(event: InputEvent, card_index: int) -> void:
 	if not _upgrade_menu_active:
 		return
+	var option_index := _upgrade_page_offset + card_index
+	if option_index < 0 or option_index >= _all_upgrade_options.size():
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if _upgrade_menu_selected_index == index:
+		if _upgrade_menu_selected_index == option_index:
 			_confirm_upgrade_selection()
 		else:
-			_set_upgrade_selection(index)
+			_set_upgrade_selection(option_index)
 
 func _make_upgrade_card_style(background: Color, border: Color) -> StyleBoxFlat:
 	var card_style := StyleBoxFlat.new()
@@ -780,6 +788,8 @@ func is_upgrade_menu_active() -> bool:
 func _open_upgrade_menu() -> void:
 	_upgrade_menu_active = true
 	_upgrade_menu_selected_index = 0
+	_upgrade_page_offset = 0
+	_rebuild_all_upgrade_options()
 	PlaytestMode.close_panel()
 	if get_tree() != null:
 		get_tree().paused = true
@@ -792,56 +802,178 @@ func _close_upgrade_menu() -> void:
 	_update_upgrade_menu_visuals()
 
 func _set_upgrade_selection(index: int) -> void:
-	_upgrade_menu_selected_index = posmod(index, _upgrade_options.size())
+	_upgrade_menu_selected_index = posmod(index, _all_upgrade_options.size())
+	# Scroll page so selected option is always visible.
+	if _upgrade_menu_selected_index < _upgrade_page_offset:
+		_upgrade_page_offset = _upgrade_menu_selected_index
+	elif _upgrade_menu_selected_index >= _upgrade_page_offset + UPGRADE_CARDS_VISIBLE:
+		_upgrade_page_offset = _upgrade_menu_selected_index - UPGRADE_CARDS_VISIBLE + 1
 	_update_upgrade_menu_visuals()
 
 func _confirm_upgrade_selection() -> void:
-	if not _upgrade_menu_active:
+	if not _upgrade_menu_active or _all_upgrade_options.is_empty():
 		return
-	var selected_type: String = ""
-	if _upgrade_menu_selected_index >= 0 and _upgrade_menu_selected_index < _upgrade_option_types.size():
-		selected_type = _upgrade_option_types[_upgrade_menu_selected_index]
+	var opt := _all_upgrade_options[_upgrade_menu_selected_index]
 	var purchased := false
-	if selected_type == "weapon":
-		purchased = UpgradeManager.purchase_weapon_might()
-	elif selected_type == "vitality":
-		purchased = UpgradeManager.purchase_vitality()
-	elif selected_type == "refresh":
-		if UpgradeManager.qi >= ROOM_CLEAR_REFRESH_COST:
-			UpgradeManager.qi -= ROOM_CLEAR_REFRESH_COST
-			UpgradeManager.qi_changed.emit(UpgradeManager.qi)
-			_update_upgrade_menu_visuals()
-		return
+	match opt.get("type", ""):
+		"weapon":
+			purchased = UpgradeManager.purchase_weapon_might()
+		"vitality":
+			purchased = UpgradeManager.purchase_vitality()
+		"refresh":
+			if UpgradeManager.qi >= ROOM_CLEAR_REFRESH_COST:
+				UpgradeManager.qi -= ROOM_CLEAR_REFRESH_COST
+				UpgradeManager.qi_changed.emit(UpgradeManager.qi)
+				_rebuild_all_upgrade_options()
+				_upgrade_menu_selected_index = 0
+				_upgrade_page_offset = 0
+				_update_upgrade_menu_visuals()
+			return
+		"sinh_rank1":
+			purchased = UpgradeManager.purchase_sinh_rank1(opt.get("pair", []))
+		"sinh_rank2":
+			purchased = UpgradeManager.purchase_sinh_rank2(opt.get("pair", []), opt.get("favored", &""))
+		"khac_rank1":
+			purchased = UpgradeManager.purchase_khac_rank1(opt.get("pair", []))
+		"khac_rank2":
+			purchased = UpgradeManager.purchase_khac_rank2(opt.get("pair", []))
 	if purchased:
-		_update_upgrade_menu_visuals()
-		return
-
+		_rebuild_all_upgrade_options()
+		_upgrade_menu_selected_index = mini(_upgrade_menu_selected_index, _all_upgrade_options.size() - 1)
 	_update_upgrade_menu_visuals()
+
+## Builds the full list of available upgrade options from scratch.
+## Called on open and after every purchase/refresh.
+func _rebuild_all_upgrade_options() -> void:
+	_all_upgrade_options.clear()
+
+	var weapon_rank := int(maxf(0.0, (UpgradeManager.weapon_might_multiplier() - 1.0) * 10.0))
+	var weapon_cost := UpgradeManager.WEAPON_MIGHT_BASE_COST + weapon_rank * 10.0
+	_all_upgrade_options.append({
+		"type": "weapon",
+		"label": "WEAPON MIGHT",
+		"desc": "+10%% weapon damage\nRank %d → %d\nCost: %d Qi" % [weapon_rank, weapon_rank + 1, int(weapon_cost)],
+		"cost": weapon_cost,
+	})
+
+	var vitality_rank := int(maxf(0.0, UpgradeManager.vitality_hp_bonus() / 10.0))
+	var vitality_cost := UpgradeManager.VITALITY_BASE_COST + vitality_rank * 10.0
+	_all_upgrade_options.append({
+		"type": "vitality",
+		"label": "VITALITY",
+		"desc": "+10 maximum HP\nRank %d → %d\nCost: %d Qi" % [vitality_rank, vitality_rank + 1, int(vitality_cost)],
+		"cost": vitality_cost,
+	})
+
+	# Reaction upgrades — all 5 Sinh pairs then all 5 Khắc pairs.
+	var sinh_pairs: Array[Array] = [
+		[Elements.KIM, Elements.THUY],   # Condensation
+		[Elements.THUY, Elements.MOC],   # Overgrowth
+		[Elements.MOC, Elements.HOA],    # Wildfire
+		[Elements.HOA, Elements.THO],    # Cinder Bloom
+		[Elements.THO, Elements.KIM],    # Ore Surge
+	]
+	var sinh_names := ["Condensation", "Overgrowth", "Wildfire", "Cinder Bloom", "Ore Surge"]
+	for i in sinh_pairs.size():
+		var pair: Array = sinh_pairs[i]
+		var name: String = sinh_names[i]
+		var rank: int = 0
+		if UpgradeManager.sinh_tier2_forced(pair):
+			rank = 1
+		if UpgradeManager.sinh_favored_element(pair) != &"":
+			rank = 2
+		if rank < 1:
+			_all_upgrade_options.append({
+				"type": "sinh_rank1",
+				"label": name.to_upper() + " I",
+				"desc": "Always Tier 2 magnitude\nCost: %d Qi" % int(UpgradeManager.SINH_RANK1_COST),
+				"cost": UpgradeManager.SINH_RANK1_COST,
+				"pair": pair,
+			})
+		if rank == 1:
+			# Offer both favored-element choices.
+			var typed_pair: Array[StringName] = [StringName(pair[0]), StringName(pair[1])]
+			var generated := Elements.sinh_generated_element(typed_pair)
+			var other: StringName = typed_pair[0] if typed_pair[1] == generated else typed_pair[1]
+			_all_upgrade_options.append({
+				"type": "sinh_rank2",
+				"label": name.to_upper() + " II (%s)" % generated.to_upper(),
+				"desc": "Favor %s bonus\nCost: %d Qi" % [generated.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
+				"cost": UpgradeManager.SINH_RANK2_COST,
+				"pair": pair,
+				"favored": generated,
+			})
+			_all_upgrade_options.append({
+				"type": "sinh_rank2",
+				"label": name.to_upper() + " II (%s)" % other.to_upper(),
+				"desc": "Favor %s bonus\nCost: %d Qi" % [other.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
+				"cost": UpgradeManager.SINH_RANK2_COST,
+				"pair": pair,
+				"favored": other,
+			})
+
+	var khac_pairs: Array[Array] = [
+		[Elements.HOA, Elements.KIM],    # Molten
+		[Elements.THO, Elements.THUY],   # Silt
+		[Elements.MOC, Elements.THO],    # Root Break
+		[Elements.KIM, Elements.MOC],    # Sever
+		[Elements.THUY, Elements.HOA],   # Douse
+	]
+	var khac_names := ["Molten", "Silt", "Root Break", "Sever", "Douse"]
+	for i in khac_pairs.size():
+		var pair: Array = khac_pairs[i]
+		var name: String = khac_names[i]
+		if not UpgradeManager.khac_graze_erased(pair):
+			_all_upgrade_options.append({
+				"type": "khac_rank1",
+				"label": name.to_upper() + " I",
+				"desc": "Partial clears become Full clears\nCost: %d Qi" % int(UpgradeManager.KHAC_RANK1_COST),
+				"cost": UpgradeManager.KHAC_RANK1_COST,
+				"pair": pair,
+			})
+		elif not UpgradeManager.khac_overwhelm_forced(pair):
+			_all_upgrade_options.append({
+				"type": "khac_rank2",
+				"label": name.to_upper() + " II",
+				"desc": "Always overwhelm magnitude\nCost: %d Qi" % int(UpgradeManager.KHAC_RANK2_COST),
+				"cost": UpgradeManager.KHAC_RANK2_COST,
+				"pair": pair,
+			})
+
+	_all_upgrade_options.append({
+		"type": "refresh",
+		"label": "REFRESH SHOP",
+		"desc": "Show new offers\nCost: %d Qi" % int(ROOM_CLEAR_REFRESH_COST),
+		"cost": ROOM_CLEAR_REFRESH_COST,
+	})
 
 func _update_upgrade_menu_visuals() -> void:
 	_upgrade_panel.visible = _upgrade_menu_active
 	if not _upgrade_menu_active:
 		return
 
-	var weapon_cost: float = UpgradeManager.WEAPON_MIGHT_BASE_COST
-	var vitality_cost: float = UpgradeManager.VITALITY_BASE_COST
-	var weapon_rank: int = int(maxf(0.0, (UpgradeManager.weapon_might_multiplier() - 1.0) * 10.0))
-	var vitality_rank: int = int(maxf(0.0, UpgradeManager.vitality_hp_bonus() / 10.0))
-	weapon_cost += weapon_rank * 10.0
-	vitality_cost += vitality_rank * 10.0
-	_upgrade_title.text = "Room Clear Upgrade — Qi: %d" % int(UpgradeManager.qi)
+	var total := _all_upgrade_options.size()
+	_upgrade_title.text = "Upgrade — Qi: %d  (%d/%d options)" % [
+		int(UpgradeManager.qi), _upgrade_menu_selected_index + 1, total]
 
-	if _upgrade_options.size() >= 3:
-		_upgrade_options[0].set_upgrade("WEAPON MIGHT", "+10%% weapon damage\n\nCost: %d Qi" % int(weapon_cost))
-		_upgrade_options[1].set_upgrade("VITALITY", "+10 maximum HP\n\nCost: %d Qi" % int(vitality_cost))
-		_upgrade_options[2].set_upgrade("REFRESH SHOP", "Show new shop offers\n\nCost: %d Qi" % int(ROOM_CLEAR_REFRESH_COST))
-		_upgrade_option_types[0] = "weapon"
-		_upgrade_option_types[1] = "vitality"
-		_upgrade_option_types[2] = "refresh"
-
-	for index in _upgrade_options.size():
-		if _upgrade_options[index].has_method("set_selected"):
-			_upgrade_options[index].set_selected(index == _upgrade_menu_selected_index)
+	for card_i in UPGRADE_CARDS_VISIBLE:
+		var opt_i := _upgrade_page_offset + card_i
+		if opt_i >= total or card_i >= _upgrade_cards.size():
+			if card_i < _upgrade_cards.size():
+				_upgrade_cards[card_i].visible = false
+			continue
+		var card = _upgrade_cards[card_i]
+		card.visible = true
+		var opt := _all_upgrade_options[opt_i]
+		var affordable: bool = UpgradeManager.qi >= opt.get("cost", 0.0)
+		var label: String = opt.get("label", "")
+		var desc: String = opt.get("desc", "")
+		if not affordable:
+			desc += "\n[Not enough Qi]"
+		if card.has_method("set_upgrade"):
+			card.set_upgrade(label, desc)
+		if card.has_method("set_selected"):
+			card.set_selected(opt_i == _upgrade_menu_selected_index)
 
 
 
