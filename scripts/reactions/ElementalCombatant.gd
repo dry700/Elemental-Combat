@@ -127,6 +127,7 @@ func _ready() -> void:
 	reversed_hit_taken.connect(func(): _spawn_text_popup("Reversed!", Color(1.0, 0.8, 0.2)))
 	# §4.8.7 — when Overload reaches level 3 it fires this signal.
 	wildfire_overload.exploded.connect(_on_wildfire_overload_exploded)
+	wildfire_overload.changed.connect(_on_wildfire_overload_changed)
 	reaction_triggered.connect(func(outcome: Reactions.Outcome, pair: Array[StringName]):
 		var r_name = Reactions.get_reaction_name(outcome, pair)
 		if r_name != "":
@@ -484,12 +485,9 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				var wf_base_dps := 3.5 if sinh_tier2 else 2.5
 				var wf_duration := 4.5 if sinh_tier2 else 3.5
 				if favored == generated:
-					# favor-Hỏa (Overload) — activate overload and scale DoT.
-					# Level is 0 after reset(), so dot_bonus() = 0 on the first
-					# trigger; it grows as subsequent Hỏa hits land.
-					wildfire_overload.active = true
-					wf_base_dps += wildfire_overload.dot_bonus()
-				dot_effect.apply(wf_base_dps, 1.0, wf_duration, Elements.HOA)
+					wildfire_overload.start(wf_base_dps, wf_duration)
+				else:
+					dot_effect.apply(wf_base_dps, 1.0, wf_duration, Elements.HOA)
 				_propagate_wildfire(sinh_tier2, generated, hit_data.charge, hit_data.source)
 				# §4.8 Rank 2 — Remnant→Spiked Ground (favor-Mộc) — §4.8.8.
 				# No spawn on the Wildfire trigger itself — Remnants drop on
@@ -507,12 +505,10 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 				status.apply(generated, hit_data.charge)
 				_apply_cinder_bloom_burn(sinh_tier2, hit_data.source)
 				spawn_zone(generated)
-				# §4.8 Rank 2 — Cinderstorm (favor-Hỏa) / Boulder (favor-Thổ) — §4.8.9.
-				if favored == generated:
-					# favor-Hỏa (Cinderstorm): motes at nearby enemies (not self).
+				# §4.8.9 — Cinderstorm favors Hỏa; Boulder favors Thổ.
+				if favored == Elements.HOA:
 					_spawn_cinderstorm_motes(self, hit_data.source)
-				elif favored != &"":
-					# favor-Thổ (Boulder): delayed impact on this specific target.
+				elif favored == Elements.THO:
 					var BoulderScript := load("res://scripts/reactions/boulder.gd")
 					if BoulderScript:
 						BoulderScript.spawn(get_tree().current_scene, self, hit_data.source)
@@ -617,6 +613,14 @@ func _on_wildfire_overload_exploded(_source: Node) -> void:
 			continue
 		if global_position.distance_to(other.global_position) <= wildfire_overload.EXPLODE_RADIUS:
 			other.bonus_damage_dealt.emit(wildfire_overload.EXPLODE_DAMAGE)
+
+
+func _on_wildfire_overload_changed() -> void:
+	if wildfire_overload.active:
+		dot_effect.apply(wildfire_overload.current_damage_per_tick(), 1.0,
+				wildfire_overload.current_duration(), Elements.HOA)
+	elif dot_effect.source_element == Elements.HOA:
+		dot_effect.clear()
 
 
 ## Condensation Tidal Wave (§4.8 Rank 2, favor-Thủy): instant AoE burst at

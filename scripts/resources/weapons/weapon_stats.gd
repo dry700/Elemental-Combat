@@ -5,11 +5,26 @@ extends Resource
 enum Weight { LIGHT, MEDIUM, HEAVY }
 enum AttackStyle { SWING, THRUST, SHOOT }
 
+enum PerfectCondition {
+	NONE,
+	STREAK,
+	TARGET_SLOWED,
+	TARGET_DISABLED,
+	FINISHER,
+	PLUNGE,
+	LONG_RANGE,
+	DODGE,
+	AIRBORNE,
+	CLOSE_RANGE,
+}
+
 @export var weapon_name: String = "Training Dagger"
 @export var weapon_texture: Texture2D ## Used for the player's attack animation (horizontal).
 @export var weapon_icon: Texture2D ## Used for the HUD and item drops (diagonal/square).
 @export var weight: Weight = Weight.LIGHT
 @export var damage: float = 10.0
+@export var perfect_condition: PerfectCondition = PerfectCondition.NONE
+@export_range(1.5, 2.0) var perfect_multiplier: float = 1.5
 @export var attack_duration: float = 0.25  ## Total seconds the attack state lasts.
 ## Start/end of the active hitbox window, in seconds, within attack_duration.
 @export var active_window: Vector2 = Vector2(0.08, 0.16)

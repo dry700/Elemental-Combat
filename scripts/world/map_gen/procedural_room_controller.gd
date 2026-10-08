@@ -68,14 +68,47 @@ func _ready() -> void:
 	# But our chunks hold the EnemySpawnPoints as grandchildren!
 	_spawn_points.clear()
 	_find_spawn_points(self)
+	_baseline_rune_spawned = true
 	
 	if exit != null:
-		exit.locked = not _spawn_points.is_empty()
+		exit.locked = false
 		
 	for spawn_point in _spawn_points:
 		spawn_point.spawn()
 		
+	_populate_shop()
 	_check_cleared()
+
+func _populate_shop() -> void:
+	var shop_chunk: Node2D = null
+	for child in get_children():
+		if child.is_in_group("shop_chunk"):
+			shop_chunk = child as Node2D
+			break
+	if shop_chunk == null:
+		return
+	var floor_y := MapGenerator.CHUNK_H - 32.0 - 15.0
+	var station_script := preload("res://scripts/items/shop_station.gd")
+	var station = station_script.new()
+	station.position = Vector2(MapGenerator.CHUNK_W / 2.0, floor_y + 9.0)
+	shop_chunk.add_child(station)
+
+	var free_rune := RunePickup.new()
+	free_rune.set_rune(RuneRoller.default().roll(Elements.ALL[randi() % Elements.ALL.size()], RuneData.Target.WEAPON))
+	free_rune.position = Vector2(160.0, floor_y + 9.0)
+	shop_chunk.add_child(free_rune)
+
+	var left_pickup := WeaponPickup.new()
+	left_pickup.weapon = WeaponStats.new()
+	left_pickup.weapon.weapon_name = "Shop Dagger"
+	left_pickup.position = Vector2(100.0, floor_y + 9.0)
+	shop_chunk.add_child(left_pickup)
+
+	var right_pickup := WeaponPickup.new()
+	right_pickup.weapon = WeaponStats.new()
+	right_pickup.weapon.weapon_name = "Shop Spear"
+	right_pickup.position = Vector2(316.0, floor_y + 9.0)
+	shop_chunk.add_child(right_pickup)
 
 func _find_spawn_points(node: Node) -> void:
 	for child in node.get_children():

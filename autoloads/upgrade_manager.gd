@@ -17,6 +17,9 @@
 
 ## ── Qi ────────────────────────────────────────────────────────────────
 var qi: float = 0.0
+var qi_earned_total: float = 0.0
+var qi_spent_total: float = 0.0
+var _restore_uses: int = 0
 
 ## Called by enemy _die() for every kill — EnemyStats.qi_reward is 0.0
 ## for neutral/training dummies by default, so those never add Qi.
@@ -24,11 +27,15 @@ func award_qi(amount: float) -> void:
 	if amount <= 0.0:
 		return
 	qi += amount
+	qi_earned_total += amount
 	qi_changed.emit(qi)
 
 ## Fully reset per-run state (called by RunManager on start and finish).
 func reset() -> void:
 	qi = 0.0
+	qi_earned_total = 0.0
+	qi_spent_total = 0.0
+	_restore_uses = 0
 	_sinh_ranks.clear()
 	_sinh_favored_elements.clear()
 	_khac_ranks.clear()
@@ -45,6 +52,9 @@ const KHAC_RANK1_COST: float  = 20.0
 const KHAC_RANK2_COST: float  = 45.0
 const WEAPON_MIGHT_BASE_COST: float = 15.0
 const VITALITY_BASE_COST: float     = 15.0
+const RESTORE_BASE_COST: float = 20.0
+const RESTORE_COST_STEP: float = 10.0
+const RESTORE_HEAL_FRACTION: float = 0.3
 
 ## ── Reaction Mastery state ────────────────────────────────────────────
 ## Keyed by sorted element-pair string (e.g. "hoa|kim").
@@ -83,23 +93,42 @@ func khac_overwhelm_forced(reaction_pair: Array) -> bool:
 	return _khac_ranks.get(_pair_key(reaction_pair), 0) >= 2
 
 ## A. Weapon Might
+func weapon_might_cost() -> float:
+	return WEAPON_MIGHT_BASE_COST + _weapon_might_rank * 10.0
+
 func weapon_might_multiplier() -> float:
 	return 1.0 + _weapon_might_rank * 0.1
 
 ## C. Vitality
+func vitality_cost() -> float:
+	return VITALITY_BASE_COST + _vitality_rank * 10.0
+
 func vitality_hp_bonus() -> float:
 	return _vitality_rank * 10.0
+
+func restore_cost() -> float:
+	return RESTORE_BASE_COST + _restore_uses * RESTORE_COST_STEP
+
+func spend_qi(amount: float) -> bool:
+	if amount < 0.0:
+		return false
+	if amount == 0.0:
+		return true
+	if qi < amount:
+		return false
+	qi -= amount
+	qi_spent_total += amount
+	qi_changed.emit(qi)
+	return true
 
 ## ── Purchase API ──────────────────────────────────────────────────────
 func purchase_sinh_rank1(reaction_pair: Array) -> bool:
 	var key := _pair_key(reaction_pair)
 	if _sinh_ranks.get(key, 0) >= 1:
 		return false
-	if qi < SINH_RANK1_COST:
+	if not spend_qi(SINH_RANK1_COST):
 		return false
-	qi -= SINH_RANK1_COST
 	_sinh_ranks[key] = 1
-	qi_changed.emit(qi)
 	return true
 
 func purchase_sinh_rank2(reaction_pair: Array, favored_element: StringName) -> bool:
@@ -108,23 +137,19 @@ func purchase_sinh_rank2(reaction_pair: Array, favored_element: StringName) -> b
 		return false
 	if _sinh_ranks.get(key, 0) >= 2:
 		return false
-	if qi < SINH_RANK2_COST:
+	if not spend_qi(SINH_RANK2_COST):
 		return false
-	qi -= SINH_RANK2_COST
 	_sinh_ranks[key] = 2
 	_sinh_favored_elements[key] = favored_element
-	qi_changed.emit(qi)
 	return true
 
 func purchase_khac_rank1(reaction_pair: Array) -> bool:
 	var key := _pair_key(reaction_pair)
 	if _khac_ranks.get(key, 0) >= 1:
 		return false
-	if qi < KHAC_RANK1_COST:
+	if not spend_qi(KHAC_RANK1_COST):
 		return false
-	qi -= KHAC_RANK1_COST
 	_khac_ranks[key] = 1
-	qi_changed.emit(qi)
 	return true
 
 func purchase_khac_rank2(reaction_pair: Array) -> bool:
@@ -133,29 +158,30 @@ func purchase_khac_rank2(reaction_pair: Array) -> bool:
 		return false
 	if _khac_ranks.get(key, 0) >= 2:
 		return false
-	if qi < KHAC_RANK2_COST:
+	if not spend_qi(KHAC_RANK2_COST):
 		return false
-	qi -= KHAC_RANK2_COST
 	_khac_ranks[key] = 2
-	qi_changed.emit(qi)
 	return true
 
 func purchase_weapon_might() -> bool:
-	var cost := WEAPON_MIGHT_BASE_COST + _weapon_might_rank * 10.0
-	if qi < cost:
+	var cost := weapon_might_cost()
+	if not spend_qi(cost):
 		return false
-	qi -= cost
 	_weapon_might_rank += 1
-	qi_changed.emit(qi)
 	return true
 
 func purchase_vitality() -> bool:
-	var cost := VITALITY_BASE_COST + _vitality_rank * 10.0
-	if qi < cost:
+	var cost := vitality_cost()
+	if not spend_qi(cost):
 		return false
-	qi -= cost
 	_vitality_rank += 1
-	qi_changed.emit(qi)
+	return true
+
+func purchase_restore() -> bool:
+	var cost := restore_cost()
+	if not spend_qi(cost):
+		return false
+	_restore_uses += 1
 	return true
 
 ## ── Save / restore (mid-run resume) ──────────────────────────────────
@@ -167,8 +193,11 @@ func purchase_vitality() -> bool:
 func to_save_state() -> Dictionary:
 	return {
 		"qi": qi,
+		"qi_earned_total": qi_earned_total,
+		"qi_spent_total": qi_spent_total,
 		"weapon_might_rank": _weapon_might_rank,
 		"vitality_rank": _vitality_rank,
+		"restore_uses": _restore_uses,
 		"sinh_ranks": _sinh_ranks.duplicate(),
 		"sinh_favored_elements": _sinh_favored_elements.duplicate(),
 		"khac_ranks": _khac_ranks.duplicate(),
@@ -179,6 +208,9 @@ func apply_save_state(saved: Dictionary) -> void:
 	if saved.is_empty():
 		return
 	qi = float(saved.get("qi", 0.0))
+	qi_earned_total = float(saved.get("qi_earned_total", 0.0))
+	qi_spent_total = float(saved.get("qi_spent_total", 0.0))
+	_restore_uses = int(saved.get("restore_uses", 0))
 	_weapon_might_rank = int(saved.get("weapon_might_rank", 0))
 	_vitality_rank = int(saved.get("vitality_rank", 0))
 	_sinh_ranks = {}

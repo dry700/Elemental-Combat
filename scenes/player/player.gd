@@ -106,6 +106,8 @@ var _combo_step: int = 0
 var _combo_window_timer: float = 0.0
 var _attack_buffered: bool = false
 var _shot_fired: bool = false
+var _perfect_streak_count: int = 0
+var _perfect_streak_last_hit_time: float = -999.0
 var _drop_through_timer: float = 0.0
 var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
 ## Set on ANY jump-key press during State.DISABLED (however early in the
@@ -640,6 +642,8 @@ func _configure_hitbox_for_current_swing() -> void:
 	_shot_fired = false
 	hitbox.damage = _active_weapon.damage * UpgradeManager.weapon_might_multiplier() * _combo_damage_multiplier()
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
+	hitbox.perfect_condition = _active_weapon.perfect_condition
+	hitbox.perfect_multiplier = _active_weapon.perfect_multiplier
 	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune
 	var swing := _active_weapon.resolve_swing(active_rune)
 	hitbox.element = swing.element
@@ -675,6 +679,25 @@ func _combo_damage_multiplier() -> float:
 func _current_combo_step_data() -> ComboStepData:
 	var steps := _active_weapon.combo_steps
 	return steps[(_combo_step - 1) % steps.size()]
+
+func _resolve_perfect_for_hit(hitbox: Hitbox, hurtbox: Hurtbox) -> bool:
+	if hitbox == null or hitbox.perfect_condition == WeaponStats.PerfectCondition.NONE:
+		return false
+	if hitbox.perfect_condition == WeaponStats.PerfectCondition.STREAK:
+		return _advance_perfect_streak_and_check()
+	return false
+
+func _advance_perfect_streak_and_check() -> bool:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _perfect_streak_last_hit_time > 2.0:
+		_perfect_streak_count = 0
+	_perfect_streak_count += 1
+	_perfect_streak_last_hit_time = now
+	return _perfect_streak_count >= 6
+
+func _reset_perfect_streak() -> void:
+	_perfect_streak_count = 0
+	_perfect_streak_last_hit_time = -999.0
 
 func _process_disabled(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, friction * delta)
@@ -791,6 +814,7 @@ func swap_weapon(is_primary: bool, new_weapon: WeaponStats, new_rune: RuneData =
 		previous = secondary_weapon
 		secondary_weapon = new_weapon
 		secondary_weapon_rune = new_rune
+	_reset_perfect_streak()
 	if new_weapon != null:
 		SaveManager.record_weapon_unlock(new_weapon.resource_path)  ## Meta-progression (Section 6.2) — found once, unlocked forever.
 	weapon_changed.emit(is_primary, new_weapon)

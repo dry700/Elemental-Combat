@@ -54,3 +54,47 @@ func test_panel_grants_qi_and_purchases_player_and_reaction_upgrades() -> void:
 	var pair: Array[StringName] = [Elements.KIM, Elements.THUY]
 	assert_true(UpgradeManager.sinh_tier2_forced(pair))
 	assert_eq(UpgradeManager.sinh_favored_element(pair), Elements.THUY)
+
+func test_wildfire_rank_two_keeps_overload_active_and_scales_fire_dot() -> void:
+	var elemental := ElementalCombatant.new()
+	elemental.show_debug_readout = false
+	add_child_autofree(elemental)
+	var source := Node2D.new()
+	add_child_autofree(source)
+
+	var pair: Array[StringName] = [Elements.MOC, Elements.HOA]
+	UpgradeManager.award_qi(65.0)
+	assert_true(UpgradeManager.purchase_sinh_rank1(pair))
+	assert_true(UpgradeManager.purchase_sinh_rank2(pair, Elements.HOA))
+
+	elemental.status.apply(Elements.MOC, 1)
+	var hit_data := HitData.new(1.0, Vector2.ZERO, source)
+	hit_data.element = Elements.HOA
+	hit_data.charge = 1
+	elemental.handle_hit(hit_data)
+	assert_true(elemental.wildfire_overload.active)
+	assert_almost_eq(elemental.dot_effect.damage_per_tick, 3.5, 0.01)
+
+	elemental.tick(0.5)
+	assert_true(elemental.wildfire_overload.active, "level-zero overload must remain ready for a follow-up hit")
+	elemental.handle_hit(hit_data)
+	assert_eq(elemental.wildfire_overload.level, 1)
+	assert_almost_eq(elemental.dot_effect.damage_per_tick, 5.0, 0.01)
+
+	elemental.wildfire_overload.tick(WildfireOverload.SUSTAIN_TIME + 0.1)
+	assert_false(elemental.wildfire_overload.active)
+	assert_false(elemental.dot_effect.active, "the overload bonus burn must end when its last level decays")
+
+func test_playtest_can_buy_sinh_rank_two_favoring_the_other_element() -> void:
+	PlaytestMode._reaction_target.select(2)
+	var reaction: Dictionary = PlaytestMode.REACTIONS[2]
+	var pair: Array[StringName] = PlaytestMode._selected_reaction_pair(reaction)
+	var generated := Elements.sinh_generated_element(pair)
+	var other: StringName = pair[0] if pair[1] == generated else pair[1]
+
+	UpgradeManager.award_qi(65.0)
+	PlaytestMode._on_buy_sinh_rank1_pressed()
+	PlaytestMode._on_buy_sinh_rank2_other_pressed()
+
+	assert_true(UpgradeManager.sinh_tier2_forced(pair))
+	assert_eq(UpgradeManager.sinh_favored_element(pair), other)

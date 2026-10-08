@@ -16,7 +16,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P9 — Procedural map generation and room overhaul
 - [x] P10a — Qi economy and upgrade-manager foundations
 - [x] P10b — Room-cleared upgrade menu, input flow, and remaining effect hooks
-- [ ] P11 — Final verification and documentation closeout
+- [x] P11 — Final verification and documentation closeout
 
 ## Verified current state
 

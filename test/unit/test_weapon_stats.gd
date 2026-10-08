@@ -51,3 +51,23 @@ func test_new_weapon_stats_have_sane_lunge_range_and_combo_defaults():
 	assert_eq(w.hitbox_radius, 5.0)
 	assert_eq(w.combo_steps.size(), 1)
 	assert_almost_eq(w.combo_damage_step_multiplier, 1.0, 0.01)
+
+func test_new_weapon_stats_have_default_perfect_hit_values():
+	var w := WeaponStats.new()
+	assert_eq(w.perfect_condition, WeaponStats.PerfectCondition.NONE)
+	assert_almost_eq(w.perfect_multiplier, 1.5, 0.01)
+
+func test_dagger_streak_requires_six_hits_and_resets_on_gap_or_swap():
+	var dagger := WeaponStats.new()
+	dagger.perfect_condition = WeaponStats.PerfectCondition.STREAK
+	dagger.perfect_multiplier = 1.5
+	var player := Player.new()
+	player.weapon = dagger
+	player._active_weapon = dagger
+	for i in range(5):
+		assert_false(player._advance_perfect_streak_and_check(), "first five hits are not yet a perfect streak")
+	assert_true(player._advance_perfect_streak_and_check(), "the sixth hit qualifies as a perfect streak")
+	player._perfect_streak_last_hit_time = Time.get_ticks_msec() / 1000.0 - 2.1
+	assert_false(player._advance_perfect_streak_and_check(), "a 2s gap resets the streak")
+	player.swap_weapon(true, WeaponStats.new())
+	assert_false(player._advance_perfect_streak_and_check(), "weapon swap resets the streak")

@@ -76,11 +76,12 @@ var _skill_2_prompt: Label
 var _player: Player
 var _boss: Boss
 
-## Whichever WeaponPickup/SkillPickup the player is currently standing
+## Whichever WeaponPickup/SkillPickup/ShopStation the player is currently standing
 ## near, if any — see _refresh_active_pickups().
 var _active_weapon_pickup: WeaponPickup = null
 var _active_skill_pickup: SkillPickup = null
 var _active_rune_pickup: Node = null
+var _active_shop_station = null
 
 ## --- Pickup selection overlay state ---
 var _overlay_panel: Control
@@ -107,11 +108,9 @@ var _upgrade_options: Array = []
 var _upgrade_cards: Array[PanelContainer] = []
 var _upgrade_card_style: StyleBoxFlat
 var _upgrade_card_selected_style: StyleBoxFlat
-var _upgrade_option_types: Array[String] = []
 var _upgrade_menu_active: bool = false
 var _upgrade_menu_selected_index: int = 0
 var _debug_room_clear_state: bool = false
-const ROOM_CLEAR_REFRESH_COST: float = 10.0
 ## Reaction upgrade menu state — paged list of all available options.
 ## Each entry is a Dictionary: {type, label, desc, cost, pair, favored}
 var _all_upgrade_options: Array[Dictionary] = []
@@ -442,6 +441,11 @@ func _refresh_active_pickups() -> void:
 		if node.get("_player_in_range") != null:
 			_active_rune_pickup = node
 			break
+	_active_shop_station = null
+	for node in get_tree().get_nodes_in_group("shop_stations"):
+		if node.get("_player_in_range") != null:
+			_active_shop_station = node
+			break
 
 
 func _update_player_hp() -> void:
@@ -705,11 +709,6 @@ func _build_upgrade_menu(root: Control) -> void:
 		card_row.add_child(card)
 		_upgrade_cards.append(card)
 		_upgrade_options.append(card)
-		_upgrade_option_types.append("weapon")
-		if index == 1:
-			_upgrade_option_types[index] = "vitality"
-		elif index == 2:
-			_upgrade_option_types[index] = "refresh"
 
 
 	var hint := Label.new()
@@ -743,6 +742,11 @@ func _make_upgrade_card_style(background: Color, border: Color) -> StyleBoxFlat:
 
 func _handle_room_clear_upgrade_input() -> void:
 	if not _upgrade_menu_active:
+		if _active_weapon_pickup != null or _active_skill_pickup != null or _active_rune_pickup != null:
+			return
+		if _active_shop_station != null and _can_open_overlay() and Input.is_action_just_pressed("pickup"):
+			_open_upgrade_menu()
+			return
 		if _can_open_upgrade_menu() and Input.is_action_just_pressed("swap"):
 			_open_upgrade_menu()
 		return
@@ -820,15 +824,9 @@ func _confirm_upgrade_selection() -> void:
 			purchased = UpgradeManager.purchase_weapon_might()
 		"vitality":
 			purchased = UpgradeManager.purchase_vitality()
-		"refresh":
-			if UpgradeManager.qi >= ROOM_CLEAR_REFRESH_COST:
-				UpgradeManager.qi -= ROOM_CLEAR_REFRESH_COST
-				UpgradeManager.qi_changed.emit(UpgradeManager.qi)
-				_rebuild_all_upgrade_options()
-				_upgrade_menu_selected_index = 0
-				_upgrade_page_offset = 0
-				_update_upgrade_menu_visuals()
-			return
+			if purchased and _player != null:
+				_player.max_health += 10.0
+				_player.current_health = minf(_player.current_health + 10.0, _player.max_health)
 		"sinh_rank1":
 			purchased = UpgradeManager.purchase_sinh_rank1(opt.get("pair", []))
 		"sinh_rank2":
@@ -848,7 +846,7 @@ func _rebuild_all_upgrade_options() -> void:
 	_all_upgrade_options.clear()
 
 	var weapon_rank := int(maxf(0.0, (UpgradeManager.weapon_might_multiplier() - 1.0) * 10.0))
-	var weapon_cost := UpgradeManager.WEAPON_MIGHT_BASE_COST + weapon_rank * 10.0
+	var weapon_cost := UpgradeManager.weapon_might_cost()
 	_all_upgrade_options.append({
 		"type": "weapon",
 		"label": "WEAPON MIGHT",
@@ -857,7 +855,7 @@ func _rebuild_all_upgrade_options() -> void:
 	})
 
 	var vitality_rank := int(maxf(0.0, UpgradeManager.vitality_hp_bonus() / 10.0))
-	var vitality_cost := UpgradeManager.VITALITY_BASE_COST + vitality_rank * 10.0
+	var vitality_cost := UpgradeManager.vitality_cost()
 	_all_upgrade_options.append({
 		"type": "vitality",
 		"label": "VITALITY",
@@ -940,12 +938,6 @@ func _rebuild_all_upgrade_options() -> void:
 				"pair": pair,
 			})
 
-	_all_upgrade_options.append({
-		"type": "refresh",
-		"label": "REFRESH SHOP",
-		"desc": "Show new offers\nCost: %d Qi" % int(ROOM_CLEAR_REFRESH_COST),
-		"cost": ROOM_CLEAR_REFRESH_COST,
-	})
 
 func _update_upgrade_menu_visuals() -> void:
 	_upgrade_panel.visible = _upgrade_menu_active

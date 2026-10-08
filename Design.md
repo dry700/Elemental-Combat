@@ -483,7 +483,7 @@ effect, larger magnitude only" rule — see the template note below).
 | Condensation | Kim+Thủy | Thủy | **Tidal Wave** — instant AoE burst at the reaction point: 10 damage + slow (×0.5 for 3.5s, Condensation's own Tier 2 numbers) to every combatant within 65px radius, bystander-excluded per the standard AoE pattern (§4.4). Reuses `bonus_damage_dealt` — no new signal. | **Rusted Chunk** — see §4.8.5, new object type |
 | Overgrowth | Thủy+Mộc | Mộc | **The Vine** — one shared Vine per trigger. Mộc hits (only Mộc counts) build toward explosion; a Thủy hit blooms it instead. See §4.8.6. | **Watering** — same Vine, alternate fate. See §4.8.6. |
 | Wildfire | Mộc+Hỏa | Hỏa | **Overload** — see §4.8.7. | **Remnant → Spiked Ground** — see §4.8.8. |
-| Cinder Bloom | Hỏa+Thổ | Thổ | **Cinderstorm** — see §4.8.9. | **Boulder** — see §4.8.9. |
+| Cinder Bloom | Hỏa+Thổ | Thổ | **Boulder** — see §4.8.9. | **Cinderstorm** — see §4.8.9. |
 | Ore Surge | Thổ+Kim | Kim | **Armor Sunder** — see §4.8.10. | **Caltrops** — see §4.8.10. |
 
 *Template rule (for Sprint 2's stretch categories and any future

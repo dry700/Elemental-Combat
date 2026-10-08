@@ -8,8 +8,14 @@ extends EnemyStats
 ## Dual-simultaneous attacks and self-reaction punish windows stay an
 ## explicit stretch goal per A.6 — not implemented here.
 
-@export var boss_name: String = "Boss"  ## Read by the HUD's boss panel.
+@export var boss_name: String = "Boss"
 @export var phase_2_element: StringName = Elements.NONE
+
+## Base armor for the boss's ElementalCombatant. Boss-only, so normal
+## EnemyStats assets are untouched. Read directly by Boss._ready().
+@export var armor: float = 10.0
+## Charge of the boss's innate element status (phase 1 and 2).
+@export_range(1, 3) var innate_charge: int = 1
 
 ## Fraction of max_health remaining at which phase 2 triggers. 0.5 (the
 ## default) means "below half health" — no number is given in A.2/A.6

@@ -16,9 +16,11 @@ var source: Node = null
 var weapon_weight: StringName = &"none"  # "light", "medium", "heavy"
 var element: StringName = &"none"        # "hoa", "thuy", "moc", "kim", "tho"
 var charge: int = 0
+var perfect: bool = false
 
 
-func _init(p_damage: float = 0.0, p_knockback: Vector2 = Vector2.ZERO, p_source: Node = null) -> void:
+func _init(p_damage: float = 0.0, p_knockback: Vector2 = Vector2.ZERO, p_source: Node = null, p_perfect: bool = false) -> void:
 	damage = p_damage
 	knockback = p_knockback
 	source = p_source
+	perfect = p_perfect

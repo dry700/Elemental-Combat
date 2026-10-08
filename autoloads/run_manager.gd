@@ -121,9 +121,10 @@ func _resume_from_save(saved: Dictionary) -> void:
 	_elapsed_sec = saved.get("elapsed_sec", 0.0)
 	var saved_map_structure: Variant = saved.get("map_structure", {})
 	_map_structure_to_restore = saved_map_structure.duplicate(true) if saved_map_structure is Dictionary else {}
-	_player.apply_save_state(saved.get("player", {}))
-	# Restore upgrade state — Qi and purchased ranks from before the quit.
+	# Restore upgrade state before the player state so the vitality bonus is
+	# already included when the save snapshot applies the player's health.
 	UpgradeManager.apply_save_state(saved.get("upgrade_state", {}))
+	_player.apply_save_state(saved.get("player", {}))
 	_current_index = int(saved.get("current_index", -1)) - 1
 	_advance()
 	print("Resumed run at room %d/%d" % [_current_index + 1, _sequence.size()])

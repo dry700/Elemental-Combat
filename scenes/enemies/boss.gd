@@ -12,6 +12,15 @@ extends CharacterBody2D
 ## Movement: always chases when aggroed, holds ground otherwise — no
 ## patrol behaviour (unlike PatrolDummy), since a boss doesn't need one.
 
+@export var boss_name: String = "Boss"
+@export var phase_2_element: StringName = Elements.NONE
+
+## Base armor for the boss's ElementalCombatant. Boss-only, so normal
+## EnemyStats assets are untouched. Read directly by Boss._ready().
+@export var armor: float = 10.0
+## Charge of the boss's innate element status (phase 1 and 2).
+@export_range(1, 3) var innate_charge: int = 1
+
 signal phase_changed(new_phase: int)
 
 @export var boss_stats: BossStats
@@ -51,12 +60,13 @@ func _ready() -> void:
 	_base_color = visual_polygon.color
 
 	elemental.indicator_offset = Vector2(0, -20)
-	elemental.armor = boss_stats.armor if "armor" in boss_stats else 10.0
+	elemental.armor = boss_stats.armor
+	elemental.innate_charge = boss_stats.innate_charge
 	elemental.innate_element = boss_stats.element  ## Phase 1 starts as boss_stats.element, same field EnemyStats already uses.
 	add_child(elemental)
 	elemental.cc_resistance.configure(boss_stats.cc_free_hits, boss_stats.cc_window_seconds)
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
-	elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge if "innate_charge" in boss_stats else 1)
+	elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge)
 
 	_current_health = boss_stats.max_health
 	health_bar.value = 100.0

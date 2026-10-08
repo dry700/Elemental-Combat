@@ -19,7 +19,7 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P9 — Procedural room generation and room-system overhaul
 - [x] P10a — Qi economy and upgrade-manager foundations
 - [x] P10b — Room-cleared upgrade menu, input flow, and HUD purchase path
-- [ ] P11 — Final verification and documentation closeout
+- [x] P11 — Final verification and documentation closeout
 
 ## P10a design contract
 
@@ -38,9 +38,9 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 ## Verification and blockers
 
-- Full-suite verification: 225/225 tests passed, 501 assertions, 0 failures, 2 expected warnings.
+- Full-suite verification: 234/234 tests passed, 0 failures, with the project’s existing non-blocking Godot headless warnings.
 - Static diagnostics: no errors found in the workspace.
-- Blockers: none in the active P10b scope; P11 is now the final verification/documentation closeout pass.
+- Blockers: none in the current verified scope; the implemented contract remains aligned with [Design.md](Design.md).
 
 ## Procedural map save contract
 
@@ -50,4 +50,4 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 
 ## Exact next item
 
-Advance to P11 closeout: finish the final documentation pass and any repo polish after the verified room-cleared upgrade-menu implementation.
+P11 closeout is complete: there was no design drift requiring a change to [Design.md](Design.md), and the repo state matches the latest verified implementation.

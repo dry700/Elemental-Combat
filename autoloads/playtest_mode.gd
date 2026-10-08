@@ -102,15 +102,21 @@ func _build_panel() -> void:
 	content.add_child(stat_row)
 	_add_button(stat_row, "Buy HP", _on_buy_vitality_pressed)
 	_add_button(stat_row, "Buy Damage", _on_buy_damage_pressed)
+	_add_button(stat_row, "Buy Restore", _on_buy_restore_pressed)
 
 	_reaction_target = OptionButton.new()
 	for reaction in REACTIONS:
 		_reaction_target.add_item(reaction["name"])
 	content.add_child(_reaction_target)
-	var rank_row := HBoxContainer.new()
-	content.add_child(rank_row)
-	_add_button(rank_row, "Buy Rank 1", _on_buy_rank1_pressed)
-	_add_button(rank_row, "Buy Rank 2", _on_buy_rank2_pressed)
+	var sinh_row := HBoxContainer.new()
+	content.add_child(sinh_row)
+	_add_button(sinh_row, "Sinh R1", _on_buy_sinh_rank1_pressed)
+	_add_button(sinh_row, "Sinh R2", _on_buy_sinh_rank2_pressed)
+	_add_button(sinh_row, "R2 Other", _on_buy_sinh_rank2_other_pressed)
+	var khac_row := HBoxContainer.new()
+	content.add_child(khac_row)
+	_add_button(khac_row, "Khắc R1", _on_buy_khac_rank1_pressed)
+	_add_button(khac_row, "Khắc R2", _on_buy_khac_rank2_pressed)
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -182,6 +188,17 @@ func _on_buy_vitality_pressed() -> void:
 func _on_buy_damage_pressed() -> void:
 	_set_status("Damage increased." if UpgradeManager.purchase_weapon_might() else "Not enough Qi for Weapon Might.")
 
+func _on_buy_restore_pressed() -> void:
+	var player := _get_live_player()
+	var heal_amount: float = 0.0
+	if not UpgradeManager.purchase_restore():
+		_set_status("Not enough Qi for Restore.")
+		return
+	if player != null:
+		heal_amount = player.max_health * UpgradeManager.RESTORE_HEAL_FRACTION
+		player.current_health = minf(player.current_health + heal_amount, player.max_health)
+	_set_status("Restore used. Healed %.0f HP." % heal_amount)
+
 func _get_live_player() -> Player:
 	if RunManager == null:
 		return null
@@ -206,6 +223,34 @@ func _on_buy_rank1_pressed() -> void:
 		success = UpgradeManager.purchase_khac_rank1(pair)
 	_set_status("Rank 1 purchased." if success else "Rank 1 unavailable or not enough Qi.")
 
+func _on_buy_sinh_rank1_pressed() -> void:
+	_on_buy_rank1_pressed()
+
+func _on_buy_sinh_rank2_pressed() -> void:
+	var reaction: Dictionary = REACTIONS[_reaction_target.selected]
+	var pair := _selected_reaction_pair(reaction)
+	var success := UpgradeManager.purchase_sinh_rank2(pair, Elements.sinh_generated_element(pair))
+	_set_status("Sinh Rank 2 purchased." if success else "Sinh Rank 1 first and check your Qi.")
+
+func _on_buy_sinh_rank2_other_pressed() -> void:
+	var reaction: Dictionary = REACTIONS[_reaction_target.selected]
+	var pair := _selected_reaction_pair(reaction)
+	var generated := Elements.sinh_generated_element(pair)
+	var favored: StringName = pair[0] if pair[1] == generated else pair[1]
+	var success := UpgradeManager.purchase_sinh_rank2(pair, favored)
+	_set_status("Sinh Rank 2 (other element) purchased." if success else "Sinh Rank 1 first and check your Qi.")
+
+func _on_buy_khac_rank1_pressed() -> void:
+	var reaction: Dictionary = REACTIONS[_reaction_target.selected]
+	var pair := _selected_reaction_pair(reaction)
+	var success := UpgradeManager.purchase_khac_rank1(pair)
+	_set_status("Khắc Rank 1 purchased." if success else "Khắc Rank 1 unavailable or not enough Qi.")
+
+func _on_buy_khac_rank2_pressed() -> void:
+	var reaction: Dictionary = REACTIONS[_reaction_target.selected]
+	var pair := _selected_reaction_pair(reaction)
+	var success := UpgradeManager.purchase_khac_rank2(pair)
+	_set_status("Khắc Rank 2 purchased." if success else "Khắc Rank 1 first and check your Qi.")
 
 func _on_buy_rank2_pressed() -> void:
 	var reaction: Dictionary = REACTIONS[_reaction_target.selected]

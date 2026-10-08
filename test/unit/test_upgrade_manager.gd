@@ -13,24 +13,49 @@ func test_award_qi_accumulates():
 	var um := _make_um()
 	um.award_qi(10.0)
 	assert_eq(um.qi, 10.0)
+	assert_eq(um.qi_earned_total, 10.0)
 	um.award_qi(15.0)
 	assert_eq(um.qi, 25.0)
+	assert_eq(um.qi_earned_total, 25.0)
 
 func test_award_qi_ignores_zero_or_negative():
 	var um := _make_um()
 	um.award_qi(0.0)
 	um.award_qi(-5.0)
 	assert_eq(um.qi, 0.0)
+	assert_eq(um.qi_earned_total, 0.0)
+
+func test_spend_qi_tracks_total_and_rejects_shortfalls():
+	var um := _make_um()
+	um.qi = 25.0
+	assert_true(um.spend_qi(10.0))
+	assert_eq(um.qi, 15.0)
+	assert_eq(um.qi_spent_total, 10.0)
+	assert_false(um.spend_qi(20.0), "Should fail with insufficient Qi")
+	assert_eq(um.qi, 15.0)
+
+func test_restore_cost_escalates_and_purchase_restore_tracks_uses():
+	var um := _make_um()
+	um.qi = 100.0
+	assert_eq(um.restore_cost(), 20.0)
+	assert_true(um.purchase_restore())
+	assert_eq(um._restore_uses, 1)
+	assert_eq(um.qi, 80.0)
+	assert_eq(um.restore_cost(), 30.0)
 
 func test_reset_clears_all_per_run_state():
 	var um := _make_um()
 	um.qi = 100.0
 	um.purchase_vitality()
+	um.purchase_restore()
 	var pair := [Elements.HOA, Elements.THUY]
 	um.purchase_sinh_rank1(pair)
 	um.purchase_sinh_rank2(pair, Elements.HOA)
 	um.reset()
 	assert_eq(um.qi, 0.0)
+	assert_eq(um.qi_earned_total, 0.0)
+	assert_eq(um.qi_spent_total, 0.0)
+	assert_eq(um._restore_uses, 0)
 	assert_eq(um.vitality_hp_bonus(), 0.0)
 	assert_false(um.sinh_tier2_forced(pair))
 	assert_eq(um.sinh_favored_element(pair), &"")
@@ -108,3 +133,17 @@ func test_purchase_rank2_fails_if_rank1_not_owned():
 	assert_false(um.purchase_sinh_rank2(pair, Elements.HOA), "Must buy rank 1 first")
 	um.purchase_sinh_rank1(pair)
 	assert_true(um.purchase_sinh_rank2(pair, Elements.HOA))
+
+func test_save_state_round_trips_restore_uses_and_qi_totals():
+	var um := _make_um()
+	um.award_qi(100.0)
+	um.purchase_restore()
+	um.purchase_vitality()
+	var saved: Dictionary = um.to_save_state()
+	var restored := _make_um()
+	restored.apply_save_state(saved)
+	assert_eq(restored._restore_uses, 1)
+	assert_eq(restored.qi_earned_total, 100.0)
+	assert_eq(restored.qi_spent_total, 35.0)
+	assert_eq(restored.qi, 65.0)
+	assert_eq(restored.vitality_hp_bonus(), 10.0)

@@ -21,6 +21,7 @@ extends RefCounted
 ## Call dot_bonus() after incrementing to get the additive amount.
 
 signal exploded(source: Node)  ## Fired when level hits 3. Owner runs the AoE.
+signal changed
 
 const MAX_LEVEL: int = 3
 const SUSTAIN_TIME: float = 10.0
@@ -29,14 +30,24 @@ const EXPLODE_DAMAGE: float = 15.0
 const EXPLODE_RADIUS: float = 55.0
 
 var level: int = 0
+var base_damage_per_tick: float = 2.5
+var base_duration: float = 3.5
 var _sustain_timer: float = 0.0
 var _source: Node = null  ## Last attacker who contributed a hit.
 var active: bool = false
 
 
+func current_damage_per_tick() -> float:
+	return base_damage_per_tick + (level * DOT_BONUS_PER_LEVEL)
+
+
+func current_duration() -> float:
+	return base_duration
+
+
 ## Called by ElementalCombatant.tick(delta).
 func tick(delta: float) -> void:
-	if not active:
+	if not active or level == 0:
 		return
 	_sustain_timer -= delta
 	if _sustain_timer <= 0.0:
@@ -46,6 +57,17 @@ func tick(delta: float) -> void:
 			active = false
 		else:
 			_sustain_timer = SUSTAIN_TIME  # Restart at the new (lower) level.
+		changed.emit()
+
+
+func start(p_base_damage_per_tick: float, p_base_duration: float) -> void:
+	level = 0
+	base_damage_per_tick = p_base_damage_per_tick
+	base_duration = p_base_duration
+	_sustain_timer = 0.0
+	_source = null
+	active = true
+	changed.emit()
 
 
 ## Called when a Hỏa hit lands on a target that already carries Hỏa status.
@@ -58,6 +80,7 @@ func increment(source: Node) -> bool:
 	if level >= MAX_LEVEL:
 		exploded.emit(_source)
 		return true
+	changed.emit()
 	return false
 
 
@@ -68,6 +91,7 @@ func reset() -> void:
 	_sustain_timer = 0.0
 	_source = null
 	active = false
+	changed.emit()
 
 
 ## Additive DoT bonus on top of Wildfire's base numbers.

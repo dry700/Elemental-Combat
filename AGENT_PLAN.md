@@ -17,7 +17,7 @@ This is the working checklist for the project. It remains intentionally lightwei
 
 ## Phase order
 
-P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11
+P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 (Perfect Hit) → P14 (Skill system)
 
 ## Phase status
 
@@ -108,8 +108,27 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 ### P11 — Final verification and closeout
 - [x] Run the full GUT suite.
 - [x] Confirm static diagnostics are clean.
-- [ ] Update [Design.md](Design.md) only if the implemented contract diverges from design.
-- [ ] Capture blockers and decisions before the final handoff.
+- [x] Update [Design.md](Design.md) only if the implemented contract diverges from design.
+- [x] Capture blockers and decisions before the final handoff.
+
+### P12 — Run optimization and economy tuning
+- [ ] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](Design.md).
+- [ ] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
+- [ ] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
+- [x] Open the gate and generator changes for procedural-room flow, shop dead-end placement, and normal-room transitions.
+- [x] Verify the optimized run loop keeps the game stable and the full GUT suite remains green before moving on.
+
+### P13 — Perfect Hit and weapon window expansion
+- [ ] Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md), beginning with the shared hit/window resolution and the dagger streak test case.
+- [ ] Add the existing-weapon timing windows and the default multiplier bands without altering Charge or the reaction resolver.
+- [ ] Add the shop-only weapon resources and the enemy health getters required for finisher-based weapons.
+- [ ] Cover the Perfect Hit tests for window behavior, multiplier handling, and scattershot/streak edge cases.
+
+### P14 — Skill system expansion
+- [ ] Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md) after the run optimization work is stable.
+- [ ] Add the expanded `SkillData` schema, duplicate guards, cooldown readout, and `SkillPool` loader.
+- [ ] Add the new cast behaviors, HUD slot rendering, and skill roster in phase order.
+- [ ] Verify all new skill behaviors and compatibility checks with the full GUT suite.
 
 ## Active decision log
 
@@ -129,6 +148,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - `Design.md` remains the source of truth for behavior and architecture.
 - `PlaytestMode` remains debug-only and does not replace the final room-cleared upgrade flow.
 - D3/D4 are resolved in the current implementation: the room-cleared upgrade menu is Tab-based, room-gated, and scoped to the player-owned run state.
+- No blockers remained at the closeout gate; the verified implementation matched the design contract and no additional Design.md updates were required.
 - Current verification: 225/225 tests passed, 501 assertions, 0 failures, 2 expected warnings.
 
 ## Immediate next action
