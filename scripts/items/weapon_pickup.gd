@@ -83,13 +83,16 @@ func _default_target_is_primary(player: Player) -> bool:
 ## Called by Hud once the player has chosen a slot (keyboard confirm,
 ## numeric shortcut, or a click on one of the overlay's two options) —
 ## never called directly from this script's own input handling anymore.
-func _do_pickup(player: Player, is_primary: bool) -> void:
+func _do_pickup(player: Player, is_primary: bool) -> bool:
+	if _picked_up or weapon == null:
+		return false
 	_picked_up = true
 	var old_rune := player.get_weapon_rune(is_primary)
 	var previous := player.swap_weapon(is_primary, weapon, rune)
 	if previous != null:
 		_spawn_dropped(previous, is_primary, old_rune)
 	queue_free()
+	return true
 
 
 ## from_slot_primary marks the dropped replacement pickup with whichever
@@ -129,4 +132,17 @@ func _draw() -> void:
 		draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
 		
 	if _player_in_range != null:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -s - 14), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)
+		draw_string(ThemeDB.fallback_font, Vector2(-_prompt_width() / 2.0, -s - 14),
+				_prompt_text(), HORIZONTAL_ALIGNMENT_CENTER, _prompt_width(), 12, _prompt_color())
+
+
+func _prompt_text() -> String:
+	return "F Pick up"
+
+
+func _prompt_color() -> Color:
+	return PROMPT_COLOR
+
+
+func _prompt_width() -> float:
+	return 60.0

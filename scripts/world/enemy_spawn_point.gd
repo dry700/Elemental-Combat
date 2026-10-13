@@ -18,15 +18,33 @@ func spawn() -> Node:
 		return null
 
 	var enemy := enemy_scene.instantiate()
+	var s: float = 1.0 + 0.25 * (RunManager.loop - 1)
+	var final_enemy_stats: EnemyStats = enemy_stats
+	var final_boss_stats: BossStats = boss_stats
+
+	if s > 1.0:
+		if final_enemy_stats != null:
+			final_enemy_stats = final_enemy_stats.duplicate() as EnemyStats
+			final_enemy_stats.max_health *= s
+			final_enemy_stats.damage *= s
+		if final_boss_stats != null:
+			final_boss_stats = final_boss_stats.duplicate() as BossStats
+			final_boss_stats.max_health *= s
+			final_boss_stats.damage *= s
+		if "max_health" in enemy:
+			enemy.max_health *= s
+		if "damage" in enemy:
+			enemy.damage *= s
+
 	# Must set these BEFORE add_child() — add_child() runs the enemy's
 	# own _ready() synchronously, and _ready() is what checks
 	# enemy_stats to decide whether to join the "enemies" group and
 	# build combat_ai. Setting it after add_child() is too late; the
 	# enemy silently never joins the group RoomController waits on.
 	if "enemy_stats" in enemy:
-		enemy.enemy_stats = enemy_stats
+		enemy.enemy_stats = final_enemy_stats
 	if "boss_stats" in enemy:
-		enemy.boss_stats = boss_stats
+		enemy.boss_stats = final_boss_stats
 	if "starting_element" in enemy:
 		enemy.starting_element = starting_element
 	if "starting_charge" in enemy:

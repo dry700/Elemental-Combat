@@ -1,4 +1,4 @@
-﻿extends Node
+extends Node
 ## Upgrade Manager — per-run Qi economy and reaction specialization state.
 ##
 ## P10a scope: Qi accumulation, reset, and the public getter API that
@@ -45,13 +45,15 @@ func reset() -> void:
 
 signal qi_changed(new_total: float)
 
-## ── Upgrade costs (§4.8 placeholder values) ──────────────────────────
-const SINH_RANK1_COST: float  = 20.0
-const SINH_RANK2_COST: float  = 45.0
-const KHAC_RANK1_COST: float  = 20.0
-const KHAC_RANK2_COST: float  = 45.0
-const WEAPON_MIGHT_BASE_COST: float = 15.0
-const VITALITY_BASE_COST: float     = 15.0
+## ── Upgrade costs (§4.8 values) ──────────────────────────────────────
+const SINH_RANK1_COST: float  = 25.0
+const SINH_RANK2_COST: float  = 55.0
+const KHAC_RANK1_COST: float  = 25.0
+const KHAC_RANK2_COST: float  = 55.0
+const WEAPON_MIGHT_BASE_COST: float = 20.0
+const WEAPON_MIGHT_COST_STEP: float = 12.0
+const VITALITY_BASE_COST: float     = 20.0
+const VITALITY_COST_STEP: float     = 12.0
 const RESTORE_BASE_COST: float = 20.0
 const RESTORE_COST_STEP: float = 10.0
 const RESTORE_HEAL_FRACTION: float = 0.3
@@ -94,20 +96,23 @@ func khac_overwhelm_forced(reaction_pair: Array) -> bool:
 
 ## A. Weapon Might
 func weapon_might_cost() -> float:
-	return WEAPON_MIGHT_BASE_COST + _weapon_might_rank * 10.0
+	return WEAPON_MIGHT_BASE_COST + _weapon_might_rank * WEAPON_MIGHT_COST_STEP
 
 func weapon_might_multiplier() -> float:
 	return 1.0 + _weapon_might_rank * 0.1
 
 ## C. Vitality
 func vitality_cost() -> float:
-	return VITALITY_BASE_COST + _vitality_rank * 10.0
+	return VITALITY_BASE_COST + _vitality_rank * VITALITY_COST_STEP
 
 func vitality_hp_bonus() -> float:
 	return _vitality_rank * 10.0
 
 func restore_cost() -> float:
 	return RESTORE_BASE_COST + _restore_uses * RESTORE_COST_STEP
+
+func restore_uses() -> int:
+	return _restore_uses
 
 func spend_qi(amount: float) -> bool:
 	if amount < 0.0:

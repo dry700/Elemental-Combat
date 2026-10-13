@@ -1,6 +1,9 @@
 class_name ProceduralRoomController
 extends RoomController
 
+const LoadoutSelectScript := preload("res://scripts/ui/loadout_select.gd")
+const ShopWeaponPickupScript := preload("res://scripts/items/shop_weapon_pickup.gd")
+
 var map_gen: MapGenerator
 var start_chunk: Node2D
 var finish_chunk: Node2D
@@ -98,17 +101,57 @@ func _populate_shop() -> void:
 	free_rune.position = Vector2(160.0, floor_y + 9.0)
 	shop_chunk.add_child(free_rune)
 
-	var left_pickup := WeaponPickup.new()
-	left_pickup.weapon = WeaponStats.new()
-	left_pickup.weapon.weapon_name = "Shop Dagger"
-	left_pickup.position = Vector2(100.0, floor_y + 9.0)
-	shop_chunk.add_child(left_pickup)
+	var stock := _get_shop_weapon_stock()
+	var stall_positions := [100.0, 316.0]
+	for index in mini(stock.size(), stall_positions.size()):
+		var weapon: WeaponStats = stock[index]
+		var pickup: WeaponPickup = ShopWeaponPickupScript.new()
+		pickup.weapon = weapon
+		pickup.slot = WeaponPickup.Slot.PRIMARY if index == 0 else WeaponPickup.Slot.SECONDARY
+		pickup.set("price", _shop_weapon_price(weapon))
+		pickup.position = Vector2(stall_positions[index], floor_y + 9.0)
+		shop_chunk.add_child(pickup)
 
-	var right_pickup := WeaponPickup.new()
-	right_pickup.weapon = WeaponStats.new()
-	right_pickup.weapon.weapon_name = "Shop Spear"
-	right_pickup.position = Vector2(316.0, floor_y + 9.0)
-	shop_chunk.add_child(right_pickup)
+
+func _get_shop_weapon_stock() -> Array[WeaponStats]:
+	var paths: Array[String] = []
+	for path in LoadoutSelectScript.STARTING_WEAPON_PATHS:
+		paths.append(path)
+	for unlocked_path in SaveManager.get_unlocked_weapon_paths():
+		var path := str(unlocked_path)
+		if not paths.has(path):
+			paths.append(path)
+
+	var player: Player = RunManager._player if RunManager != null else null
+	var held_paths: Array[String] = []
+	if player != null:
+		if player.weapon != null and player.weapon.resource_path != "":
+			held_paths.append(player.weapon.resource_path)
+		if player.secondary_weapon != null and player.secondary_weapon.resource_path != "":
+			held_paths.append(player.secondary_weapon.resource_path)
+
+	var candidates: Array[WeaponStats] = []
+	for path in paths:
+		if path.get_file().begins_with("runed_") or held_paths.has(path):
+			continue
+		var weapon := load(path) as WeaponStats
+		if weapon == null:
+			push_warning("ProceduralRoomController: skipping invalid shop weapon resource %s" % path)
+			continue
+		candidates.append(weapon)
+	candidates.shuffle()
+	return candidates
+
+
+func _shop_weapon_price(weapon: WeaponStats) -> int:
+	match weapon.weight:
+		WeaponStats.Weight.LIGHT:
+			return 35
+		WeaponStats.Weight.MEDIUM:
+			return 45
+		WeaponStats.Weight.HEAVY:
+			return 55
+	return 45
 
 func _find_spawn_points(node: Node) -> void:
 	for child in node.get_children():

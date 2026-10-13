@@ -36,6 +36,7 @@ extends CanvasLayer
 ## proportioned. Retune this one constant if the stretch ratio (window
 ## override size ÷ viewport size in project.godot) ever changes.
 const UI_SCALE: float = 0.5
+const SHOP_WEAPON_PICKUP_SCRIPT := preload("res://scripts/items/shop_weapon_pickup.gd")
 
 const SLOT_SIZE: float = 40.0 * UI_SCALE
 const SLOT_SEPARATION: float = 8.0 * UI_SCALE
@@ -566,12 +567,13 @@ func _handle_pickup_overlay_input() -> void:
 					
 					var auto_equip = false
 					if is_weapon:
-						if _player.weapon == null:
-							pickup.call("_do_pickup", _player, true)
-							auto_equip = true
-						elif _player.secondary_weapon == null:
-							pickup.call("_do_pickup", _player, false)
-							auto_equip = true
+						if pickup.get_script() != SHOP_WEAPON_PICKUP_SCRIPT:
+							if _player.weapon == null:
+								pickup.call("_do_pickup", _player, true)
+								auto_equip = true
+							elif _player.secondary_weapon == null:
+								pickup.call("_do_pickup", _player, false)
+								auto_equip = true
 					elif pickup == _active_skill_pickup:
 						if _player.skill_1 == null:
 							pickup.call("_do_pickup", _player, true)
@@ -827,6 +829,14 @@ func _confirm_upgrade_selection() -> void:
 			if purchased and _player != null:
 				_player.max_health += 10.0
 				_player.current_health = minf(_player.current_health + 10.0, _player.max_health)
+		"restore":
+			if _player == null or _player.current_health >= _player.max_health:
+				return
+			purchased = UpgradeManager.purchase_restore()
+			if purchased:
+				_player.current_health = minf(
+						_player.current_health + _player.max_health * UpgradeManager.RESTORE_HEAL_FRACTION,
+						_player.max_health)
 		"sinh_rank1":
 			purchased = UpgradeManager.purchase_sinh_rank1(opt.get("pair", []))
 		"sinh_rank2":
@@ -861,6 +871,18 @@ func _rebuild_all_upgrade_options() -> void:
 		"label": "VITALITY",
 		"desc": "+10 maximum HP\nRank %d → %d\nCost: %d Qi" % [vitality_rank, vitality_rank + 1, int(vitality_cost)],
 		"cost": vitality_cost,
+	})
+
+	var restore_cost := UpgradeManager.restore_cost()
+	var restore_desc := "Heal 30%% maximum HP\nUsed %d times\nCost: %d Qi" % [
+		UpgradeManager.restore_uses(), int(restore_cost)]
+	if _player == null or _player.current_health >= _player.max_health:
+		restore_desc += "\n[Full HP]"
+	_all_upgrade_options.append({
+		"type": "restore",
+		"label": "RESTORE",
+		"desc": restore_desc,
+		"cost": restore_cost,
 	})
 
 	# Reaction upgrades — all 5 Sinh pairs then all 5 Khắc pairs.
@@ -994,7 +1016,13 @@ func _confirm_overlay_selection() -> void:
 	if _player == null or not is_instance_valid(_overlay_pickup):
 		_close_overlay()
 		return
-	_overlay_pickup.call("_do_pickup", _player, _overlay_selected_primary)
+	if _overlay_pickup is WeaponPickup \
+			and _player.would_duplicate_weapon(_overlay_selected_primary, _overlay_pickup.weapon):
+		return
+	var is_shop_weapon: bool = _overlay_pickup.get_script() == SHOP_WEAPON_PICKUP_SCRIPT
+	var pickup_result: Variant = _overlay_pickup.call("_do_pickup", _player, _overlay_selected_primary)
+	if is_shop_weapon and not bool(pickup_result):
+		return
 	_close_overlay()
 
 

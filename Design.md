@@ -680,7 +680,8 @@ shape family as `ArmorBuffEffect`/`SlowEffect`): `level: int` (0–3),
   fire status entirely), AoE damage (~15) via `bonus_damage_dealt` in a
   ~55px burst — **deliberately including `_source`** (the attacker who
   pushed it to 3), per §1's now-documented exception. Not
-  bystander-excluded on purpose.
+  bystander-excluded on purpose. Show a brief expanding orange fire-ring
+  and outward sparks centered on the target so the detonation is visible.
 - **A fresh Wildfire Sinh trigger on this target resets `level` to 0**
   — consistent with the project's existing refresh-only philosophy
   (§1): a new base application always wins over accumulated auxiliary
@@ -754,6 +755,16 @@ than 4 → spawns fewer motes, never a wasted/aimless one. Each:
 `element = Elements.HOA`, `shred_amount = 0.0`, `damage_amount = 4.0` —
 refreshes Hỏa burn on whoever it hits, distinct from the direct target's
 own Thổ status.
+
+**Before P13 — follow-up work:** playtest and buff the Hỏa-favor Cinderstorm
+branch; its current ceiling is four 4-damage motes, and the final buff
+should be chosen against the other Cinder Bloom branch in play. Also revisit
+entity-form reaction effects — Rusted Chunk, Boulder/Ore Surge fragments,
+and their shared `Projectile` behavior — so they move and interact like
+physical objects (clear launch velocity, gravity/drag, and convincing
+collision, bounce, or settling where appropriate) rather than floaty,
+straight-line effects. Preserve each effect's documented targeting and hit
+rules unless a playtest demonstrates those need a deliberate balance change.
 
 #### 4.8.10 Ore Surge Branches — Armor Sunder & Caltrops
 

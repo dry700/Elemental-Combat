@@ -13,7 +13,7 @@ extends CharacterBody2D
 @export var projectile_speed: float = 200.0
 @export var starting_element: StringName = Elements.NONE
 @export var starting_charge: int = 1
-@export var qi_reward: float = 5.0
+@export var qi_reward: float = 3.0
 @export var starting_armor: float = 5.0
 
 const SLOWED_TINT: Color = Color(0.55, 0.75, 1.0)

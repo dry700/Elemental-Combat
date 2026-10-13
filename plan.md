@@ -17,18 +17,22 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P10a — Qi economy and upgrade-manager foundations
 - [x] P10b — Room-cleared upgrade menu, input flow, and remaining effect hooks
 - [x] P11 — Final verification and documentation closeout
+- [ ] P12 — Run optimization and economy tuning (Phase 6 complete; Phase 7 next)
 
 ## Verified current state
 
 - `CCResistance` is implemented and wired through `ElementalCombatant`.
 - `UpgradeManager` is registered as a script-only autoload and owns per-run Qi/rank state.
 - Enemy kills award Qi, `RunManager` resets per-run state correctly, and the playtest harness remains debug-only.
-- The HUD owns the room-cleared upgrade menu while the room is cleared, gated to the Tab key and the existing purchase APIs.
-- The room-clear shop is now larger, easier to read, stays open for repeated purchases within the same room, and includes a paid Refresh Shop action.
+- Procedural rooms contain a shop station, a Restore option, a free baseline rune, and two distinct priced weapon stalls.
+- Pressing F near the shop station opens its menu; pickups retain input priority over the shop interaction.
+- Shop weapon purchases reject duplicates and insufficient Qi without equipping or charging.
+- Qi, Restore use counts, and weapon prices are managed through `UpgradeManager` purchase APIs.
 - Procedural map layout persists and resumes as designed; legacy snapshots remain compatible.
-- The implemented contract is now aligned with the active P10b scope and the verified runtime.
+- Loop persistence and scaling (P12 Phase 6) is implemented: `RunManager` tracks loops, winning runs carry over Qi, upgrades, weapons, and runes; enemy HP and damage scale by `1.0 + 0.25 * (loop - 1)` via `EnemySpawnPoint`; death resets to loop 1.
+- P12 remains active; Phase 6 is verified (256/256 tests passed) and Phase 7 economy numbers is next.
 
-## Current scope: P10b
+## Historical scope: P10b
 
 ### Implemented P10b support tools
 
@@ -47,24 +51,23 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] Expand the room-clear shop into a repeatable upgrade panel with a larger presentation and a Refresh Shop option.
 - [x] Expose Sinh and Khắc Rank 1/Rank 2 purchases in the paged room-clear UI, including both Sinh favored-element choices.
 
-### Known blockers
+### P10b closeout record
 
-- The room-cleared upgrade menu is complete for the active scope, but P11 remains the documentation and closeout pass.
-- `PlaytestMode` remains a development tool and does not replace the final in-run room-clear flow.
+- `PlaytestMode` remains a development tool and does not replace the in-run shop flow.
 
 ## Verification gate
 
-- [x] Full GUT suite: 230/230 tests passed, 537 assertions, 0 failures, 2 warnings.
-- [x] Static diagnostics: no errors found in the workspace during the current check.
-- [x] The repo is consistent with the currently implemented code and the active design contract in [Design.md](Design.md).
+- [x] Full GUT suite: 256/256 tests passed, 1,657 assertions, 0 failures.
+- [x] Targeted diagnostics: `test_loop_scaling.gd` clean, all 7 loop scaling unit tests passing.
+- [ ] Final Design.md reconciliation: reserved for P12 Phase 9 as directed by the P12 plan.
 
 ## Exact next item
 
-- Move to P11 closeout: final docs and repo polish after the verified room-cleared upgrade menu is complete.
+- Move to P12 Phase 7: apply economy numbers and tune costs/rewards.
 
 ## Deferred work
 
-- P11 remains the final verification/documentation step after the active P10b task is closed.
+- P12 Phases 7–9 remain; update Design.md and run the final verification during Phase 9.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
 - No further gameplay scope should be treated as complete without fresh verification.
@@ -72,5 +75,5 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- Result: 230 passing tests, 537 assertions, 0 failures, 2 warnings.
-- Static analysis: no errors found in the workspace.
+- Result: 256 passing tests, 1,657 assertions, 0 failures. Two GUT warnings remain.
+- Static analysis: changed run manager, save manager, enemy spawn point, and loop scaling test files are clean.

@@ -820,6 +820,12 @@ func swap_weapon(is_primary: bool, new_weapon: WeaponStats, new_rune: RuneData =
 	weapon_changed.emit(is_primary, new_weapon)
 	return previous
 
+func would_duplicate_weapon(is_primary: bool, candidate: WeaponStats) -> bool:
+	if candidate == null or candidate.resource_path == "":
+		return false
+	var other := secondary_weapon if is_primary else weapon
+	return other != null and other.resource_path == candidate.resource_path
+
 func get_weapon_rune(is_primary: bool) -> RuneData:
 	return weapon_rune if is_primary else secondary_weapon_rune
 

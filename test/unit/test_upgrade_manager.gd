@@ -1,4 +1,4 @@
-﻿extends GutTest
+extends GutTest
 ## Unit tests for UpgradeManager (P10a).
 ## Verifies Qi earning/reset, stat upgrade logic, and Reaction Mastery getters.
 
@@ -63,22 +63,22 @@ func test_reset_clears_all_per_run_state():
 func test_weapon_might_multiplier_scales_with_purchases():
 	var um := _make_um()
 	assert_eq(um.weapon_might_multiplier(), 1.0)
-	um.qi = 50.0
+	um.qi = 60.0
 	var success: bool = um.purchase_weapon_might()
 	assert_true(success)
 	assert_eq(um.weapon_might_multiplier(), 1.1)
-	assert_eq(um.qi, 35.0)
+	assert_eq(um.qi, 40.0)
 	success = um.purchase_weapon_might()
 	assert_true(success)
 	assert_eq(um.weapon_might_multiplier(), 1.2)
-	assert_eq(um.qi, 10.0)
+	assert_eq(um.qi, 8.0)
 	success = um.purchase_weapon_might()
 	assert_false(success, "Should fail with insufficient Qi")
 
 func test_vitality_hp_bonus_scales_with_purchases():
 	var um := _make_um()
 	assert_eq(um.vitality_hp_bonus(), 0.0)
-	um.qi = 15.0
+	um.qi = 20.0
 	var success: bool = um.purchase_vitality()
 	assert_true(success)
 	assert_eq(um.vitality_hp_bonus(), 10.0)
@@ -144,6 +144,6 @@ func test_save_state_round_trips_restore_uses_and_qi_totals():
 	restored.apply_save_state(saved)
 	assert_eq(restored._restore_uses, 1)
 	assert_eq(restored.qi_earned_total, 100.0)
-	assert_eq(restored.qi_spent_total, 35.0)
-	assert_eq(restored.qi, 65.0)
+	assert_eq(restored.qi_spent_total, 40.0)
+	assert_eq(restored.qi, 60.0)
 	assert_eq(restored.vitality_hp_bonus(), 10.0)

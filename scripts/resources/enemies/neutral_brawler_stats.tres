@@ -12,4 +12,4 @@ telegraph_duration = 0.3
 special_telegraph_duration = 0.6
 active_window = 0.14
 special_attack_every = 4
-qi_reward = 10.0
+qi_reward = 5.0

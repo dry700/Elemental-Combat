@@ -116,6 +116,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [ ] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
 - [ ] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
 - [x] Open the gate and generator changes for procedural-room flow, shop dead-end placement, and normal-room transitions.
+- [x] Complete P12 Phase 5 shop contents: station interaction, Restore, free rune, and two priced distinct weapon stalls; full GUT suite passes.
 - [x] Verify the optimized run loop keeps the game stable and the full GUT suite remains green before moving on.
 
 ### P13 — Perfect Hit and weapon window expansion

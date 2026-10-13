@@ -63,7 +63,7 @@ func test_wildfire_rank_two_keeps_overload_active_and_scales_fire_dot() -> void:
 	add_child_autofree(source)
 
 	var pair: Array[StringName] = [Elements.MOC, Elements.HOA]
-	UpgradeManager.award_qi(65.0)
+	UpgradeManager.award_qi(80.0)
 	assert_true(UpgradeManager.purchase_sinh_rank1(pair))
 	assert_true(UpgradeManager.purchase_sinh_rank2(pair, Elements.HOA))
 
@@ -92,7 +92,7 @@ func test_playtest_can_buy_sinh_rank_two_favoring_the_other_element() -> void:
 	var generated := Elements.sinh_generated_element(pair)
 	var other: StringName = pair[0] if pair[1] == generated else pair[1]
 
-	UpgradeManager.award_qi(65.0)
+	UpgradeManager.award_qi(80.0)
 	PlaytestMode._on_buy_sinh_rank1_pressed()
 	PlaytestMode._on_buy_sinh_rank2_other_pressed()
 

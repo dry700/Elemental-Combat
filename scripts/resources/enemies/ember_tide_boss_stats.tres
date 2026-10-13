@@ -21,4 +21,4 @@ element = &"thuy"
 telegraph_duration = 0.4
 special_telegraph_duration = 0.8
 active_window = 0.16
-qi_reward = 25.0
+qi_reward = 30.0

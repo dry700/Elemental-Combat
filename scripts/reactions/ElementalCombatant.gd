@@ -1,5 +1,6 @@
 class_name ElementalCombatant
 extends Node2D
+const WildfireOverloadBurstScript = preload("res://scripts/reactions/wildfire_overload_burst.gd")
 ## Composed component — NOT a base class. Player is a CharacterBody2D and
 ## TestDummy is a StaticBody2D (PatrolDummy is CharacterBody2D too, but
 ## the split already rules out a single shared ancestor), so inheritance
@@ -605,6 +606,15 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 ## bonus damage in a ~55px burst. Deliberately includes _source (the attacker
 ## who pushed it to 3) — §1's documented exception, not bystander-excluded.
 func _on_wildfire_overload_exploded(_source: Node) -> void:
+	var burst: Node2D = WildfireOverloadBurstScript.new()
+	var scene_root := get_tree().current_scene
+	if scene_root != null:
+		scene_root.add_child(burst)
+		burst.global_position = global_position
+	else:
+		add_child(burst)
+		burst.position = Vector2.ZERO
+
 	status.clear()
 	wildfire_overload.reset()
 	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):

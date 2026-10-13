@@ -143,7 +143,7 @@ func get_run_history() -> Array:
 
 ## --- Mid-run save/resume ---
 
-func save_in_progress_run(sequence: Array, current_index: int, player_state: Dictionary, elapsed_sec: float, map_structure: Dictionary = {}, upgrade_state: Dictionary = {}) -> void:
+func save_in_progress_run(sequence: Array, current_index: int, player_state: Dictionary, elapsed_sec: float, map_structure: Dictionary = {}, upgrade_state: Dictionary = {}, loop: int = 1) -> void:
 	_data["in_progress_run"] = {
 		"sequence": sequence,
 		"current_index": current_index,
@@ -151,6 +151,7 @@ func save_in_progress_run(sequence: Array, current_index: int, player_state: Dic
 		"player": player_state,
 		"map_structure": map_structure,
 		"upgrade_state": upgrade_state,
+		"loop": loop,
 	}
 	_save_to_disk()
 

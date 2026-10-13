@@ -150,6 +150,9 @@ Files: `scripts/world/map_gen/map_generator.gd`, `procedural_room_controller.gd`
 
 ## Phase 5 — Shop contents (station, Restore, weapon rack, free rune)
 
+**Status: Complete** — shop station input, Restore, priced weapon stalls, and shop population
+are covered by the full GUT run (249 tests, 1,627 assertions, 0 failures).
+
 **T5.1 `ShopStation`** — new `scripts/items/shop_station.gd`, `class_name ShopStation extends Area2D`.
 Built in code like `WeaponPickup`: `monitoring = true`, `collision_layer = 0`, `collision_mask = 1`, circle radius ~14, joins group `shop_stations`,
 tracks `_player_in_range`, draws a simple glyph and `"F Shop"` when in range.

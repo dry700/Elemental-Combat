@@ -98,6 +98,21 @@ func test_wildfire_chains_to_an_overgrowth_linked_combatant():
 	assert_false(linked.is_in_group(ElementalCombatant.OVERGROWTH_GROUP), "consumed by the chain")
 	assert_signal_emitted(linked, "bonus_damage_dealt")
 
+
+func test_wildfire_overload_explosion_spawns_visible_burst():
+	target.status.apply(Elements.HOA, 1)
+	target.wildfire_overload.start(3.5, 4.5)
+	target.wildfire_overload.increment(attacker)
+	target.wildfire_overload.increment(attacker)
+
+	assert_eq(get_tree().get_nodes_in_group("wildfire_overload_bursts").size(), 0)
+	target.wildfire_overload.increment(attacker)
+
+	assert_false(target.status.has_status(), "the explosion still clears the fire status")
+	assert_eq(target.wildfire_overload.level, 0, "the overload still resets after exploding")
+	assert_eq(get_tree().get_nodes_in_group("wildfire_overload_bursts").size(), 1)
+
+
 func test_cinder_bloom_applies_earth_and_burns_nearby():
 	var nearby := ElementalCombatant.new()
 	nearby.show_debug_readout = false

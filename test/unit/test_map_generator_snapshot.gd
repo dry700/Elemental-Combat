@@ -55,22 +55,40 @@ func test_generator_places_one_dead_end_shop_and_round_trips_snapshot() -> void:
 		assert_eq(restored.to_dict(), snapshot)
 
 func test_procedural_room_populates_a_visible_shop_station() -> void:
-	var generator := MapGenerator.new(4, 3)
-	generator.load_pool_from_dir(CHUNK_DIR)
-	generator.generate()
-	assert_ne(generator.shop_cell, Vector2i(-1, -1))
 	var room := ProceduralRoomController.new()
 	add_child_autofree(room)
-	room.map_gen = generator
-	generator.build_map(room)
-	room._populate_shop()
 	var station_count := 0
+	var stall_count := 0
+	var rune_count := 0
+	var shop_weapons: Array[WeaponPickup] = []
 	for child in room.get_children():
-		if child is Node2D:
-			for grandchild in child.get_children():
-				if grandchild.get_script() != null and grandchild.get_script().resource_path.ends_with("shop_station.gd"):
-					station_count += 1
-	assert_gt(station_count, 0, "procedural rooms should spawn a shop station on the shop chunk")
+		if not child.is_in_group("shop_chunk"):
+			continue
+		for shop_item in child.get_children():
+			if shop_item.get_script() == preload("res://scripts/items/shop_station.gd"):
+				station_count += 1
+			elif shop_item.get_script() == preload("res://scripts/items/shop_weapon_pickup.gd"):
+				stall_count += 1
+				shop_weapons.append(shop_item as WeaponPickup)
+			elif shop_item.get_script() == preload("res://scripts/items/rune_pickup.gd"):
+				rune_count += 1
+	assert_eq(station_count, 1, "procedural rooms should spawn one station on the shop chunk")
+	assert_eq(stall_count, 2, "shop should populate two distinct paid weapon stalls")
+	assert_eq(rune_count, 1, "shop should provide one free baseline rune")
+	if shop_weapons.size() == 2:
+		assert_ne(shop_weapons[0].weapon.resource_path, shop_weapons[1].weapon.resource_path)
+	for shop_weapon in shop_weapons:
+		assert_eq(int(shop_weapon.get("price")), _expected_shop_weapon_price(shop_weapon.weapon))
+
+func _expected_shop_weapon_price(weapon: WeaponStats) -> int:
+	match weapon.weight:
+		WeaponStats.Weight.LIGHT:
+			return 35
+		WeaponStats.Weight.MEDIUM:
+			return 45
+		WeaponStats.Weight.HEAVY:
+			return 55
+	return 45
 
 func _is_reachable(start: Vector2i, grid: Dictionary, target: Vector2i) -> bool:
 	var queue: Array[Vector2i] = []
