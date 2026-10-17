@@ -1,4 +1,4 @@
-﻿# AGENT_PLAN.md
+# AGENT_PLAN.md
 
 This is the working checklist for the project. It remains intentionally lightweight while the detailed mechanics live in [Design.md](Design.md).
 
@@ -112,12 +112,15 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Capture blockers and decisions before the final handoff.
 
 ### P12 — Run optimization and economy tuning
-- [ ] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](Design.md).
-- [ ] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
-- [ ] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
+- [x] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](Design.md).
+- [x] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
+- [x] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
 - [x] Open the gate and generator changes for procedural-room flow, shop dead-end placement, and normal-room transitions.
 - [x] Complete P12 Phase 5 shop contents: station interaction, Restore, free rune, and two priced distinct weapon stalls; full GUT suite passes.
-- [x] Verify the optimized run loop keeps the game stable and the full GUT suite remains green before moving on.
+- [x] Implement loop persistence and scaling in Phase 6: carry upgrades/weapons/runes, scale enemy HP/damage `1 + 0.25 * (loop - 1)`.
+- [x] Apply economy numbers in Phase 7: tuned Qi rewards and costs.
+- [x] Add Phase 8 instrumentation: per-room delta logging in debug builds.
+- [x] Phase 9 documentation reconciliation and final verification.
 
 ### P13 — Perfect Hit and weapon window expansion
 - [ ] Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md), beginning with the shared hit/window resolution and the dagger streak test case.
@@ -135,7 +138,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 
 - [x] D1 — Weapon Might and Vitality are repeatable per-run upgrades with escalating prices.
 - [x] D2 — `UpgradeManager` getter names are stable and the resolver remains unchanged.
-- [x] D3 — The room-cleared upgrade-menu input rule is Tab-based while the room is cleared and the HUD owns the flow.
+- [x] D3 — ShopStation proximity interaction (F) replaces room-cleared Tab menu.
 - [x] D4 — The upgrade flow remains player-owned and scoped to the current run's player state path.
 - [x] D9 — Rune modifiers are rolled at drop time and saved with the run.
 - [x] D10 — Runes carry 1–2 modifiers and weapon resources remain unduplicated.
@@ -143,15 +146,19 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] D12 — Weapon and skill pickup shapes stay separate and the inspect flow remains keyboard-only.
 - [x] D13 — Runes live on player slots, not in duplicated weapon resources.
 - [x] D14 — Monogram UI and plain DPS stay in place; hidden invalid slots remain the default.
+- [x] D15 — Normal procedural room exit is open from the start; boss room locked until defeat.
+- [x] D16 — Shop is placed on a guaranteed dead-end branch with an empty fallback chunk (no enemies).
+- [x] D17 — Paid Restore card provides run sustain (30% max HP, 20 + 10/use Qi, free/no-op at full HP).
+- [x] D18 — Loop scaling persists Qi/upgrades/runes on victory, scales stats by `1 + 0.25 * (loop - 1)`, resets on death.
+- [x] D19 — Refresh Shop is permanently removed; multi-purchases allowed in a single visit.
 
 ## Notes and blockers
 
 - `Design.md` remains the source of truth for behavior and architecture.
-- `PlaytestMode` remains debug-only and does not replace the final room-cleared upgrade flow.
-- D3/D4 are resolved in the current implementation: the room-cleared upgrade menu is Tab-based, room-gated, and scoped to the player-owned run state.
-- No blockers remained at the closeout gate; the verified implementation matched the design contract and no additional Design.md updates were required.
-- Current verification: 225/225 tests passed, 501 assertions, 0 failures, 2 expected warnings.
+- `PlaytestMode` remains debug-only and does not replace the in-run shop flow.
+- P12 is fully verified and documented. No blockers remaining.
+- Current verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
 
 ## Immediate next action
 
-- Move to P11 closeout: final documentation clean-up and repo polish after the completed room-cleared upgrade-menu implementation.
+- Move to P13: Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md).

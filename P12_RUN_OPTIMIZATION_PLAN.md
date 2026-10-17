@@ -251,9 +251,11 @@ prefer finding options by `type` over fixed indices).
 
 ## Phase 9 — Docs and final verification
 
+**Status: Complete** — Documentation reconciled across `Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`. Full GUT test suite is completely green (257/257 passing tests, 1,658 assertions, 0 failures).
+
 - `Design.md`: §4.8.1 (reward table), §4.8.2 (costs, Restore), §6 (open gate, loop persistence, scaling), §8 (shop station input),
-  §19 (shop branch algorithm, shop contents), §11 (move resolved items). Fix the stale "Refresh Shop" references.
-- `plan.md`, `plan-elemental_roguelike.md`, `README.md`: add P12 line, update test counts.
+  §19 (shop branch algorithm, shop contents), §11 (move resolved items). Stale "Refresh Shop" references resolved.
+- `plan.md`, `plan-elemental_roguelike.md`, `README.md`: P12 marked complete, test counts updated (257 passing tests, 1,658 assertions).
 - Full suite green; zero errors in the Godot output.
 
 ## Playtest checklist (manual, use F12: invincibility, teleport, +1000 Qi)

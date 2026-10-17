@@ -442,27 +442,28 @@ previous one.
 every enemy body (no new pickup/physics needed). `UpgradeManager.award_qi()`
 ignores non-positive rewards and emits `qi_changed` after valid awards:
 
-| Enemy tier | `qi_reward` (starting value, tune in Sprint 3) |
+| Enemy tier | `qi_reward` (tuned P12 values) |
 |---|---|
-| Normal (`neutral_brawler_stats`) | 6 |
-| Elemental spirit (`kim_spirit_stats`, etc.) | 12 |
-| Boss (`ember_tide_boss_stats`) | 50 |
+| Normal (`neutral_brawler_stats`) | 5 |
+| Elemental spirit (`kim_spirit_stats`, etc.) | 8 |
+| Flying / shooter / swooper enemy | 3 |
+| Boss (`ember_tide_boss_stats`) | 30 |
 
-A typical 3-room + boss run (~2–4 enemies/room) nets roughly **90–130 Qi**
-total. Deliberately sized so a player can max **one** category or spread
-thin across two or three — not everything in one run. That scarcity is
-the actual design goal, not a balance accident.
+A typical 3-room + boss run nets roughly **55–85 Qi** total (with enemies scaling
+and additional reward potential across loops). Deliberately sized so a player
+can afford roughly two fully mastered reactions, or Restore + one weapon + stat
+upgrades, per run. That scarcity is the actual design goal, not a balance accident.
 
 #### 4.8.2 Categories
 
 Three categories now, not four — the old "Aftermath" (flat Khắc
 magnitude boost) is superseded by Khắc Specialization below, which does
-the same job with more build identity. **A** and **D→C (Vitality)** are
-unchanged from the earlier draft.
+the same job with more build identity. In P12, a paid **Restore** option was added
+for run sustain, available at the ShopStation.
 
 **A. Weapon Might** — repeatable. Each purchase adds 10% to the player's
-weapon damage multiplier. The first purchase costs 15 Qi and each later
-purchase costs 10 Qi more than the previous one.
+weapon damage multiplier. Cost formula: `20 + 12 * rank` (first purchase costs 20 Qi,
+second 32 Qi, third 44 Qi, etc.).
 
 **B. Reaction Mastery** — replaces "Charge Flow." Never touches Charge
 values at all (this is what resolves 4.8.4's original tension — see
@@ -510,37 +511,41 @@ that would normally be base-magnitude.
 | Sever | Kim+Mộc | Armor shred always 6.0, never base 3.0 |
 | Douse | Thủy+Hỏa | Cloud always Thừa radius/stun (65px / 0.5s), never base (45px / 0.3s) |
 
-**Reaction costs** (implemented P10a values):
+**Reaction costs** (tuned P12 values):
 
 | Rank | Cost | Cumulative for one fully-specialized reaction |
 |---|---|---|
-| Rank 1 (force Tier 2 / erase graze) | 20 Qi | 20 |
-| Rank 2 (branch / force overwhelm) | 45 Qi | 65 |
+| Rank 1 (force Tier 2 / erase graze) | 25 Qi | 25 |
+| Rank 2 (branch / force overwhelm) | 55 Qi | 80 |
 
-Against the ~90–130 Qi/run estimate (§4.8.1), that's roughly **two
-fully-mastered reactions per run**, or Rank-1-only breadth across four.
+Against the ~55–85 Qi/run estimate (§4.8.1), that's roughly **one to two
+fully-mastered reactions per run**, or Rank-1-only breadth across two to three.
 Matches the same scarcity goal Weapon Might/Vitality were built around.
 
-**A. Weapon Might** and **C. Vitality** are repeatable stat upgrades. Each
-purchase increases the player's Damage or maximum HP respectively, and the
-next purchase costs more based on that category's current rank. Their ranks
-are per-run state and reset with Qi; they never touch `SaveManager`.
+**C. Vitality** — repeatable stat upgrade. Each purchase adds +10 to the player's
+maximum health (and immediately heals +10 current HP when purchased in the HUD).
+Cost formula: `20 + 12 * rank` (first purchase: 20 Qi, second: 32 Qi, etc.).
 
-The current stat increments and price curves are the verified P10a values.
+**D. Restore** — repeatable sustain option purchased at the ShopStation.
+Heals 30% of max health (`RESTORE_HEAL_FRACTION = 0.3`). Cost formula:
+`20 + 10 * uses` (`RESTORE_BASE_COST = 20.0`, `RESTORE_COST_STEP = 10.0`).
+If the player is already at full health, purchasing Restore is blocked and charges
+nothing (the UI card shows `[Full HP]`). Uses escalate per-run and reset on run finish.
+
 The purchase contract is fixed:
 
 - a purchase is allowed only when the player has enough Qi;
-- the price is deducted immediately and the category rank increases by one;
-- the next price is computed from the increased rank, so repeated purchases
+- the price is deducted immediately and the category rank increases by one (or uses for Restore);
+- the next price is computed from the increased rank/uses, so repeated purchases
   cannot retain the initial price;
 - insufficient Qi leaves both the rank and Qi unchanged.
 
 Reaction specializations are different: each named reaction can be selected
 once at Rank 1 and once at Rank 2, after which it is fully specialized and
-cannot be purchased again. The reaction rank costs remain 20 Qi and 45 Qi;
-the repeatable HP and Damage curves are independent of those one-time
-reaction purchases. The room-clear upgrade menu exposes all available
-Weapon Might, Vitality, Sinh, and Khắc purchases as paged cards, including
+cannot be purchased again. The reaction rank costs are 25 Qi and 55 Qi;
+the repeatable HP and Damage curves and Restore uses are independent of those one-time
+reaction purchases. The shop upgrade menu exposes all available
+Weapon Might, Vitality, Restore, Sinh, and Khắc purchases as paged cards, including
 both favored-element choices for Sinh Rank 2. Remaining combat effect hooks
 are tracked in their respective §4.8 subsections.
 
@@ -862,26 +867,30 @@ implemented**, stays an explicit stretch goal.
 
 ## 6. World & Run Structure
 
-`RoomController` resolves `EnemySpawnPoint` children into real enemies on
-`_ready()`, polls the `"enemies"` group each frame, unlocks `RoomExit`
-once empty. `RunManager` (autoload) owns sequencing: each loop contains
-`ROOMS_PER_RUN = 3` random normal rooms (no immediate repeat) followed by
-`BOSS_ROOM_SCENE_PATH`, which is never part of the random pool. The first
-time tutorial room is outside this loop and is shown only until its save
-flag is completed.
+Normal procedural rooms have their exit door **open from the start**
+(`exit.locked = false`, Dead Cells style); the player is free to engage enemies
+for Qi or navigate directly toward the exit. The boss room (`room_boss.tscn`,
+using `RoomController`) remains locked until the boss is defeated.
 
-Defeating the boss completes the current loop and opens a short summary
-that asks whether the player wants to proceed. Proceeding starts another
-three-normal-room-plus-boss loop without returning to the tutorial. Each
-new loop increases the configured enemy and boss difficulty and unlocks
-one additional move for that loop's enemies and boss. The exact stat
-curves and move content are balance data, but the loop number is the
-authoritative difficulty/unlock input.
+`RunManager` (autoload) owns sequencing: each loop contains
+`ROOMS_PER_RUN = 3` random normal procedural rooms (no immediate repeat) followed by
+`BOSS_ROOM_SCENE_PATH`, which is never part of the random pool. The first-time
+tutorial room is outside this loop and is shown only until its save flag is completed.
+
+Defeating the boss completes the current loop and opens the run summary screen.
+Choosing "Continue" calls `RunManager.start_next_loop()`, starting another
+three-procedural-room-plus-boss loop (`loop += 1`):
+- **Loop persistence:** Upgrades, current Qi balance, held weapons, and equipped
+  runes (`pending_weapon_rune`, `pending_secondary_weapon_rune`) carry across loops.
+- **Loop scaling:** Enemy and boss difficulty scales across loops:
+  `scale = 1.0 + 0.25 * (loop - 1)` dynamically multiplies `max_health` and `damage`
+  in `EnemySpawnPoint.spawn()` on duplicated stats (never mutating shared `.tres` resources).
+- **Run loss:** On player death, upgrades and Qi reset, and the loop counter resets to 1.
 
 The full loadout screen is not part of ordinary loop transitions. It is
 opened only when a run weapon or skill pickup requires the player to
 choose its destination slot; ordinary room transitions preserve the
-current loadout. Autosaves after every room transition via `SaveManager`,
+current loadout. Autosaves occur after every room transition via `SaveManager`,
 deliberately **not** mid-room precise (enemies always respawn fresh — see
 `run_manager.gd`'s own header for the reasoning). The current procedural
 room's complete generated layout is saved with the snapshot so resuming
@@ -892,24 +901,22 @@ rebuilds the same map, including its per-cell chunk scene choices.
 
 One JSON file at `user://save_data.json`, three independent concerns:
 meta-progression (`unlocked_weapons`/`unlocked_skills`, by resource path,
-recorded in `Player.swap_weapon`/`swap_skill`), run history (capped at 50,
-oldest dropped), and a single mid-run snapshot (room sequence + index +
-elapsed time + `Player.to_save_state()` + the current procedural map
-structure). The map structure stores grid dimensions, occupied cell
-coordinates and door masks, start/finish cells, and the selected chunk
-scene resource path for each cell. A saved fallback chunk remains a
-fallback; unavailable saved chunk resources fall back safely with a
-warning. Legacy snapshots without `map_structure` remain loadable and
-generate a fresh layout. Enemy health/status and other mid-room combat
-state are still deliberately not saved; enemies respawn fresh in the same
-map. Test isolation via
-`test/helpers/save_test_isolation.gd` — **always use this in any new test
-that touches `SaveManager`**, never the real save path.
+recorded in `Player.swap_weapon`/`swap_skill`, plus `tutorial_completed`),
+run history (capped at 50, oldest dropped), and a single mid-run snapshot
+(room sequence + index + elapsed time + `Player.to_save_state()` + the current
+procedural map structure + `loop` + `UpgradeManager.to_save_state()`). The map
+structure stores grid dimensions, occupied cell coordinates and door masks,
+start/finish cells, `shop_cell`, and the selected chunk scene resource path for
+each cell. A saved fallback chunk remains a fallback; unavailable saved chunk
+resources fall back safely with a warning. Legacy snapshots without `map_structure`
+or `shop_cell` remain loadable and generate a fresh layout. Enemy health/status and
+other mid-room combat state are still deliberately not saved; enemies respawn fresh
+in the same map. Test isolation via `test/helpers/save_test_isolation.gd` —
+**always use this in any new test that touches `SaveManager`**, never the real save path.
 
-Qi and purchased upgrade tiers are **never** written to `SaveManager` —
-per-run only, reset by `RunManager` the same as `_elapsed_sec`. If this
-ever changes to a meta-currency, it needs its own explicit design
-decision (see §4.8's per-run-only rationale) before touching this file.	
+Qi, purchased upgrade tiers, and loop count are tracked in the mid-run snapshot
+for resuming active runs, but are **never** written to persistent meta-progression;
+they are per-run only and are completely cleared on run loss or completion.
 
 Equipped runes are saved as `RuneData.to_dict()` inside
 `Player.to_save_state()` (`weapon_rune`, `secondary_weapon_rune`; `skill_1_rune`
@@ -1039,6 +1046,21 @@ native pixel size on the download page before committing it).
 
 `pickup` (F), `menu_up/down`, `equip_slot_1/2` and `menu_cancel` keep their
 current bindings. No joypad events (decided: keyboard only).
+
+### 8.4 Shop & Upgrade Menu HUD
+
+The upgrade menu is accessed directly within the world at the `ShopStation` in the
+shop chunk, replacing the older room-cleared Tab prompt:
+- **Proximity trigger:** When the player is within range of a `ShopStation`, an interaction
+  prompt (`"F Shop"`) is displayed. Pressing `pickup` (F) opens the upgrade menu.
+- **Input priority:** If the player is simultaneously within range of a ground pickup
+  (weapon, skill, or rune) and a `ShopStation`, the pickup takes priority for the `F` key.
+- **Card layout:** The shop menu displays up to 4 cards per page: Weapon Might,
+  Vitality, Restore, Sinh Rank 1/2 (including favored element choice), and Khắc Rank 1/2.
+- **Navigation:** Arrow keys / W/S or mouse hover select cards; pressing `pickup` (F)
+  or clicking confirms a purchase; `menu_cancel` (Esc) closes the menu.
+- **Continuous shopping:** Multiple purchases can be made in a single shop visit without
+  closing the menu; prices recalculate immediately upon purchase.
 ---
 
 ## 9. Visuals
@@ -1090,13 +1112,22 @@ already framed as "spec said X, build does Y, here's why."*
 - ~~Armor has no mitigation effect~~ **Resolved (§3.1)** — diminishing-
   returns formula added, `get_armor_bonus()` (Vitality Rank 2) and
   `armor_buff` (Rusted Chunk, §4.8.5) are both mechanically live now.
-  Outstanding: the four `_apply_damage()` call sites + two test files
-  above still need the actual edit — not done as part of this doc pass.
-  - **Same-element Charge overwrite** (§4.2) — accepted, revisit after the P5 playtest with Charge 3 reachable.
+- ~~Boss stats missing armor/charge wiring~~ **Resolved (P12 T1.1)** —
+  `BossStats` exports `armor` and `innate_charge`, wired into `ElementalCombatant`
+  in `Boss._ready()`.
+- ~~Vitality purchase does not heal current HP~~ **Resolved (P12 T1.2)** —
+  `Hud._confirm_upgrade_selection()` now increases `player.current_health` alongside `max_health`.
+- ~~Resume order drops Vitality bonus~~ **Resolved (P12 T1.4)** —
+  `RunManager._resume_from_save()` applies upgrade state before restoring player state.
+- ~~Stray file `training_staff (1).tres`~~ **Resolved (P12 T1.5)** — removed.
+- ~~Procedural room gating forced combat~~ **Resolved (P12 Phase 3)** —
+  normal procedural room exits are open from the start (`exit.locked = false`).
+- ~~Refresh Shop fee~~ **Resolved (P12 T1.3)** — removed; shop stations allow continuous multi-purchases.
+- **Same-element Charge overwrite** (§4.2) — accepted, revisit after the P5 playtest with Charge 3 reachable.
 - **Rune modifier catalogue is empty** — runes roll with zero modifiers until `RuneModifierDef` assets exist; the UI shows "no modifiers".
 - `_next_swing_uses_innate` (§10) can now move off the shared Resource onto the Player slot cheaply, since runes no longer duplicate weapons. Optional fix.
-- **Stray files (P0):** `scripts/resources/enemies/enemy_stats.gd` is a 3-line fragment with no class header (real class is `scenes/enemies/enemy_stats.gd`). `scripts/resources/weapons/training_staff.tres` uses inline `ComboStepData(...)` syntax that likely fails to parse, while `training_staff (1).tres` looks editor-saved. §15.1's loadout pool lists `training_staff.tres`. Verify in the editor.
-
+- **Stray files (P0):** `scripts/resources/enemies/enemy_stats.gd` is a 3-line fragment with no class header (real class is `scenes/enemies/enemy_stats.gd`).
+- `runed_greatsword.tres` has invalid combo step data (`combo_steps = null`) and must remain excluded from shop stock until rebuilt.
 ---
 
 ## 12. Conventions for new code
@@ -1780,31 +1811,44 @@ finishing/abandoning back to it).
 
 ## 19. Room Chunk Authoring & Generation
 
-Normal rooms are assembled dynamically by MapGenerator, overriding the old static room models. procedural_room.tscn is the only active normal room scene; it acts as a shell that delegates its layout construction to MapGenerator before spawning enemies and placing the player.
+Normal rooms are assembled dynamically by MapGenerator, overriding the old static room models. `procedural_room.tscn` is the only active normal room scene; it acts as a shell that delegates its layout construction to MapGenerator before spawning enemies and placing the player.
 
 ### 19.1 Map Generator Algorithm
 The room-building algorithm operates on a fixed 4x3 grid of "chunks".
-- **Pathing:** It carves a critical path from a random start cell to a random end cell using a recursive backtracker, plus a 50% chance to carve a single short dead-end branch. This ensures a highly linear, focused traversal without overwhelming labyrinths.
+- **Pathing:** It carves a critical path from a random start cell to a random end cell using a recursive backtracker.
+- **Guaranteed Dead-End Shop Branch:** Evaluates valid neighbor cells adjacent to the path (strictly excluding `start_cell` and `finish_cell` to preserve authored entry/exit chunks).
+  - Scoring prefers horizontal connections (+2) to ensure a flat, walkable shop floor, and adds +1 if the parent cell retains an authored chunk layout from the pool.
+  - Carves exactly one step: `grid[parent] |= dir`, `grid[shop] = opposite(dir)`, `shop_cell = shop`.
+  - Sets `chunk_paths[shop_cell] = ""` so `build_map()` skips the chunk pool and uses an empty procedural fallback chunk, guaranteeing no enemy spawn points exist in the shop.
+  - Up to 8 attempts are made (horizontal only); if none succeed, the final attempt permits vertical placement (with a one-way platform placed over any drop hole).
 - **Bitmasking:** Each cell computes a door_mask based on its neighbors (UP=1, RIGHT=2, DOWN=4, LEFT=8).
-- **Chunk Instantiation:** The algorithm searches scenes/world/chunks/ for a pre-built chunk matching the exact door mask. If found, it instantiates it. 
-- **Procedural Fallback:** If no chunk template matches the mask, MapGenerator dynamically builds a fallback chunk from scratch using a TileMapLayer. 
+- **Chunk Instantiation:** The algorithm searches `scenes/world/chunks/` for a pre-built chunk matching the exact door mask. If found, it instantiates it. 
+- **Procedural Fallback:** If no chunk template matches the mask (or for `shop_cell`), MapGenerator dynamically builds a fallback chunk from scratch using a TileMapLayer. The shop chunk is added to the `"shop_chunk"` node group.
 
 ### 19.2 Chunk Architecture
 - **Dimensions:** Every chunk is strictly 416x320 pixels (26x20 tiles, at 16x16px per tile). Wall thickness is 2 tiles. Side doors span y=13 to y=18. Top/bottom doors span x=10 to x=16.
-- **Composition:** Hand-authored chunks are defined programmatically via scripts/editor_tools/build_chunks.gd. This macro spits out templates like chunk_climb.tscn and chunk_drop.tscn, pre-populated with EnemySpawnPoint markers.
+- **Composition:** Hand-authored chunks are defined programmatically via `scripts/editor_tools/build_chunks.gd`. This macro outputs templates like `chunk_climb.tscn` and `chunk_drop.tscn`, pre-populated with `EnemySpawnPoint` markers.
 - **Vertical Navigation:** 
-  - To respect the player's 31.5px jump apex (Gravity 700, Jump Velocity -210), all vertical traversal utilizes OneWayPlatform nodes (instead of solid tiles). 
+  - To respect the player's 31.5px jump apex (Gravity 700, Jump Velocity -210), all vertical traversal utilizes `OneWayPlatform` nodes (instead of solid tiles). 
   - Platforms are spaced at exactly 1.5 tiles (24 pixels) vertically, guaranteeing the player can single-jump between them.
-  - Platforms sit on Physics Layer 3 (ONE_WAY_PLATFORM_LAYER), which both the Player and Enemies (via collision_mask = 5) collide with. The Player drops through them seamlessly via the drop_down action ('S' key).
+  - Platforms sit on Physics Layer 3 (`ONE_WAY_PLATFORM_LAYER`), which both the Player and Enemies (via collision_mask = 5) collide with. The Player drops through them seamlessly via the drop_down action ('S' key).
 
 ### 19.3 Room Controller Integration
-ProceduralRoomController extends the original RoomController. When added to the tree:
-1. It runs MapGenerator.generate().
-2. It dynamically pins PlayerSpawn and RoomExit to the floor level (y = CHUNK_HEIGHT - 32 - 15) of the Start and End chunks respectively.
-3. It recursively harvests all EnemySpawnPoint markers baked inside the chunks.
-4. It initializes the standard room lifecycle, ensuring kill-tracking and loot drops work identically to the old static rooms.
+`ProceduralRoomController` extends the original `RoomController`. When added to the tree:
+1. It runs `MapGenerator.generate()`.
+2. Sets `exit.locked = false` so normal procedural room exits are open from the start.
+3. Dynamically pins `PlayerSpawn` and `RoomExit` to the floor level (y = CHUNK_HEIGHT - 32 - 15) of the Start and End chunks respectively.
+4. Recursively harvests all `EnemySpawnPoint` markers baked inside the chunks.
+5. Populates the shop chunk via `_populate_shop()`.
 
-### 19.4 The Old Rooms
+### 19.4 Shop Contents & Mechanics
+When `_populate_shop()` locates the node in group `"shop_chunk"`, it instantiates the shop fixture at floor level (`floor_y = CHUNK_H - 32 - 15`):
+- **ShopStation (Center, x = 208):** Proximity interaction displaying `"F Shop"`. Opens the upgrade card menu (Weapon Might, Vitality, Restore, Sinh/Khắc mastery). Refresh Shop has been permanently removed; multiple purchases are allowed in a single visit without exit fees.
+- **Free Baseline Rune (x = 160):** A `RunePickup` rolling a random element weapon rune via `RuneRoller.default().roll(...)`.
+- **Weapon Rack Stalls (x = 100, x = 316):** Two `ShopWeaponPickup` stalls spaced away from the station.
+  - Stock pool draws from starting weapons plus unlocked weapon paths, excluding held weapons and broken fixtures (`runed_greatsword.tres`).
+  - Priced by weight tier: Light (35 Qi), Medium (45 Qi), Heavy (55 Qi).
+  - Interacting with F checks funds and duplicates (`player.would_duplicate_weapon`) before opening the slot overlay and deducting Qi.
 
-oom_a.tscn through 
-oom_e.tscn have been formally retired from RunManager's active pool. They remain in the codebase strictly as historical test fixtures or references for spacing.
+### 19.5 The Old Rooms
+`room_a.tscn` through `room_e.tscn` have been formally retired from `RunManager`'s active pool. They remain in the codebase strictly as historical test fixtures or references for spacing.

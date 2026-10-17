@@ -1,6 +1,6 @@
 # Elemental Roguelike Plan
 
-This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The verified implementation boundary is P10b complete; final project closeout now sits in P11.
+This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). The verified implementation boundary is P12 complete; next milestone is P13 (Perfect Hit and weapon window expansion).
 
 ## Current status
 
@@ -20,34 +20,25 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - [x] P10a — Qi economy and upgrade-manager foundations
 - [x] P10b — Room-cleared upgrade menu, input flow, and HUD purchase path
 - [x] P11 — Final verification and documentation closeout
+- [x] P12 — Run optimization and economy tuning (Phases 1–9 complete)
+- [ ] P13 — Perfect Hit and weapon window expansion
+- [ ] P14 — Skill system expansion
 
-## P10a design contract
+## P12 run optimization summary
 
-- `UpgradeManager` is a script-only autoload and owns per-run Qi/rank state.
-- Reaction specializations are one-time Rank 1/Rank 2 purchases.
-- Weapon Might and Vitality are repeatable purchases with category-local escalating prices.
-- Qi and upgrade ranks remain out of `SaveManager` and persistent save data.
-- The remaining P10b work is the normal room-cleared UI and the effect hookups, not a second pass on P10a itself.
-
-## P10b active scope
-
-- [x] Resolve D3 and D4: the active room-cleared upgrade flow uses the Tab-based HUD menu, and upgrades remain scoped to the player-owned run state.
-- [x] Implement the normal room-cleared upgrade screen and input gating.
-- [x] Connect the verified purchase APIs to the HUD purchase path.
-- [x] Add focused tests for the room-cleared menu flow and purchase behavior.
+- Normal procedural room exits are open from the start (`exit.locked = false`). Boss room remains locked until victory.
+- Guaranteed dead-end shop branch with no enemy spawns (`shop_cell`).
+- Shop contains `ShopStation` (F interaction opens card menu), 30% max HP Restore option (`20 + 10 * uses`, free at full HP), free baseline weapon rune, and two priced weapon stalls (Light: 35, Medium: 45, Heavy: 55 Qi). Refresh Shop fee removed.
+- Loop persistence and scaling: `RunManager` tracks loops (`loop`); victory carries Qi, upgrades, weapons, and runes; enemy HP and damage scale by `1.0 + 0.25 * (loop - 1)` via `EnemySpawnPoint.spawn()`; death resets to loop 1.
+- Tuned Qi economy: Normal brawler 5 Qi, Elemental spirit 8 Qi, Flying/Shooter/Swooper 3 Qi, Boss 30 Qi; Might/Vitality cost `20 + 12 * rank`; Sinh/Khắc Rank 1: 25 Qi, Rank 2: 55 Qi.
+- Instrumentation: `[RUNLOG]` delta metrics per completed room in debug builds.
 
 ## Verification and blockers
 
-- Full-suite verification: 234/234 tests passed, 0 failures, with the project’s existing non-blocking Godot headless warnings.
-- Static diagnostics: no errors found in the workspace.
-- Blockers: none in the current verified scope; the implemented contract remains aligned with [Design.md](Design.md).
-
-## Procedural map save contract
-
-- The in-progress snapshot contains the current procedural grid, door masks, start/finish cells, and chosen chunk scene paths.
-- Resume restores the structure before room entry so the room topology is not rerolled.
-- Enemy state remains intentionally fresh on resume; legacy snapshots without `map_structure` still load properly.
+- Full-suite verification: 257/257 tests passed, 1,658 assertions, 0 failures, with 2 expected headless warnings.
+- Static diagnostics: clean across all workspace files.
+- Blockers: none; all changes verified against [Design.md](Design.md).
 
 ## Exact next item
 
-P11 closeout is complete: there was no design drift requiring a change to [Design.md](Design.md), and the repo state matches the latest verified implementation.
+P12 closeout is complete. Next milestone is P13: Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md).
