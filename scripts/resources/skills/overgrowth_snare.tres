@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Overgrowth Snare"
+description = "Create a wooden snare zone that applies wood to enemies inside it."
 element = &"moc"
 function = 4
 cooldown = 14.0

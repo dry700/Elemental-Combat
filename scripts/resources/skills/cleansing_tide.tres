@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Cleansing Tide"
+description = "Clear your elemental status, then apply water to yourself."
 element = &"thuy"
 function = 1
 cooldown = 22.0

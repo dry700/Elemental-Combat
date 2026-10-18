@@ -11,11 +11,25 @@ extends Area2D
 ## the two pickup types read apart at a glance in the world.
 
 enum Slot { PRIMARY, SECONDARY }
+const SkillPoolScript := preload("res://scripts/resources/skills/skill_pool.gd")
+
+static func spawn_drop(parent: Node, position: Vector2, element: StringName, chance: float = 1.0) -> SkillPickup:
+	if parent == null or randf() > chance:
+		return null
+	var rolled_skill := SkillPoolScript.roll([], element)
+	if rolled_skill == null:
+		return null
+	var pickup := SkillPickup.new()
+	pickup.skill = rolled_skill
+	pickup.global_position = position
+	parent.add_child.call_deferred(pickup)
+	return pickup
 
 @export var skill: SkillData
 @export var slot: Slot = Slot.PRIMARY
 
 const RADIUS: float = 5.0
+const ICON_SIZE: float = 16.0
 const PRIMARY_COLOR := Color(0.45, 0.8, 0.75)
 const SECONDARY_COLOR := Color(0.75, 0.45, 0.8)
 const PROMPT_COLOR := Color(1.0, 1.0, 1.0, 0.9)
@@ -63,12 +77,15 @@ func _default_target_is_primary(player: Player) -> bool:
 	return slot == Slot.PRIMARY
 
 
-func _do_pickup(player: Player, is_primary: bool) -> void:
+func _do_pickup(player: Player, is_primary: bool) -> bool:
+	if player == null or skill == null or player.would_duplicate_skill(is_primary, skill):
+		return false
 	_picked_up = true
 	var previous := player.swap_skill(is_primary, skill)
 	if previous != null:
 		_spawn_dropped(previous, is_primary)
 	queue_free()
+	return true
 
 
 func _spawn_dropped(old_skill: SkillData, from_slot_primary: bool) -> void:
@@ -84,9 +101,15 @@ func _spawn_dropped(old_skill: SkillData, from_slot_primary: bool) -> void:
 
 func _draw() -> void:
 	var color := PRIMARY_COLOR if slot == Slot.PRIMARY else SECONDARY_COLOR
-	draw_circle(Vector2.ZERO, RADIUS, color)
-	draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 24, Color.BLACK, 1.5)
-	var label := "Q" if slot == Slot.PRIMARY else "E"
-	draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
+	if skill != null and skill.icon != null:
+		draw_texture_rect(skill.icon, Rect2(Vector2(-ICON_SIZE * 0.5, -ICON_SIZE * 0.5), Vector2.ONE * ICON_SIZE), false)
+	else:
+		draw_circle(Vector2.ZERO, RADIUS, color)
+		draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 24, Color.BLACK, 1.5)
+		var label := "Q" if slot == Slot.PRIMARY else "E"
+		draw_string(ThemeDB.fallback_font, Vector2(-4, 5), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.BLACK)
 	if _player_in_range != null:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -RADIUS - 6), "F Pick up", HORIZONTAL_ALIGNMENT_CENTER, 60, 12, PROMPT_COLOR)
+		draw_string(ThemeDB.fallback_font, Vector2(-40, -RADIUS - 6), _prompt_text(), HORIZONTAL_ALIGNMENT_CENTER, 80, 12, PROMPT_COLOR)
+
+func _prompt_text() -> String:
+	return "F Pick up"

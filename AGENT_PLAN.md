@@ -130,10 +130,10 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Verification: 269/269 GUT tests passed, 1,760 assertions, 0 failures; two expected headless warnings.
 
 ### P14 — Skill system expansion
-- [ ] Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md) after the run optimization work is stable.
-- [ ] Add the expanded `SkillData` schema, duplicate guards, cooldown readout, and `SkillPool` loader.
-- [ ] Add the new cast behaviors, HUD slot rendering, and skill roster in phase order.
-- [ ] Verify all new skill behaviors and compatibility checks with the full GUT suite.
+- [x] Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md) after the run optimization work is stable.
+- [x] Add the expanded `SkillData` schema, duplicate guards, cooldown readout, and `SkillPool` loader.
+- [x] Add the new cast behaviors, HUD slot rendering, and skill roster in phase order.
+- [x] Verify all new skill behaviors and compatibility checks with the full GUT suite: 287/287 passed, 1,841 assertions, 0 failures.
 
 ## Active decision log
 
@@ -160,7 +160,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P12 is fully verified and documented. No blockers remaining.
 - P12 verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
 - P13 verification: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected warnings.
+- P14 verification: 287/287 tests passed, 1,841 assertions, 0 failures, 2 expected warnings; headless shutdown emits resource leak diagnostics. Manual gameplay checkpoint remains pending.
 
 ## Immediate next action
 
-- Move to P14: Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md).
+- P14 follow-up: playtest each skill, shop stall spacing, and boss/spirit drops in game.

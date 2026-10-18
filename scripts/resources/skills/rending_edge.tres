@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Rending Edge"
+description = "Remove the elemental status from a nearby enemy."
 element = &"kim"
 function = 3
 cooldown = 16.0

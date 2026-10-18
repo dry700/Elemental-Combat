@@ -100,6 +100,8 @@ var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
 var _air_jumps_used: int = 0
 var _dodge_timer: float = 0.0
+var _active_dodge_duration: float = 0.0
+var _active_dodge_iframe_window: Vector2 = Vector2.ZERO
 var _dodge_cooldown_timer: float = 0.0
 var _last_dodge_end_time: float = -999.0
 var _attack_timer: float = 0.0
@@ -463,12 +465,14 @@ func _try_start_dodge() -> void:
 		state = State.DODGE
 		_dodge_timer = 0.0
 		_dodge_cooldown_timer = dodge_cooldown
+		_active_dodge_duration = dodge_duration
+		_active_dodge_iframe_window = dodge_iframe_window
 		velocity = Vector2(facing * dodge_speed, 0.0)
 
 
 func _process_dodge(delta: float) -> void:
 	_dodge_timer += delta
-	var in_iframe_window := _dodge_timer >= dodge_iframe_window.x and _dodge_timer <= dodge_iframe_window.y
+	var in_iframe_window := _dodge_timer >= _active_dodge_iframe_window.x and _dodge_timer <= _active_dodge_iframe_window.y
 	var was_in_iframe := hurtbox.invulnerable
 	hurtbox.invulnerable = in_iframe_window
 
@@ -481,7 +485,7 @@ func _process_dodge(delta: float) -> void:
 			if is_instance_valid(enemy) and enemy is CollisionObject2D:
 				remove_collision_exception_with(enemy)
 
-	if _dodge_timer >= dodge_duration:
+	if _dodge_timer >= _active_dodge_duration:
 		_last_dodge_end_time = Time.get_ticks_msec() / 1000.0
 		state = State.IDLE if is_on_floor() else State.FALL
 
@@ -762,29 +766,23 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 		SkillData.Function.REMOVE_APPLY_SELF:
 			elemental.cast_cleanse_and_apply_self(skill.element, charge)
 		SkillData.Function.APPLY_SINGLE_TARGET:
-			# No longer an instant hitscan resolution — fires a real
-			# traveling SkillProjectile instead (see ElementalCombatant.
-			# cast_apply_projectile). _find_skill_target(cast_range) is
-			# only used to pick a DIRECTION to aim at now, not to
-			# resolve the hit immediately — same "no aim/targeting
-			# system exists elsewhere" reasoning SkillData.cast_range's
-			# own doc comment already gives. Falls back to facing
-			# direction with nothing in range, so the dart can now miss
-			# a target that moves out of its path, same as it always
-			# could with Ore Surge's fragments.
-			var aim_target := _find_skill_target(skill.cast_range)
-			var aim_direction := Vector2(facing, 0)
-			if aim_target != null:
-				var to_target := aim_target.global_position - global_position
-				if not to_target.is_zero_approx():
-					aim_direction = to_target.normalized()
-			elemental.cast_apply_projectile(skill.element, charge, aim_direction)
+			_cast_single_target_skill(skill, charge)
 		SkillData.Function.REMOVE_ENEMY:
-			var enemy_target := _find_skill_target(skill.cast_range)
-			if enemy_target != null:
-				elemental.cast_remove_enemy(enemy_target)
+			_cast_remove_enemy_skill(skill)
 		SkillData.Function.APPLY_AREA:
 			elemental.cast_apply_area(skill.element, skill.zone_radius, skill.zone_lifetime)
+		SkillData.Function.AREA_BURST:
+			elemental.cast_area_burst(skill.element, skill.radius, skill.damage, skill.control_duration, skill.slow_multiplier, skill.slow_duration, charge)
+		SkillData.Function.PROJECTILE_FAN:
+			var fan_direction := Vector2(facing, 0)
+			var fan_target := _find_skill_target(skill.cast_range)
+			if fan_target != null:
+				fan_direction = (fan_target.global_position - global_position).normalized()
+			elemental.cast_projectile_fan(skill.element, charge, fan_direction, skill.projectile_count, skill.spread_deg, skill.damage, skill.projectile_speed, skill.projectile_lifetime, skill.pierce, skill.shred_amount)
+		SkillData.Function.DASH:
+			_start_skill_dash(skill)
+		SkillData.Function.BUFF_ARMOR:
+			elemental.cast_buff_armor(skill.armor_bonus, skill.buff_duration)
 
 	_skill_cooldowns[skill] = skill.cooldown
 	print("Cast ", skill.skill_name)
@@ -804,6 +802,30 @@ func _resolve_skill_charge(skill: SkillData) -> int:
 		if effective2 != &"none" and effective2 == secondary_weapon.innate_element and secondary_weapon.innate_element == skill.element:
 			return 3
 	return 2
+
+func _cast_single_target_skill(skill: SkillData, charge: int) -> void:
+	var aim_target := _find_skill_target(skill.cast_range)
+	var aim_direction := Vector2(facing, 0)
+	if aim_target != null:
+		var to_target := aim_target.global_position - global_position
+		if not to_target.is_zero_approx():
+			aim_direction = to_target.normalized()
+	elemental.cast_apply_projectile(skill.element, charge, aim_direction)
+
+func _cast_remove_enemy_skill(skill: SkillData) -> void:
+	var target := _find_skill_target(skill.cast_range)
+	if target != null:
+		elemental.cast_remove_enemy(target)
+
+func _start_skill_dash(skill: SkillData) -> void:
+	if skill.clear_slow:
+		elemental.slow_effect.clear()
+	var dash_duration := maxf(skill.dash_iframes, 0.2)
+	state = State.DODGE
+	_dodge_timer = 0.0
+	_active_dodge_duration = dash_duration
+	_active_dodge_iframe_window = Vector2(0.0, skill.dash_iframes)
+	velocity = Vector2(facing * skill.dash_distance / dash_duration, 0.0)
 
 
 ## No aim/targeting system exists anywhere else in this project (same
@@ -887,6 +909,17 @@ func swap_skill(is_primary: bool, new_skill: SkillData) -> SkillData:
 		SaveManager.record_skill_unlock(new_skill.resource_path)  ## Meta-progression (Section 6.2) — found once, unlocked forever.
 	skill_changed.emit(is_primary, new_skill)
 	return previous
+
+func would_duplicate_skill(is_primary: bool, candidate: SkillData) -> bool:
+	if candidate == null or candidate.resource_path.is_empty():
+		return false
+	var other := skill_2 if is_primary else skill_1
+	return other != null and other.resource_path == candidate.resource_path
+
+func get_skill_cooldown_ratio(skill: SkillData) -> float:
+	if skill == null or skill.cooldown <= 0.0:
+		return 0.0
+	return clampf(float(_skill_cooldowns.get(skill, 0.0)) / skill.cooldown, 0.0, 1.0)
 
 func _update_facing() -> void:
 	if state in [State.DODGE, State.ATTACK]:

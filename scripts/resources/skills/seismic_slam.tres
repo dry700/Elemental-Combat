@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Seismic Slam"
+description = "Strike the ground to damage and stagger nearby enemies with earth."
+element = &"tho"
+function = 5
+cooldown = 14.0
+damage = 16.0
+radius = 40.0
+control_duration = 0.5

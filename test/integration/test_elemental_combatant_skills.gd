@@ -50,3 +50,53 @@ func test_rending_edge_strips_status_bypassing_charge_entirely():
 func test_overgrowth_snare_does_not_error_without_a_current_scene():
 	caster.cast_apply_area(Elements.MOC, 120.0, 8.0)
 	assert_true(true, "cast_apply_area should not throw when current_scene is unset")
+
+func test_area_burst_hits_only_nearby_targets_and_excludes_caster():
+	var nearby := ElementalCombatant.new()
+	nearby.show_debug_readout = false
+	add_child_autofree(nearby)
+	var distant := ElementalCombatant.new()
+	distant.show_debug_readout = false
+	distant.position = Vector2(200, 0)
+	add_child_autofree(distant)
+	var caster_damage := [0]
+	var nearby_damage := [0]
+	var distant_damage := [0]
+	caster.bonus_damage_dealt.connect(func(_amount): caster_damage[0] += 1)
+	nearby.bonus_damage_dealt.connect(func(_amount): nearby_damage[0] += 1)
+	distant.bonus_damage_dealt.connect(func(_amount): distant_damage[0] += 1)
+	caster.cast_area_burst(Elements.NONE, 50.0, 10.0)
+	assert_eq(caster_damage[0], 0)
+	assert_eq(nearby_damage[0], 1)
+	assert_eq(distant_damage[0], 0)
+
+func test_area_burst_control_uses_cc_resistance():
+	target.cc_resistance.configure(0, 8.0)
+	caster.cast_area_burst(Elements.NONE, 50.0, 0.0, 1.0)
+	assert_true(target.disable_effect.active)
+	assert_almost_eq(target.disable_effect.get_remaining_duration(), 0.5, 0.1)
+
+func test_fan_cast_is_safe_without_current_scene():
+	caster.cast_projectile_fan(Elements.MOC, 2, Vector2.RIGHT, 5, 40.0, 5.0, 220.0, 0.5, false, 0.0)
+	assert_true(true)
+
+func test_fan_spawns_count_with_even_spread_angles_when_scene_exists():
+	var scene_root := Node2D.new()
+	get_tree().root.add_child(scene_root)
+	var previous_scene: Node = get_tree().current_scene
+	get_tree().current_scene = scene_root
+	caster.cast_projectile_fan(Elements.MOC, 2, Vector2.RIGHT, 3, 30.0, 5.0, 220.0, 0.5, false, 0.0)
+	var shots: Array[Node] = scene_root.get_children()
+	assert_eq(shots.size(), 3)
+	assert_almost_eq(rad_to_deg(shots[0].direction.angle()), -15.0, 0.01)
+	assert_almost_eq(rad_to_deg(shots[1].direction.angle()), 0.0, 0.01)
+	assert_almost_eq(rad_to_deg(shots[2].direction.angle()), 15.0, 0.01)
+	get_tree().current_scene = previous_scene
+	get_tree().root.remove_child(scene_root)
+	scene_root.free()
+
+func test_armor_buff_refreshes_without_stacking():
+	caster.cast_buff_armor(15.0, 6.0)
+	caster.cast_buff_armor(25.0, 4.0)
+	assert_eq(caster.armor_buff.bonus_armor, 25.0)
+	assert_almost_eq(caster.armor_buff.get_remaining_duration(), 4.0, 0.01)

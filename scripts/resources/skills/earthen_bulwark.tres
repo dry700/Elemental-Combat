@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Earthen Bulwark"
+description = "Raise an earthen guard, gaining 25 armor for five seconds."
+element = &"tho"
+function = 8
+cooldown = 18.0
+armor_bonus = 25.0
+buff_duration = 5.0

@@ -26,6 +26,7 @@ const DART_COLOR: Color = Color(0.95, 0.35, 0.25)  ## Hỏa's tint (ElementIndic
 const GLYPH_HALF_SIZE: float = 5.0
 
 var _spent: bool = false  ## Guards against resolving a second hit once this dart has already connected.
+var damage: float = 0.0
 
 
 func _init() -> void:
@@ -47,6 +48,8 @@ func _resolve_hit(hurtbox: Hurtbox) -> void:
 	hit_data.element = element
 	hit_data.charge = charge
 	combatant.handle_hit(hit_data, true)  ## ICD bypassed — same as cast_apply_enemy.
+	if damage > 0.0:
+		combatant.bonus_damage_dealt.emit(damage)
 	queue_free()
 
 

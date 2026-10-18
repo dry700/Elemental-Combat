@@ -86,3 +86,12 @@ func test_a_spent_dart_does_not_resolve_a_second_hit():
 func test_cast_apply_projectile_does_not_error_without_a_current_scene():
 	caster.cast_apply_projectile(Elements.HOA, 1, Vector2.RIGHT)
 	assert_true(true, "cast_apply_projectile should not throw when current_scene is unset")
+
+func test_optional_skill_damage_emits_on_hit_target():
+	var t := _make_target_owner()
+	var received := []
+	t["elemental"].bonus_damage_dealt.connect(func(amount): received.append(amount))
+	var dart := _make_dart(Elements.HOA, 1, null)
+	dart.damage = 12.0
+	dart._on_area_entered(t["hurtbox"])
+	assert_eq(received, [12.0])

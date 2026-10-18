@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Ignite Dart"
+description = "Fire a traveling bolt that applies fire and resolves elemental reactions on impact."
 element = &"hoa"
 function = 2
 cooldown = 8.0

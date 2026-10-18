@@ -135,6 +135,7 @@ func _die() -> void:
 			rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(enemy_stats.element), RuneData.Target.WEAPON))
 			rune.global_position = global_position
 			get_parent().add_child.call_deferred(rune)
+			SkillPickup.spawn_drop(get_parent(), global_position, enemy_stats.element, 0.08)
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
 

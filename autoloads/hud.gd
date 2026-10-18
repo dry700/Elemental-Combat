@@ -37,6 +37,7 @@ extends CanvasLayer
 ## override size ÷ viewport size in project.godot) ever changes.
 const UI_SCALE: float = 0.5
 const SHOP_WEAPON_PICKUP_SCRIPT := preload("res://scripts/items/shop_weapon_pickup.gd")
+const SHOP_SKILL_PICKUP_SCRIPT := preload("res://scripts/items/shop_skill_pickup.gd")
 
 const SLOT_SIZE: float = 40.0 * UI_SCALE
 const SLOT_SEPARATION: float = 8.0 * UI_SCALE
@@ -201,9 +202,9 @@ func _build_slots(root: Control) -> void:
 	_weapon_1_box = w1[0]; _weapon_1_label = w1[1]; _weapon_1_prompt = w1[2]
 	var w2 := _make_slot(container, "2")
 	_weapon_2_box = w2[0]; _weapon_2_label = w2[1]; _weapon_2_prompt = w2[2]
-	var s1 := _make_slot(container, "1")
+	var s1 := _make_slot(container, "Q")
 	_skill_1_box = s1[0]; _skill_1_label = s1[1]; _skill_1_prompt = s1[2]
-	var s2 := _make_slot(container, "2")
+	var s2 := _make_slot(container, "E")
 	_skill_2_box = s2[0]; _skill_2_label = s2[1]; _skill_2_prompt = s2[2]
 
 
@@ -524,12 +525,55 @@ func _fill_weapon_slot(box: Control, label: Label, weapon: WeaponStats) -> void:
 
 
 func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
+	if label.get_parent() != box:
+		label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		box.add_child(label)
+	var tex_rect: TextureRect = box.find_child("SkillIcon", false, false) as TextureRect
+	if tex_rect == null:
+		tex_rect = TextureRect.new()
+		tex_rect.name = "SkillIcon"
+		tex_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(tex_rect)
+	var cooldown_overlay := box.find_child("SkillCooldownOverlay", false, false) as ColorRect
+	if cooldown_overlay == null:
+		cooldown_overlay = ColorRect.new()
+		cooldown_overlay.name = "SkillCooldownOverlay"
+		cooldown_overlay.color = Color(0.02, 0.02, 0.03, 0.72)
+		cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cooldown_overlay.anchor_right = 1.0
+		box.add_child(cooldown_overlay)
+	var key_label := box.find_child("SkillKeyLabel", false, false) as Label
+	if key_label == null:
+		key_label = Label.new()
+		key_label.name = "SkillKeyLabel"
+		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		key_label.position = Vector2(2, 0)
+		key_label.size = Vector2(SLOT_SIZE - 4, 14 * UI_SCALE)
+		key_label.add_theme_font_size_override("font_size", int(10 * UI_SCALE))
+		key_label.add_theme_color_override("font_color", PROMPT_TEXT_COLOR)
+		key_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		key_label.add_theme_constant_override("outline_size", 2)
+		box.add_child(key_label)
+	var is_primary := box == _skill_1_box
+	key_label.text = "Q" if is_primary else "E"
 	if skill == null:
 		if box is ColorRect: box.color = SLOT_EMPTY_COLOR
 		label.text = ""
+		tex_rect.texture = null
+		cooldown_overlay.visible = false
 		return
 	if box is ColorRect: box.color = ElementIndicator.ELEMENT_COLOR.get(skill.element, SLOT_EMPTY_COLOR)
-	label.text = skill.skill_name.substr(0, 1)
+	tex_rect.texture = skill.icon
+	label.text = "" if skill.icon != null else skill.skill_name.substr(0, 1)
+	var cooldown_ratio := _player.get_skill_cooldown_ratio(skill) if _player != null else 0.0
+	cooldown_overlay.position = Vector2.ZERO
+	cooldown_overlay.size = Vector2(box.size.x, box.size.y * cooldown_ratio)
+	cooldown_overlay.visible = cooldown_ratio > 0.0
 
 
 func _update_pickup_prompts() -> void:
@@ -1019,9 +1063,15 @@ func _confirm_overlay_selection() -> void:
 	if _overlay_pickup is WeaponPickup \
 			and _player.would_duplicate_weapon(_overlay_selected_primary, _overlay_pickup.weapon):
 		return
+	if _overlay_pickup is SkillPickup \
+			and _player.would_duplicate_skill(_overlay_selected_primary, _overlay_pickup.skill):
+		return
 	var is_shop_weapon: bool = _overlay_pickup.get_script() == SHOP_WEAPON_PICKUP_SCRIPT
+	var is_shop_skill: bool = _overlay_pickup.get_script() == SHOP_SKILL_PICKUP_SCRIPT
 	var pickup_result: Variant = _overlay_pickup.call("_do_pickup", _player, _overlay_selected_primary)
 	if is_shop_weapon and not bool(pickup_result):
+		return
+	if is_shop_skill and not bool(pickup_result):
 		return
 	_close_overlay()
 
@@ -1051,8 +1101,8 @@ func _update_overlay_visuals() -> void:
 		_ground_item_card.set_skill(skill, null)
 			
 		if _player != null:
-			_overlay_card_1.set_skill(_player.skill_1, _player.weapon_rune)
-			_overlay_card_2.set_skill(_player.skill_2, _player.secondary_weapon_rune)
+			_overlay_card_1.set_skill(_player.skill_1, null)
+			_overlay_card_2.set_skill(_player.skill_2, null)
 
 	if _ground_item_card.get_parent() != null:
 		var target_container = _ground_container_1 if _overlay_selected_primary else _ground_container_2

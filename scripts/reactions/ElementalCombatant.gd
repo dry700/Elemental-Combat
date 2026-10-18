@@ -1012,3 +1012,55 @@ func cast_remove_enemy(target: ElementalCombatant) -> void:
 ## (Hitbox is melee-proximity, Ore Surge radiates in a fixed spread).
 func cast_apply_area(element: StringName, radius: float, lifetime: float) -> void:
 	spawn_zone(element, radius, lifetime)
+
+
+func cast_area_burst(element: StringName, radius: float, damage: float = 0.0, control_duration: float = 0.0, slow_multiplier: float = 1.0, slow_duration: float = 0.0, charge: int = 2) -> void:
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var target := node as ElementalCombatant
+		if target == null or target == self or global_position.distance_to(target.global_position) > radius:
+			continue
+		if damage > 0.0:
+			target.bonus_damage_dealt.emit(damage)
+		if control_duration > 0.0:
+			target.apply_control(control_duration)
+		if slow_duration > 0.0 and slow_multiplier < 1.0:
+			target.apply_control_slow(slow_multiplier, slow_duration)
+		if element != Elements.NONE:
+			var hit := HitData.new(0.0, Vector2.ZERO, get_parent())
+			hit.element = element
+			hit.charge = charge
+			target.handle_hit(hit, true)
+
+
+func cast_projectile_fan(element: StringName, charge: int, direction: Vector2, projectile_count: int, spread_deg: float, damage: float, speed: float, lifetime: float, pierce: bool, shred_amount: float) -> void:
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var count := maxi(1, projectile_count)
+	for index in count:
+		var angle := 0.0
+		if count > 1:
+			angle = lerpf(-spread_deg * 0.5, spread_deg * 0.5, float(index) / float(count - 1))
+		var shot_direction := direction.rotated(deg_to_rad(angle)).normalized()
+		var projectile: BaseProjectile
+		if pierce:
+			var piercing := Projectile.new()
+			piercing.shred_amount = shred_amount
+			piercing.damage_amount = damage
+			projectile = piercing
+		else:
+			var skill_projectile := SkillProjectile.new()
+			skill_projectile.damage = damage
+			projectile = skill_projectile
+		projectile.element = element
+		projectile.charge = charge
+		projectile.speed = speed
+		projectile.lifetime = lifetime
+		projectile.direction = shot_direction
+		projectile.attacker = get_parent()
+		projectile.global_position = global_position
+		scene_root.add_child(projectile)
+
+
+func cast_buff_armor(amount: float, duration: float) -> void:
+	armor_buff.apply(amount, duration)

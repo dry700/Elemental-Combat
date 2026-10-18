@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Shard Field"
+description = "Create a field of metal shards around you that applies metal to enemies."
+element = &"kim"
+function = 4
+cooldown = 14.0
+zone_radius = 55.0
+zone_lifetime = 8.0

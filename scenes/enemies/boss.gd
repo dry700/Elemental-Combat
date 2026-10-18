@@ -192,6 +192,10 @@ func _die() -> void:
 			rune.set_rune(RuneRoller.default().roll(RunePickup.roll_spirit_element(boss_stats.element), RuneData.Target.WEAPON))
 			rune.global_position = global_position
 			get_parent().add_child.call_deferred(rune)
+		var skill_element := boss_stats.element
+		if boss_stats.phase_2_element != Elements.NONE and randf() < 0.5:
+			skill_element = boss_stats.phase_2_element
+		SkillPickup.spawn_drop(get_parent(), global_position, skill_element)
 	await get_tree().create_timer(DEATH_FADE_DELAY).timeout
 	queue_free()
 

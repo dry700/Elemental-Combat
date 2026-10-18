@@ -67,7 +67,7 @@ changes needed there for the Final Report beyond good writing.
 | Timed-effect components | `scripts/reactions/{dot_effect,slow_effect,disable_effect}.gd` | DoT, slow, stagger/stun/root — reused by every reaction |
 | Terrain footprint | `scripts/reactions/reaction_zone.gd`, `scripts/reactions/steam_cloud.gd`, `autoloads/vision_blocker.gd` | A.7 Zone, Douse's cloud, player screen-darkening |
 | Projectiles | `scripts/combat/base_projectile.gd` + `fragment_projectile.gd` (Ore Surge) + `skill_projectile.gd` (Ignite Dart) | Travel/lifetime/collision, per-type hit resolution |
-| Skills | `scripts/resources/skills/skill_data.gd` + `.tres` assets | A.5 function dispatch, called from `player.gd._try_cast_skill` |
+| Skills | `scripts/resources/skills/skill_data.gd`, `skill_pool.gd` + `.tres` assets | A.5 function dispatch, roster/acquisition pool, cooldown state |
 | Enemy AI | `scenes/enemies/enemy_combat_ai.gd`, `scenes/enemies/enemy_stats.gd` | Aggro/telegraph/attack/cooldown state machine, shared by all enemy types |
 | Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss,flying_enemy,shooter_enemy}.gd` | Health/death/flash, wires `ElementalCombatant` + `EnemyCombatAI` together |
 | Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
@@ -395,8 +395,24 @@ genuine press, lives on `ElementalCombatant.break_free_press()`.
 `APPLY_SINGLE_TARGET` (now a real `SkillProjectile`, not instant hitscan —
 routes through the *same* `handle_hit()` pipeline on first contact) /
 `REMOVE_ENEMY` (bypass Charge) / `APPLY_AREA` (spawns a Zone at caster).
-All five entry points live on `ElementalCombatant` (`cast_*` methods), not
-`Player`, so a future enemy skill-caster reuses them unchanged.
+The expanded functions are `AREA_BURST` (radius hit with optional bonus
+damage, control, slow, and element application), `PROJECTILE_FAN` (spread
+shots), `DASH` (Player DODGE state with skill-owned movement/i-frames), and
+`BUFF_ARMOR` (refresh-only `ArmorBuffEffect`). Projectile-fan damage and
+burst damage emit `bonus_damage_dealt`, so target armor mitigation applies;
+skills do not use Perfect Hit or Weapon Might. `ElementalCombatant` owns
+the reusable `cast_area_burst`, `cast_projectile_fan`, and `cast_buff_armor`
+entry points. `SkillPool` contains all 15 resources and supports element
+filtering and exclusion-aware rolls. Two slots cannot hold the same
+non-empty resource path, and `Player.get_skill_cooldown_ratio()` exposes
+the ready-to-cooling 0–1 ratio without exposing the cooldown dictionary.
+
+The roster has three skills per element. New skills are Ember Burst and
+Flame Dash (Fire), Undertow and Tide Step (Water), Thorn Volley and
+Barkskin (Wood), Throwing Blades and Shard Field (Metal), Seismic Slam and
+Earthen Bulwark (Earth). The shop stocks one random skill for 60 Qi;
+elemental spirits have an 8% matching-element drop chance, and bosses drop
+one guaranteed skill matching either phase element.
 
 ### 4.7 Projectiles
 
@@ -930,6 +946,10 @@ catalogue is dropped with a `push_warning`, never a crash.
 `Hud` (autoload, `CanvasLayer`, layer 110) has transitioned to a **hybrid** approach. The autoload uses `scenes/ui/custom_hud.tscn` (with `hud.gd` attached) as its root. Code-built fallback generation still exists for backward compatibility, but the system now prioritizes `.tscn` nodes (via `get_node_or_null`). This resolves the NodePath-drop bug class by combining visual `.tscn` authoring with graceful degradation. 
 It instantiates `swap_card.tscn` and `upgrade_card.tscn` for dynamic menus.
 Owns **all** pickup input now; `WeaponPickup`/`SkillPickup` only track proximity. `UI_SCALE = 0.5` compensates for the project's viewport-stretch display settings for any remaining code-built elements.
+Skill slots show their resource icon or a name initial, Q/E labels, and a
+cooldown fill driven by `Player.get_skill_cooldown_ratio()`. Skill pickup
+cards render the resource description and icon; absent icons use the
+existing shape/initial fallback.
 
 `InputSetup` (autoload) defines every input action in code
 (`InputMap.add_action`), not via Project Settings, specifically so a
@@ -1123,6 +1143,7 @@ already framed as "spec said X, build does Y, here's why."*
 - ~~Procedural room gating forced combat~~ **Resolved (P12 Phase 3)** —
   normal procedural room exits are open from the start (`exit.locked = false`).
 - ~~Refresh Shop fee~~ **Resolved (P12 T1.3)** — removed; shop stations allow continuous multi-purchases.
+- ~~Skill pickup card description crash~~ **Resolved (P14 S0)** — `SkillData.description` and `icon` are part of the resource schema and `PickupCard.set_skill()` reads them safely.
 - **Same-element Charge overwrite** (§4.2) — accepted, revisit after the P5 playtest with Charge 3 reachable.
 - **Rune modifier catalogue is empty** — runes roll with zero modifiers until `RuneModifierDef` assets exist; the UI shows "no modifiers".
 - `_next_swing_uses_innate` (§10) can now move off the shared Resource onto the Player slot cheaply, since runes no longer duplicate weapons. Optional fix.
@@ -1844,8 +1865,9 @@ The room-building algorithm operates on a fixed 4x3 grid of "chunks".
 ### 19.4 Shop Contents & Mechanics
 When `_populate_shop()` locates the node in group `"shop_chunk"`, it instantiates the shop fixture at floor level (`floor_y = CHUNK_H - 32 - 15`):
 - **ShopStation (Center, x = 208):** Proximity interaction displaying `"F Shop"`. Opens the upgrade card menu (Weapon Might, Vitality, Restore, Sinh/Khắc mastery). Refresh Shop has been permanently removed; multiple purchases are allowed in a single visit without exit fees.
-- **Free Baseline Rune (x = 160):** A `RunePickup` rolling a random element weapon rune via `RuneRoller.default().roll(...)`.
-- **Weapon Rack Stalls (x = 100, x = 316):** Two `ShopWeaponPickup` stalls spaced away from the station.
+- **Free Baseline Rune (x = 128):** A `RunePickup` rolling a random element weapon rune via `RuneRoller.default().roll(...)`.
+- **Skill Stall (x = 288):** One random `SkillPool` skill not already held, priced at 60 Qi.
+- **Weapon Rack Stalls (x = 64, x = 352):** Two `ShopWeaponPickup` stalls spaced across the shop floor.
   - Stock pool draws from starting weapons, unlocked weapon paths, and the shop-only roster in `LoadoutSelect.SHOP_ONLY_WEAPON_PATHS`, excluding held weapons and broken fixtures (`runed_greatsword.tres`).
   - Priced by weight tier: Light (35 Qi), Medium (45 Qi), Heavy (55 Qi).
   - Interacting with F checks funds and duplicates (`player.would_duplicate_weapon`) before opening the slot overlay and deducting Qi.

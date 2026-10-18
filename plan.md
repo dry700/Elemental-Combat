@@ -19,7 +19,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P11 — Final verification and documentation closeout
 - [x] P12 — Run optimization and economy tuning (Phases 1–9 complete)
 - [x] P13 — Perfect Hit and weapon window expansion
-- [ ] P14 — Skill system expansion
+- [x] P14 — Skill system expansion (automated verification complete; interactive playtest checkpoint pending)
 
 ## Verified current state
 
@@ -35,6 +35,8 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - Documentation fully reconciled across `Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`.
 - Perfect Hit windows now resolve for the existing and six shop-only weapons; the weapon card displays each window and perfect hits preserve Charge and reaction inputs.
 - P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
+- P14 adds ten skills (15 total), four cast behaviors, cooldown HUD, duplicate prevention, a 60 Qi shop stall, and matching-element spirit/boss drops.
+- P14 GUT verification: 287 tests passed, 1,841 assertions, 0 failures; 2 expected warnings. Interactive gameplay was not available in the headless test session.
 
 ## Verification gate
 
@@ -45,11 +47,11 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## Exact next item
 
-- Move to P14: Skill system expansion, following [AGENT_PLAN.md](AGENT_PLAN.md).
+- Interactive P14 playtest checkpoint: cast all skills in `test_arena`, then check the shop stall and boss skill drop.
 
 ## Deferred work
 
-- P14 (Skill system expansion) is next.
+- P14 implementation is complete; use the recorded interactive playtest checkpoint before gameplay balance tuning.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
 

@@ -3,6 +3,8 @@ extends RoomController
 
 const LoadoutSelectScript := preload("res://scripts/ui/loadout_select.gd")
 const ShopWeaponPickupScript := preload("res://scripts/items/shop_weapon_pickup.gd")
+const ShopSkillPickupScript := preload("res://scripts/items/shop_skill_pickup.gd")
+const SkillPoolScript := preload("res://scripts/resources/skills/skill_pool.gd")
 
 var map_gen: MapGenerator
 var start_chunk: Node2D
@@ -98,11 +100,25 @@ func _populate_shop() -> void:
 
 	var free_rune := RunePickup.new()
 	free_rune.set_rune(RuneRoller.default().roll(Elements.ALL[randi() % Elements.ALL.size()], RuneData.Target.WEAPON))
-	free_rune.position = Vector2(160.0, floor_y + 9.0)
+	free_rune.position = Vector2(128.0, floor_y + 9.0)
 	shop_chunk.add_child(free_rune)
 
+	var held_skill_paths: Array[String] = []
+	var player: Player = RunManager._player if RunManager != null else null
+	if player != null:
+		for held_skill in [player.skill_1, player.skill_2]:
+			if held_skill != null and not held_skill.resource_path.is_empty():
+				held_skill_paths.append(held_skill.resource_path)
+	var shop_skill: SkillData = SkillPoolScript.roll(held_skill_paths)
+	if shop_skill != null:
+		var skill_pickup: SkillPickup = ShopSkillPickupScript.new()
+		skill_pickup.skill = shop_skill
+		skill_pickup.set("price", 60)
+		skill_pickup.position = Vector2(288.0, floor_y + 9.0)
+		shop_chunk.add_child(skill_pickup)
+
 	var stock := _get_shop_weapon_stock()
-	var stall_positions := [100.0, 316.0]
+	var stall_positions := [64.0, 352.0]
 	for index in mini(stock.size(), stall_positions.size()):
 		var weapon: WeaponStats = stock[index]
 		var pickup: WeaponPickup = ShopWeaponPickupScript.new()

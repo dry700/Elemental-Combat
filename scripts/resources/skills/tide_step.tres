@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Tide Step"
+description = "Slip forward with brief invulnerability and wash away your slow."
+element = &"thuy"
+function = 7
+cooldown = 9.0
+dash_distance = 80.0
+dash_iframes = 0.25
+clear_slow = true

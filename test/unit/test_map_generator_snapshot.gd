@@ -59,6 +59,7 @@ func test_procedural_room_populates_a_visible_shop_station() -> void:
 	add_child_autofree(room)
 	var station_count := 0
 	var stall_count := 0
+	var skill_stall_count := 0
 	var rune_count := 0
 	var shop_weapons: Array[WeaponPickup] = []
 	for child in room.get_children():
@@ -70,10 +71,14 @@ func test_procedural_room_populates_a_visible_shop_station() -> void:
 			elif shop_item.get_script() == preload("res://scripts/items/shop_weapon_pickup.gd"):
 				stall_count += 1
 				shop_weapons.append(shop_item as WeaponPickup)
+			elif shop_item.get_script() == preload("res://scripts/items/shop_skill_pickup.gd"):
+				skill_stall_count += 1
+				assert_eq(int(shop_item.get("price")), 60)
 			elif shop_item.get_script() == preload("res://scripts/items/rune_pickup.gd"):
 				rune_count += 1
 	assert_eq(station_count, 1, "procedural rooms should spawn one station on the shop chunk")
 	assert_eq(stall_count, 2, "shop should populate two distinct paid weapon stalls")
+	assert_eq(skill_stall_count, 1, "shop should populate one paid skill stall")
 	assert_eq(rune_count, 1, "shop should provide one free baseline rune")
 	if shop_weapons.size() == 2:
 		assert_ne(shop_weapons[0].weapon.resource_path, shop_weapons[1].weapon.resource_path)

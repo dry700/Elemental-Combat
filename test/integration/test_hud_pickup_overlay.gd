@@ -66,6 +66,23 @@ func test_mouse_click_on_an_option_selects_and_confirms_immediately():
 	assert_eq(player.secondary_weapon, pickup.weapon)
 	assert_false(Hud.is_overlay_active())
 
+func test_skill_slot_renders_icon_and_cooldown_overlay_ratio():
+	var skill := SkillData.new()
+	skill.skill_name = "Icon Skill"
+	skill.cooldown = 10.0
+	skill.icon = GradientTexture2D.new()
+	player.skill_1 = skill
+	Hud._update_skill_slots()
+	var box: Control = Hud._skill_1_box
+	var icon := box.find_child("SkillIcon", false, false) as TextureRect
+	var overlay := box.find_child("SkillCooldownOverlay", false, false) as ColorRect
+	assert_eq(icon.texture, skill.icon)
+	assert_false(overlay.visible, "ready skills should have no cooldown fill")
+	player._skill_cooldowns[skill] = 5.0
+	Hud._update_skill_slots()
+	assert_true(overlay.visible)
+	assert_almost_eq(overlay.size.y, box.size.y * 0.5, 0.1)
+
 func test_close_overlay_does_not_equip_anything():
 	var original := player.weapon
 	Hud._open_overlay(pickup, true)

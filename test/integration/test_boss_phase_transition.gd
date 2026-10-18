@@ -49,3 +49,13 @@ func test_death_at_zero_health_still_works_after_phase_2():
 	boss.boss_stats = null
 	boss._apply_damage(lethal)         # lethal
 	assert_true(boss._is_dead)
+
+func test_boss_death_spawns_a_guaranteed_element_skill_drop():
+	var parent := Node2D.new()
+	add_child_autofree(parent)
+	boss.reparent(parent)
+	boss._die()
+	await get_tree().process_frame
+	var drops := parent.get_children().filter(func(node): return node is SkillPickup)
+	assert_eq(drops.size(), 1)
+	assert_true(drops[0].skill.element in [boss.boss_stats.element, boss.boss_stats.phase_2_element])

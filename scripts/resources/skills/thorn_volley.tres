@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Thorn Volley"
+description = "Fire five wooden thorns in a wide fan, applying wood on hit."
+element = &"moc"
+function = 6
+cooldown = 11.0
+damage = 5.0
+projectile_count = 5
+spread_deg = 40.0

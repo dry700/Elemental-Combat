@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/skills/skill_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "Barkskin"
+description = "Harden your skin, gaining 15 armor for six seconds."
+element = &"moc"
+function = 8
+cooldown = 16.0
+armor_bonus = 15.0
+buff_duration = 6.0

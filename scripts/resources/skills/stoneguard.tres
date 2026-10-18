@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Stoneguard"
+description = "Apply earth to yourself without triggering a reaction."
 element = &"tho"
 function = 0
 cooldown = 20.0

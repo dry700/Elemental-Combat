@@ -63,7 +63,7 @@ func set_skill(skill, slot_rune = null) -> void:
 	
 	_stats_label.text = "CD: %.1fs | Elem: %s" % [skill.cooldown, active_element]
 	_desc_label.text = skill.description
-	_icon_tex.texture = null
+	_icon_tex.texture = skill.icon
 
 func set_rune_inspect(rune, target_weapon, target_slot_rune) -> void:
 	_title_label.text = "Rune of " + str(rune.element)

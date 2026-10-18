@@ -15,12 +15,34 @@ enum Function {
 	APPLY_SINGLE_TARGET, ## Ignite Dart: fires a traveling SkillProjectile that resolves through the full Sinh/Khắc pipeline on its first hit, same as a weapon hit — no longer an instant hitscan (see SkillProjectile).
 	REMOVE_ENEMY,        ## Rending Edge: strips a target enemy's status, bypasses Charge, no damage.
 	APPLY_AREA,          ## Overgrowth Snare: spawns an A.7 Zone at the caster's position.
+	AREA_BURST,
+	PROJECTILE_FAN,
+	DASH,
+	BUFF_ARMOR,
 }
 
 @export var skill_name: String = "Skill"
+@export_multiline var description: String = ""
+@export var icon: Texture2D
 @export var element: StringName = &"none"
 @export var function: Function = Function.APPLY_SELF
 @export var cooldown: float = 10.0
+@export var damage: float = 0.0
+@export var radius: float = 0.0
+@export var control_duration: float = 0.0
+@export var slow_multiplier: float = 1.0
+@export var slow_duration: float = 0.0
+@export var projectile_count: int = 1
+@export var spread_deg: float = 0.0
+@export var projectile_speed: float = 220.0
+@export var projectile_lifetime: float = 0.5
+@export var pierce: bool = false
+@export var shred_amount: float = 0.0
+@export var armor_bonus: float = 0.0
+@export var buff_duration: float = 0.0
+@export var dash_distance: float = 0.0
+@export var dash_iframes: float = 0.0
+@export var clear_slow: bool = false
 
 ## APPLY_SINGLE_TARGET / REMOVE_ENEMY only. No aim/targeting system
 ## exists anywhere else in this project (Hitbox is melee-proximity,

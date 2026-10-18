@@ -151,3 +151,9 @@ Balance notes:
 3. **Healing skills.** Excluded so Restore stays the only sustain. Confirm.
 4. **Spirit drop rate (8%) and skill price (60 Qi)** are placeholders; both depend on the P12 economy numbers.
 5. **Future, not in scope:** skill runes (Design.md 16.2: build together with the modifier catalogue), DoT/summon skills, enemy skill casters, and skill upgrades in the shop.
+
+## P14 verification record
+
+- Automated GUT suite: **287/287 passed**, **1,841 assertions**, **0 failures**; two expected headless warnings.
+- Coverage includes skill data/card compatibility, duplicate and cooldown APIs, burst/fan/dash/armor behavior, HUD cooldown rendering, all 15 resources, shop purchase rules, pool exclusions, and matching-element drop helpers/boss drops.
+- Interactive playtest was not available in the headless session. In `test_arena`, cast each skill once, then inspect shop spacing/purchase behavior and a boss skill drop before balance tuning.
