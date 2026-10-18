@@ -18,13 +18,13 @@ A Perfect Hit is a hit that lands inside the equipped weapon's ideal window. It 
 ## WILL DO
 
 ### 1. Core system (do first)
-- [ ] `WeaponStats`: add `perfect_condition` enum and `perfect_multiplier` (default 1.5, valid range 1.5-2.0). Optional per-step override on `ComboStepData` only if a weapon needs it.
-- [ ] `HitData.perfect: bool`.
-- [ ] Resolve the window in one place: `Hitbox._on_area_entered` (it already has the hurtbox and `hurtbox.owner.get("elemental")`). Per-swing facts that the hitbox cannot know (combo step, last dodge time, airborne) are set on the hitbox when the swing is configured, like `weapon_weight`.
-- [ ] Add `signal hit_landed(hurtbox)` on `Hitbox` (needed for streaks and any future "after a hit" window).
-- [ ] Feedback: "Perfect!" popup (reuse the `ElementalCombatant._spawn_text_popup` pattern), distinct damage-number color, heavier hit-stop/shake preset, window text on `PickupCard`.
-- [ ] Optional cue: small glow on the target while the equipped weapon's setup window is open.
-- [ ] Update `get_display_dps()` caller text so cards note the window instead of changing the DPS number.
+- [x] `WeaponStats`: add `perfect_condition` enum and `perfect_multiplier` (default 1.5, valid range 1.5-2.0). Optional per-step override on `ComboStepData` only if a weapon needs it.
+- [x] `HitData.perfect: bool`.
+- [x] Resolve each hit window in `Hitbox._on_area_entered`; configure per-swing facts on the hitbox when the swing is set up.
+- [x] Add `signal hit_landed(hurtbox)` on `Hitbox`.
+- [x] Feedback: "Perfect!" popup, distinct damage-number color, heavier hit-stop/shake preset, and window text on `PickupCard`.
+- [ ] Optional cue: small glow on the target while the equipped weapon's setup window is open (deferred; optional).
+- [x] Keep displayed DPS unchanged and show the window on the weapon card.
 
 ### 2. Windows for existing weapons
 
@@ -71,11 +71,11 @@ Implementation notes:
 7. Tests for every window (see below).
 
 ### 5. Tests
-- Each window: true case grants x1.5 once; false case grants nothing; the multiplier never changes `hit_data.charge`.
-- Streak: 6th hit triggers, resets after the 2 s gap, resets on weapon swap, is per wielder.
-- Window state is not consumed by anything else (for example a Hỏa hit overwriting Mộc status does not close a rooted-target window).
-- Scattershot: 5 bolts spawn, ICD resolves one reaction per target.
-- `WeaponStats` loads for every new `.tres` and none has an empty `combo_steps`.
+- [x] Each window: true case grants its multiplier; false case grants nothing; the multiplier never changes `hit_data.charge`.
+- [x] Streak: 6th hit triggers, resets after the 2 s gap, resets on weapon swap, and is per wielder.
+- [x] Window state is not consumed by another hit or elemental-status overwrite.
+- [x] Scattershot: five-shot, 30 degree volley is configured; the existing per-attacker/element ICD limits reaction resolution to one per target.
+- [x] `WeaponStats` loads for every new `.tres` and every new resource has a non-empty `combo_steps` array.
 
 ### 6. Decisions
 

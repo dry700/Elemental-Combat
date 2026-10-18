@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+
+[sub_resource type="Resource" id="down"]
+script = ExtResource("2")
+swing_rotation_start_deg = -35.0
+swing_rotation_end_deg = 70.0
+
+[sub_resource type="Resource" id="up"]
+script = ExtResource("2")
+swing_rotation_start_deg = 70.0
+swing_rotation_end_deg = -35.0
+
+[sub_resource type="Resource" id="cross_down"]
+script = ExtResource("2")
+swing_rotation_start_deg = 45.0
+swing_rotation_end_deg = -55.0
+
+[sub_resource type="Resource" id="cross_up"]
+script = ExtResource("2")
+swing_rotation_start_deg = -55.0
+swing_rotation_end_deg = 45.0
+
+[resource]
+script = ExtResource("1")
+weapon_name = "Song kiếm"
+weight = 0
+damage = 7.0
+perfect_condition = 8
+perfect_multiplier = 1.5
+attack_duration = 0.2
+active_window = Vector2(0.04, 0.09)
+innate_element = &"thuy"
+lunge_speed = 90.0
+reach = 6.0
+combo_damage_step_multiplier = 1.04
+combo_steps = Array[Object]([SubResource("down"), SubResource("up"), SubResource("cross_down"), SubResource("cross_up")])

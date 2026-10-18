@@ -117,6 +117,8 @@ func _get_shop_weapon_stock() -> Array[WeaponStats]:
 	var paths: Array[String] = []
 	for path in LoadoutSelectScript.STARTING_WEAPON_PATHS:
 		paths.append(path)
+	for path in LoadoutSelectScript.SHOP_ONLY_WEAPON_PATHS:
+		paths.append(path)
 	for unlocked_path in SaveManager.get_unlocked_weapon_paths():
 		var path := str(unlocked_path)
 		if not paths.has(path):

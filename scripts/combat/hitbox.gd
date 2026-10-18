@@ -12,6 +12,16 @@ extends Area2D
 @export var perfect_condition: WeaponStats.PerfectCondition = WeaponStats.PerfectCondition.NONE
 @export_range(1.5, 2.0) var perfect_multiplier: float = 1.5
 
+## Per-swing facts configured by the wielder
+var combo_step: int = 1
+var is_finisher: bool = false
+var wielder_is_airborne: bool = false
+var time_since_dodge: float = 999.0
+var is_plunge: bool = false
+var plunge_intensity: float = 0.0
+var attack_origin: Vector2 = Vector2.ZERO
+var weapon_reach: float = 0.0
+
 signal hit_landed(hurtbox: Hurtbox)
 
 var _already_hit: Array[Hurtbox] = []
@@ -35,7 +45,9 @@ func _on_area_entered(area: Area2D) -> void:
 	if not (area is Hurtbox):
 		return
 	var hurtbox := area as Hurtbox
-	if hurtbox.owner == owner:
+	if hurtbox.invulnerable:
+		return
+	if owner != null and hurtbox.owner == owner:
 		# Never hit your own wielder.
 		return
 		
@@ -67,14 +79,56 @@ func _on_area_entered(area: Area2D) -> void:
 
 
 func _resolve_perfect_hit(hurtbox: Hurtbox) -> bool:
-	if owner == null:
+	if perfect_condition == WeaponStats.PerfectCondition.NONE:
 		return false
-	if owner.has_method("_resolve_perfect_for_hit"):
-		return owner._resolve_perfect_for_hit(self, hurtbox)
-	return false
+
+	if owner != null and owner.has_method("_resolve_perfect_for_hit"):
+		if owner._resolve_perfect_for_hit(self, hurtbox):
+			return true
+
+	var target_node: Node = null
+	if hurtbox != null:
+		target_node = hurtbox.owner if hurtbox.owner != null else hurtbox.get_parent()
+	var elemental: ElementalCombatant = null
+	if target_node != null and "elemental" in target_node:
+		elemental = target_node.elemental as ElementalCombatant
+
+	match perfect_condition:
+		WeaponStats.PerfectCondition.TARGET_SLOWED:
+			return elemental != null and elemental.is_slowed()
+		WeaponStats.PerfectCondition.TARGET_DISABLED:
+			return elemental != null and elemental.is_disabled()
+		WeaponStats.PerfectCondition.FINISHER:
+			return is_finisher
+		WeaponStats.PerfectCondition.PLUNGE:
+			return is_plunge and plunge_intensity >= 0.6
+		WeaponStats.PerfectCondition.DODGE:
+			return time_since_dodge <= 0.5
+		WeaponStats.PerfectCondition.AIRBORNE:
+			return wielder_is_airborne
+		WeaponStats.PerfectCondition.LONG_RANGE:
+			var origin: Vector2 = attack_origin if attack_origin != Vector2.ZERO else (owner.global_position if owner != null else global_position)
+			return origin.distance_to(hurtbox.global_position) >= 110.0
+		WeaponStats.PerfectCondition.CLOSE_RANGE:
+			var origin: Vector2 = attack_origin if attack_origin != Vector2.ZERO else (owner.global_position if owner != null else global_position)
+			return origin.distance_to(hurtbox.global_position) <= 40.0
+		WeaponStats.PerfectCondition.TIP:
+			var origin: Vector2 = attack_origin if attack_origin != Vector2.ZERO else (owner.global_position if owner != null else global_position)
+			var dist: float = origin.distance_to(hurtbox.global_position)
+			var ref_reach: float = weapon_reach if weapon_reach > 0.0 else 16.0
+			return dist >= ref_reach * 0.7
+		WeaponStats.PerfectCondition.LOW_HEALTH:
+			if target_node != null and target_node.has_method("get_health_ratio"):
+				return target_node.get_health_ratio() <= 0.30
+			return false
+		_:
+			return false
 
 func _spawn_hit_particles(at_position: Vector2, away_direction: Vector2) -> void:
-	var scene_root := get_tree().current_scene
+	var tree := get_tree()
+	if tree == null:
+		return
+	var scene_root := tree.current_scene
 	if scene_root == null:
 		return
 	var particles := HitParticles.new()
@@ -85,7 +139,10 @@ func _spawn_hit_particles(at_position: Vector2, away_direction: Vector2) -> void
 
 
 func _spawn_hit_spark(at_position: Vector2) -> void:
-	var scene_root := get_tree().current_scene
+	var tree := get_tree()
+	if tree == null:
+		return
+	var scene_root := tree.current_scene
 	if scene_root == null:
 		return
 	var spark := HitSpark.new()

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+
+[sub_resource type="Resource" id="first"]
+script = ExtResource("2")
+style = 1
+thrust_extend_distance = 8.0
+
+[sub_resource type="Resource" id="second"]
+script = ExtResource("2")
+style = 1
+thrust_extend_distance = 20.0
+
+[resource]
+script = ExtResource("1")
+weapon_name = "Mâu"
+weight = 2
+damage = 17.0
+perfect_condition = 10
+perfect_multiplier = 1.75
+attack_duration = 0.5
+active_window = Vector2(0.15, 0.25)
+innate_element = &"tho"
+lunge_speed = 35.0
+reach = 20.0
+hitbox_radius = 5.0
+combo_damage_step_multiplier = 1.1
+combo_steps = Array[Object]([SubResource("first"), SubResource("second")])

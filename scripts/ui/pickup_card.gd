@@ -36,7 +36,12 @@ func set_weapon(weapon, slot_rune = null, is_equipped: bool = false) -> void:
 	_stats_label.text = "DPS: %.1f | Elem: %s" % [weapon.get_display_dps(), active_element]
 	
 	var details := "A weapon."
+	var perfect_text: String = weapon.get_perfect_condition_text()
+	if not perfect_text.is_empty():
+		details = "Perfect: " + perfect_text
 	if slot_rune != null:
+		if details == "A weapon.":
+			details = ""
 		details += " (+%d mods)" % slot_rune.modifiers.size()
 	_desc_label.text = details
 	

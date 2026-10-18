@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+
+[sub_resource type="Resource" id="down"]
+script = ExtResource("2")
+swing_rotation_start_deg = -35.0
+swing_rotation_end_deg = 75.0
+
+[sub_resource type="Resource" id="up"]
+script = ExtResource("2")
+swing_rotation_start_deg = 75.0
+swing_rotation_end_deg = -35.0
+
+[sub_resource type="Resource" id="sweep"]
+script = ExtResource("2")
+swing_rotation_start_deg = -80.0
+swing_rotation_end_deg = 15.0
+
+[resource]
+script = ExtResource("1")
+weapon_name = "Đao"
+weight = 1
+damage = 12.0
+perfect_condition = 7
+perfect_multiplier = 1.5
+attack_duration = 0.32
+active_window = Vector2(0.08, 0.15)
+innate_element = &"hoa"
+lunge_speed = 70.0
+reach = 12.0
+combo_damage_step_multiplier = 1.08
+combo_steps = Array[Object]([SubResource("down"), SubResource("up"), SubResource("sweep")])

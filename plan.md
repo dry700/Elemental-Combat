@@ -18,7 +18,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] P10b — Room-cleared upgrade menu, input flow, and remaining effect hooks
 - [x] P11 — Final verification and documentation closeout
 - [x] P12 — Run optimization and economy tuning (Phases 1–9 complete)
-- [ ] P13 — Perfect Hit and weapon window expansion (next)
+- [x] P13 — Perfect Hit and weapon window expansion
 - [ ] P14 — Skill system expansion
 
 ## Verified current state
@@ -33,6 +33,8 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - Tuned Qi economy: Normal brawler 5 Qi, Elemental spirit 8 Qi (Kim Spirit HP tuned to 50), Flying/Shooter/Swooper 3 Qi, Boss 30 Qi; Weapon Might and Vitality cost `20 + 12 * rank`; Sinh/Khắc Rank 1 costs 25 Qi, Rank 2 costs 55 Qi.
 - Instrumentation: `[RUNLOG] loop=%d room=%d time=%.1f hp=%d->%d qi_earned=%d qi_spent=%d` logs delta metrics per completed room in debug builds.
 - Documentation fully reconciled across `Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`.
+- Perfect Hit windows now resolve for the existing and six shop-only weapons; the weapon card displays each window and perfect hits preserve Charge and reaction inputs.
+- P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
 
 ## Verification gate
 
@@ -43,16 +45,17 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 
 ## Exact next item
 
-- Move to P13: Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md), starting with window resolution and streak mechanics.
+- Move to P14: Skill system expansion, following [AGENT_PLAN.md](AGENT_PLAN.md).
 
 ## Deferred work
 
-- P13 (Perfect Hit) and P14 (Skill system expansion) queued in order.
+- P14 (Skill system expansion) is next.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
 
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- Result: 257 passing tests, 1,658 assertions, 0 failures. Two GUT warnings remain.
+- P12 result: 257 passing tests, 1,658 assertions, 0 failures. Two GUT warnings remain.
+- P13 result: 269 passing tests, 1,756 assertions, 0 failures. Two expected headless warnings remain.
 - Static analysis: clean across all workspace files.

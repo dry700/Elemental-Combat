@@ -89,10 +89,17 @@ func _resting_color() -> Color:
 	return _base_color
 
 
+func get_health_ratio() -> float:
+	if enemy_stats == null or enemy_stats.max_health <= 0.0:
+		return 1.0
+	return clampf(_current_health / enemy_stats.max_health, 0.0, 1.0)
+
+
 func _on_hurtbox_hit(hit_data: HitData) -> void:
-	_apply_damage(hit_data.damage)
-	HitStop.freeze_for_weight(hit_data.weapon_weight)
-	ScreenShake.shake_for_weight(hit_data.weapon_weight)
+	_apply_damage(hit_data.damage, hit_data.perfect)
+	var weight: StringName = &"heavy" if hit_data.perfect else hit_data.weapon_weight
+	HitStop.freeze_for_weight(weight)
+	ScreenShake.shake_for_weight(weight)
 	elemental.handle_hit(hit_data)
 
 
@@ -101,10 +108,10 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 	_apply_damage(amount)
 
 
-func _apply_damage(amount: float) -> void:
+func _apply_damage(amount: float, is_perfect: bool = false) -> void:
 	var mitigated := elemental.mitigate_damage(amount)
 	_total_damage_taken += mitigated
-	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
+	DamagePopup.spawn(self, mitigated, Vector2(0, -10), is_perfect)
 	_flash()
 	if enemy_stats != null and not _is_dead:
 		_current_health -= mitigated

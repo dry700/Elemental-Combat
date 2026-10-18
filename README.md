@@ -15,9 +15,10 @@ The project is beyond the initial prototype stage. The verified codebase include
 - In-world shop containing `ShopStation` upgrade menu, paid Restore card, free baseline rune, and priced weapon stalls
 - Run loop persistence and enemy/boss scaling across loops (`1.0 + 0.25 * (loop - 1)`)
 - `UpgradeManager` with tuned Qi economy numbers and spend tracking
+- Perfect Hit windows for the weapon roster, including six shop-unlock weapons and a five-arrow scattershot crossbow
 - Runtime debug instrumentation (`[RUNLOG]`) logging room performance metrics
 
-The active phase is P12 closeout complete. The implementation matches the design contract in [Design.md](Design.md).
+P13 (Perfect Hit and weapon window expansion) is complete. The implementation matches the design contract in [Design.md](Design.md).
 
 ## Opening the project
 
@@ -42,7 +43,7 @@ Run the full suite in headless mode with:
 
 `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
 
-Current verification status: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
+Current verification status: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected headless warnings.
 
 ## Save data
 

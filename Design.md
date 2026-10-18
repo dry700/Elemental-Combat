@@ -1846,9 +1846,47 @@ When `_populate_shop()` locates the node in group `"shop_chunk"`, it instantiate
 - **ShopStation (Center, x = 208):** Proximity interaction displaying `"F Shop"`. Opens the upgrade card menu (Weapon Might, Vitality, Restore, Sinh/Khắc mastery). Refresh Shop has been permanently removed; multiple purchases are allowed in a single visit without exit fees.
 - **Free Baseline Rune (x = 160):** A `RunePickup` rolling a random element weapon rune via `RuneRoller.default().roll(...)`.
 - **Weapon Rack Stalls (x = 100, x = 316):** Two `ShopWeaponPickup` stalls spaced away from the station.
-  - Stock pool draws from starting weapons plus unlocked weapon paths, excluding held weapons and broken fixtures (`runed_greatsword.tres`).
+  - Stock pool draws from starting weapons, unlocked weapon paths, and the shop-only roster in `LoadoutSelect.SHOP_ONLY_WEAPON_PATHS`, excluding held weapons and broken fixtures (`runed_greatsword.tres`).
   - Priced by weight tier: Light (35 Qi), Medium (45 Qi), Heavy (55 Qi).
   - Interacting with F checks funds and duplicates (`player.would_duplicate_weapon`) before opening the slot overlay and deducting Qi.
 
 ### 19.5 The Old Rooms
 `room_a.tscn` through `room_e.tscn` have been formally retired from `RunManager`'s active pool. They remain in the codebase strictly as historical test fixtures or references for spacing.
+
+## 20. Perfect Hit and Weapon Windows
+
+Every weapon may define one `WeaponStats.perfect_condition` and a
+`perfect_multiplier` from 1.5x to 2.0x. `Hitbox` resolves the condition once
+when a hurtbox is hit, marks `HitData.perfect`, and multiplies only damage.
+Charge, element, weapon weight in `HitData`, and reaction resolution remain
+unchanged. A Perfect Hit receives a yellow damage popup labelled “Perfect!”
+and the heavy hit-stop/shake preset; weapon cards show the condition on a
+“Perfect:” line while the displayed DPS stays plain.
+
+| Weapon | Perfect condition | Multiplier |
+|---|---|---:|
+| Dagger | The 6th landed hit in a streak; the streak resets after a 2 second gap or a weapon swap | 1.5x |
+| Spear | Target is slowed | 1.75x |
+| Staff | Target is disabled | 2.0x |
+| Greatsword | Last step of its combo | 1.75x |
+| Hammer | Plunge impact intensity is at least 0.6 | 2.0x |
+| Bow | Target is at least 110 px from the arrow's spawn point | 1.5x |
+| Đao | Swing occurs within 0.5 s after a dodge | 1.5x |
+| Song kiếm | Player attacks while jumping or falling | 1.5x |
+| Mâu | Target is at or beyond 70% of weapon reach | 1.75x |
+| Quan đao | Target is disabled | 2.0x |
+| Liên châu nỏ | Target is within 40 px; fires five arrows across a 30 degree cone | 1.75x |
+| Định Nam Đao | Target has at most 30% health remaining | 2.0x |
+
+Disable and slow windows read the target's active control effect directly;
+they do not depend on its current elemental status or consume the window.
+The dagger streak is per Player, and only non-invulnerable landed hits count.
+`Hitbox.hit_landed(hurtbox)` is emitted for landed melee hits. Perfect Hits
+may stack multiplicatively with Weapon Might and combo-step damage.
+
+The six new weapons live in `LoadoutSelect.SHOP_ONLY_WEAPON_PATHS`; they are
+available in shop stock and enter the loadout pool after purchase unlocks
+them. They are not starting weapons. The shop uses priced stalls by weapon
+weight. `WeaponStats.get_projectile_angles()` supplies the crossbow volley
+spread; each bolt still uses the shared projectile hit pipeline and existing
+per-attacker/element reaction cooldown.

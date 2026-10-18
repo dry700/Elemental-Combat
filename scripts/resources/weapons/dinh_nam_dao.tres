@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+
+[sub_resource type="Resource" id="strike"]
+script = ExtResource("2")
+swing_rotation_start_deg = -100.0
+swing_rotation_end_deg = 60.0
+
+[resource]
+script = ExtResource("1")
+weapon_name = "Định Nam Đao"
+weight = 2
+damage = 28.0
+perfect_condition = 11
+perfect_multiplier = 2.0
+attack_duration = 0.85
+active_window = Vector2(0.34, 0.44)
+innate_element = &"tho"
+lunge_speed = 25.0
+reach = 22.0
+hitbox_radius = 9.0
+combo_steps = Array[Object]([SubResource("strike")])

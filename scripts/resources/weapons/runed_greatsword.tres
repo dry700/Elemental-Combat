@@ -4,6 +4,8 @@
 
 [resource]
 script = ExtResource("1")
+perfect_condition = 4
+perfect_multiplier = 1.75
 weapon_name = "Runed Greatsword (Kim/Kim)"
 weight = 2
 damage = 16.0

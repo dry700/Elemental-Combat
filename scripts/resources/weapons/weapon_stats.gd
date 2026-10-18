@@ -16,6 +16,8 @@ enum PerfectCondition {
 	DODGE,
 	AIRBORNE,
 	CLOSE_RANGE,
+	TIP,
+	LOW_HEALTH,
 }
 
 @export var weapon_name: String = "Training Dagger"
@@ -44,6 +46,8 @@ enum PerfectCondition {
 
 @export var projectile_speed: float = 240.0    ## SHOOT only.
 @export var projectile_lifetime: float = 0.6   ## SHOOT only. Range ≈ speed × lifetime.
+@export_range(1, 12, 1) var projectile_count: int = 1 ## Number of arrows in a SHOOT volley.
+@export_range(0.0, 60.0, 0.5) var projectile_spread_degrees: float = 0.0 ## Total cone width for a SHOOT volley.
 
 ## Grace period after a swing ends during which another attack press
 ## still continues the combo instead of restarting at hit 1.
@@ -75,6 +79,43 @@ func get_display_dps() -> float:
 	for i in combo_steps.size():
 		total += damage * pow(combo_damage_step_multiplier, i)
 	return total / (combo_steps.size() * attack_duration)
+
+func get_perfect_condition_text() -> String:
+	match perfect_condition:
+		PerfectCondition.STREAK:
+			return "6th landed hit in a streak"
+		PerfectCondition.TARGET_SLOWED:
+			return "Target is slowed"
+		PerfectCondition.TARGET_DISABLED:
+			return "Target is disabled"
+		PerfectCondition.FINISHER:
+			return "Combo finisher"
+		PerfectCondition.PLUNGE:
+			return "Plunge impact from a high apex"
+		PerfectCondition.LONG_RANGE:
+			return "Long distance hit"
+		PerfectCondition.DODGE:
+			return "Shortly after dodge"
+		PerfectCondition.AIRBORNE:
+			return "Attacking while airborne"
+		PerfectCondition.CLOSE_RANGE:
+			return "Point-blank range"
+		PerfectCondition.TIP:
+			return "Target near the tip of reach"
+		PerfectCondition.LOW_HEALTH:
+			return "Target below 30% health"
+		_:
+			return ""
+
+func get_projectile_angles() -> Array[float]:
+	var angles: Array[float] = []
+	var count := maxi(1, projectile_count)
+	for index in count:
+		var angle := 0.0
+		if count > 1:
+			angle = lerpf(-projectile_spread_degrees * 0.5, projectile_spread_degrees * 0.5, float(index) / float(count - 1))
+		angles.append(angle)
+	return angles
 
 ## Resolves the element and Charge THIS swing actually applies, per A.4's
 ## rune fork and the Base/+Rune Charge table:

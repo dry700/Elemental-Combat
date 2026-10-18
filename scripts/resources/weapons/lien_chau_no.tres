@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+
+[sub_resource type="Resource" id="volley"]
+script = ExtResource("2")
+style = 2
+
+[resource]
+script = ExtResource("1")
+weapon_name = "Liên châu nỏ"
+weight = 1
+damage = 4.5
+perfect_condition = 9
+perfect_multiplier = 1.75
+attack_duration = 0.7
+active_window = Vector2(0.18, 0.24)
+innate_element = &"moc"
+lunge_speed = 0.0
+reach = 6.0
+hitbox_radius = 4.0
+projectile_speed = 260.0
+projectile_lifetime = 0.4
+projectile_count = 5
+projectile_spread_degrees = 30.0
+combo_steps = Array[Object]([SubResource("volley")])

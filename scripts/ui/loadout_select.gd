@@ -9,6 +9,16 @@ const STARTING_WEAPON_PATHS: Array[String] = [
 	"res://scripts/resources/weapons/training_hammer.tres",
 ]
 
+## Novel weapons enter the loadout pool after being purchased from a shop.
+const SHOP_ONLY_WEAPON_PATHS: Array[String] = [
+	"res://scripts/resources/weapons/dao.tres",
+	"res://scripts/resources/weapons/song_kiem.tres",
+	"res://scripts/resources/weapons/mau.tres",
+	"res://scripts/resources/weapons/quan_dao.tres",
+	"res://scripts/resources/weapons/lien_chau_no.tres",
+	"res://scripts/resources/weapons/dinh_nam_dao.tres",
+]
+
 const STARTING_SKILL_PATHS: Array[String] = [
 	"res://scripts/resources/skills/ignite_dart.tres",
 	"res://scripts/resources/skills/overgrowth_snare.tres",

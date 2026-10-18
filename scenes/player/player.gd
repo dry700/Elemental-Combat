@@ -101,6 +101,7 @@ var _jump_buffer_timer: float = 0.0
 var _air_jumps_used: int = 0
 var _dodge_timer: float = 0.0
 var _dodge_cooldown_timer: float = 0.0
+var _last_dodge_end_time: float = -999.0
 var _attack_timer: float = 0.0
 var _combo_step: int = 0
 var _combo_window_timer: float = 0.0
@@ -388,9 +389,11 @@ func _trigger_plunge_impact(intensity: float) -> void:
 	var element = swing.element if swing else Elements.NONE
 	var weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower()) if _active_weapon else &"none"
 	var knockback = 150.0 * (1.0 + intensity)
+	var is_perfect_plunge := _active_weapon != null and _active_weapon.perfect_condition == WeaponStats.PerfectCondition.PLUNGE and intensity >= 0.6
 	
-	HitStop.freeze_for_weight(weight)
-	ScreenShake.shake_for_weight(weight)
+	var feedback_weight: StringName = &"heavy" if is_perfect_plunge else weight
+	HitStop.freeze_for_weight(feedback_weight)
+	ScreenShake.shake_for_weight(feedback_weight)
 	
 	# Spawn splash particles along the ground horizontally to match the blast radius
 	var scene_root := get_tree().current_scene
@@ -426,7 +429,14 @@ func _trigger_plunge_impact(intensity: float) -> void:
 					if direction.is_zero_approx():
 						direction = Vector2.RIGHT
 					
-					var specific_hit_data = HitData.new(dmg, direction * knockback, self)
+					var is_perfect := false
+					if _active_weapon != null and _active_weapon.perfect_condition == WeaponStats.PerfectCondition.PLUNGE and intensity >= 0.6:
+						is_perfect = true
+					var final_dmg: float = dmg
+					if is_perfect:
+						final_dmg *= _active_weapon.perfect_multiplier
+
+					var specific_hit_data = HitData.new(final_dmg, direction * knockback, self, is_perfect)
 					specific_hit_data.element = element
 					specific_hit_data.charge = plunge_charge
 					specific_hit_data.weapon_weight = weight
@@ -472,6 +482,7 @@ func _process_dodge(delta: float) -> void:
 				remove_collision_exception_with(enemy)
 
 	if _dodge_timer >= dodge_duration:
+		_last_dodge_end_time = Time.get_ticks_msec() / 1000.0
 		state = State.IDLE if is_on_floor() else State.FALL
 
 
@@ -590,18 +601,23 @@ func _fire_arrow() -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
 		return
-	var arrow := ArrowProjectile.new()
-	arrow.attacker = self
-	arrow.direction = Vector2(facing, 0)
-	arrow.speed = _active_weapon.projectile_speed
-	arrow.lifetime = _active_weapon.projectile_lifetime
-	arrow.element = hitbox.element
-	arrow.charge = hitbox.charge
-	arrow.damage = hitbox.damage
-	arrow.weapon_weight = hitbox.weapon_weight
-	arrow.knockback_strength = hitbox.knockback_strength
-	arrow.global_position = global_position + Vector2(facing * (WEAPON_GRIP_OFFSET + 4.0), 0.0)
-	scene_root.add_child(arrow)
+	var origin := global_position + Vector2(facing * (WEAPON_GRIP_OFFSET + 4.0), 0.0)
+	for angle_degrees in _active_weapon.get_projectile_angles():
+		var arrow := ArrowProjectile.new()
+		arrow.attacker = self
+		arrow.direction = Vector2(facing, 0).rotated(deg_to_rad(angle_degrees))
+		arrow.speed = _active_weapon.projectile_speed
+		arrow.lifetime = _active_weapon.projectile_lifetime
+		arrow.element = hitbox.element
+		arrow.charge = hitbox.charge
+		arrow.damage = hitbox.damage
+		arrow.weapon_weight = hitbox.weapon_weight
+		arrow.knockback_strength = hitbox.knockback_strength
+		arrow.perfect_condition = hitbox.perfect_condition
+		arrow.perfect_multiplier = hitbox.perfect_multiplier
+		arrow.spawn_position = origin
+		arrow.global_position = origin
+		scene_root.add_child(arrow)
 	
 ## Called the instant a swing's attack_duration elapses. If the player
 ## already buffered another attack press during this swing (captured in
@@ -654,6 +670,16 @@ func _configure_hitbox_for_current_swing() -> void:
 	if _active_weapon.weapon_texture != null:
 		actual_reach = float(_active_weapon.weapon_texture.get_width())
 
+	hitbox.combo_step = _combo_step
+	hitbox.is_finisher = (_combo_step == _active_weapon.combo_steps.size())
+	hitbox.wielder_is_airborne = (state == State.JUMP or state == State.FALL)
+	var now := Time.get_ticks_msec() / 1000.0
+	hitbox.time_since_dodge = now - _last_dodge_end_time
+	hitbox.is_plunge = false
+	hitbox.plunge_intensity = 0.0
+	hitbox.attack_origin = global_position
+	hitbox.weapon_reach = actual_reach
+
 	var rect := hitbox_shape.shape as RectangleShape2D
 	if rect != null:
 		rect.size = Vector2(actual_reach, _active_weapon.hitbox_radius * 2.0)
@@ -689,7 +715,7 @@ func _resolve_perfect_for_hit(hitbox: Hitbox, hurtbox: Hurtbox) -> bool:
 
 func _advance_perfect_streak_and_check() -> bool:
 	var now := Time.get_ticks_msec() / 1000.0
-	if now - _perfect_streak_last_hit_time > 2.0:
+	if now - _perfect_streak_last_hit_time >= 2.0:
 		_perfect_streak_count = 0
 	_perfect_streak_count += 1
 	_perfect_streak_last_hit_time = now
@@ -910,13 +936,20 @@ func _on_disabled_expired() -> void:
 		_wants_jump_on_recovery = false
 
 
+func get_health_ratio() -> float:
+	if max_health <= 0.0:
+		return 1.0
+	return clampf(current_health / max_health, 0.0, 1.0)
+
+
 func _on_hurtbox_hit(hit_data: HitData) -> void:
 	if playtest_invincible:
 		return
-	_apply_damage(hit_data.damage)
+	_apply_damage(hit_data.damage, hit_data.perfect)
 	velocity += hit_data.knockback
-	HitStop.freeze_for_weight(hit_data.weapon_weight)
-	ScreenShake.shake_for_weight(hit_data.weapon_weight)
+	var weight: StringName = &"heavy" if hit_data.perfect else hit_data.weapon_weight
+	HitStop.freeze_for_weight(weight)
+	ScreenShake.shake_for_weight(weight)
 	elemental.handle_hit(hit_data)
 
 
@@ -933,11 +966,11 @@ func _on_bonus_damage_dealt(amount: float) -> void:
 ## version tracks a rising damage-taken counter; this one drains a
 ## falling health float) since Player's health model has always been
 ## different from the dummies' own damage-counter approach.
-func _apply_damage(amount: float) -> void:
+func _apply_damage(amount: float, is_perfect: bool = false) -> void:
 	if _is_dead or playtest_invincible:
 		return
 	var mitigated = elemental.mitigate_damage(amount)
-	DamagePopup.spawn(self, mitigated, Vector2(0, -10))
+	DamagePopup.spawn(self, mitigated, Vector2(0, -10), is_perfect)
 	current_health = maxf(current_health - mitigated, 0.0)
 	if current_health <= 0.0:
 		_die()

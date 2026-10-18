@@ -11,6 +11,9 @@ const HEAD_SIZE: float = 2.5
 var damage: float = 10.0
 var knockback_strength: float = 80.0
 var weapon_weight: StringName = &"medium"
+var perfect_condition: WeaponStats.PerfectCondition = WeaponStats.PerfectCondition.NONE
+var perfect_multiplier: float = 1.5
+var spawn_position: Vector2 = Vector2.ZERO
 
 var _spent: bool = false
 
@@ -26,7 +29,18 @@ func _resolve_hit(hurtbox: Hurtbox) -> void:
 		return
 	_spent = true
 	var safe_attacker = attacker if is_instance_valid(attacker) else null
-	var hit_data := HitData.new(damage, direction.normalized() * knockback_strength, safe_attacker)
+	var is_perfect := false
+	if perfect_condition == WeaponStats.PerfectCondition.LONG_RANGE:
+		if spawn_position.distance_to(hurtbox.global_position) >= 110.0:
+			is_perfect = true
+	elif perfect_condition == WeaponStats.PerfectCondition.CLOSE_RANGE:
+		if spawn_position.distance_to(hurtbox.global_position) <= 40.0:
+			is_perfect = true
+	var final_damage := damage
+	if is_perfect:
+		final_damage *= perfect_multiplier
+
+	var hit_data := HitData.new(final_damage, direction.normalized() * knockback_strength, safe_attacker, is_perfect)
 	hit_data.weapon_weight = weapon_weight
 	hit_data.element = element
 	hit_data.charge = charge

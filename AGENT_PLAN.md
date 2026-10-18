@@ -123,10 +123,11 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Phase 9 documentation reconciliation and final verification.
 
 ### P13 — Perfect Hit and weapon window expansion
-- [ ] Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md), beginning with the shared hit/window resolution and the dagger streak test case.
-- [ ] Add the existing-weapon timing windows and the default multiplier bands without altering Charge or the reaction resolver.
-- [ ] Add the shop-only weapon resources and the enemy health getters required for finisher-based weapons.
-- [ ] Cover the Perfect Hit tests for window behavior, multiplier handling, and scattershot/streak edge cases.
+- [x] Implement the shared Perfect Hit hit/window resolution, feedback, and dagger streak behavior.
+- [x] Add the existing-weapon windows and multiplier bands without altering Charge or the reaction resolver.
+- [x] Add six shop-only weapon resources, shop stock wiring, and target health getters.
+- [x] Cover window behavior, multiplier handling, scattershot spread, and streak edge cases.
+- [x] Verification: 269/269 GUT tests passed, 1,760 assertions, 0 failures; two expected headless warnings.
 
 ### P14 — Skill system expansion
 - [ ] Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md) after the run optimization work is stable.
@@ -157,8 +158,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - `Design.md` remains the source of truth for behavior and architecture.
 - `PlaytestMode` remains debug-only and does not replace the in-run shop flow.
 - P12 is fully verified and documented. No blockers remaining.
-- Current verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
+- P12 verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
+- P13 verification: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected warnings.
 
 ## Immediate next action
 
-- Move to P13: Implement the shared Perfect Hit system described in [WEAPON_BACKLOG.md](WEAPON_BACKLOG.md).
+- Move to P14: Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md).
