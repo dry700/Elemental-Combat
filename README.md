@@ -19,7 +19,7 @@ The project is beyond the initial prototype stage. The verified codebase include
 - Perfect Hit windows for the weapon roster, including six shop-unlock weapons and a five-arrow scattershot crossbow
 - Runtime debug instrumentation (`[RUNLOG]`) logging room performance metrics
 
-P14 (Skill system expansion) is implemented. The implementation matches the design contract in [Design.md](Design.md); an interactive playtest checkpoint remains for the next game session.
+P14 (Skill system expansion) is implemented. The implementation matches the design contract in [Design.md](docs/Design.md); an interactive playtest checkpoint remains for the next game session.
 
 ## Opening the project
 
@@ -52,7 +52,7 @@ Save data is handled by `SaveManager` and includes meta-progression, run history
 
 ## Design and planning docs
 
-- [Design.md](Design.md) — the implementation source of truth
+- [Design.md](docs/Design.md) — the implementation source of truth
 - [AGENT_PLAN.md](AGENT_PLAN.md) — active checklist for phase work
 - [plan.md](plan.md) — current execution log and verified status
 - [plan-elemental_roguelike.md](plan-elemental_roguelike.md) — roadmap summary aligned with the current design contract

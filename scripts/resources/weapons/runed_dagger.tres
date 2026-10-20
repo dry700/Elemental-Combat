@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-weapon_name = "Runed Dagger (Hỏa/Thổ)"
+weapon_name = "Runed Dagger (Fire/Earth)"
 perfect_condition = 1
 perfect_multiplier = 1.5
 weight = 0

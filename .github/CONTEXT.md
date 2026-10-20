@@ -12,7 +12,7 @@
 | **Workspace** | `E:\FYP\elemental_roguelike\elemental_roguelike` |
 | **Godot executable** | `E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe` |
 | **GUT test command** | `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s "res://addons/gut/gut_cmdln.gd" -gdir=res://test -ginclude_subdirs -gexit` |
-| **Source of truth** | `Design.md` (93 KB) |
+| **Source of truth** | `docs/Design.md` (93 KB) |
 | **Working checklist** | `AGENT_PLAN.md` |
 | **Execution roadmap** | `.github/prompts/plan-elementalRoguelike.prompt.md` |
 | **Sync prompt** | `.github/prompts/plan.prompt.md` |
@@ -191,7 +191,7 @@
 ```
 elemental_roguelike/
 ├── AGENT_PLAN.md                    <- working checklist
-├── Design.md                        <- source of truth (93 KB)
+├── docs/Design.md                   <- source of truth (93 KB)
 ├── plan.md                          <- per-sub-phase detailed plan
 ├── plan-elemental_roguelike.md      <- broader phase plan
 ├── project.godot                    <- main scene = scenes/world/test_arena.tscn

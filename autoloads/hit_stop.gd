@@ -35,7 +35,7 @@ func _wait_and_restore() -> void:
 
 ## Per-weight base freeze duration — A.3 already uses weight class to
 ## drive speed and Charge; this extends the same "weight = identity"
-## idea to hit-stop, per GUIDE.md's own tuning table ("Hits feel weak →
+## idea to hit-stop, per docs/GUIDE.md's own tuning table ("Hits feel weak →
 ## increase the freeze duration"). "none" covers enemy attacks (which
 ## never set weapon_weight on their Hitbox) and anything else that
 ## still wants the old flat default.

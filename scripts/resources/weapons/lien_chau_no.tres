@@ -9,7 +9,7 @@ style = 2
 
 [resource]
 script = ExtResource("1")
-weapon_name = "Liên châu nỏ"
+weapon_name = "Repeating Crossbow"
 weight = 1
 damage = 4.5
 perfect_condition = 9

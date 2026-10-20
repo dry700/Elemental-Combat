@@ -157,10 +157,10 @@ The static room-template expansion was replaced by procedural room generation. D
 - [ ] Run targeted tests and the full GUT suite before closing out the upgrade phase.
 
 ### P11 — Close-out documentation and final verification
-- [ ] Update Design.md for autoloads, system map, and implemented/partial status headings.
+- [ ] Update docs/Design.md for autoloads, system map, and implemented/partial status headings.
 - [ ] Record the D7 and D8 decisions and any new architecture notes.
 - [ ] Refresh README with the menu entry point, controls table, and test count.
-- [ ] Verify AGENT_PLAN.md and Design.md remain aligned with the final state.
+- [ ] Verify AGENT_PLAN.md and docs/Design.md remain aligned with the final state.
 - [ ] Run the full project GUT suite and confirm a green result.
 - [ ] Perform the required manual playtest checklist for tutorial and menu flow.
 

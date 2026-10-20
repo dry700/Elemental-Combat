@@ -9,7 +9,7 @@ extends Node
 ##     persists across deaths and new runs.
 ##   - run_history: a capped log of completed runs (win or loss), each
 ##     with an outcome, how many rooms were cleared, and how long it
-##     took — the evaluation-friendly record GUIDE.md's own "keep track
+##     took — the evaluation-friendly record docs/GUIDE.md's own "keep track
 ##     of what you tried" advice already models for tuning sessions,
 ##     just for runs instead.
 ##   - in_progress_run: a single mid-run snapshot (room sequence,

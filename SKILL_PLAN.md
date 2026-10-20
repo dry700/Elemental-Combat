@@ -1,6 +1,6 @@
 # Skill System Plan (post-P12)
 
-Depends on P12 being done (shop chunk and `ShopStation`). Independent of the Perfect Hit work in `WEAPON_BACKLOG.md`.
+Depends on P12 being done (shop chunk and `ShopStation`). Independent of the Perfect Hit work in `docs/WEAPON_BACKLOG.md`.
 Follow the same agent rules as `P12_RUN_OPTIMIZATION_PLAN.md` section 0 (run the full GUT suite per phase, one commit per phase,
 no edits to `reaction_resolver.gd`, never mutate shared `.tres`, `SaveTestIsolation` in any test touching `SaveManager`).
 
@@ -56,7 +56,7 @@ Keep `zone_radius` / `zone_lifetime` for `APPLY_AREA`.
 
 **S0.4 Skill pool.** New `scripts/resources/skills/skill_pool.gd` (`class_name SkillPool`, static only, same convention as `Elements`): one list of all skill paths, `static func by_element(element) -> Array[String]`, and `static func roll(exclude_paths: Array, element := Elements.NONE) -> SkillData`. `LoadoutSelect` keeps its own starting-five list; shop and drops use `SkillPool`.
 
-**S0.5 Duplicate guard.** Add `Player.would_duplicate_skill(is_primary, candidate)` (compare `resource_path`, ignore empty paths), same rule as weapons (Design.md 15.4). Cooldowns are keyed by the resource, so two copies would silently share one cooldown. Call it from `SkillPickup._do_pickup` and the Hud overlay.
+**S0.5 Duplicate guard.** Add `Player.would_duplicate_skill(is_primary, candidate)` (compare `resource_path`, ignore empty paths), same rule as weapons (docs/Design.md 15.4). Cooldowns are keyed by the resource, so two copies would silently share one cooldown. Call it from `SkillPickup._do_pickup` and the Hud overlay.
 
 **S0.6 Cooldown readout API.** `Player.get_skill_cooldown_ratio(skill) -> float` (0 = ready, 1 = just cast), and keep `_skill_cooldowns` private.
 
@@ -140,7 +140,7 @@ Balance notes:
 
 ## Phase S5 - Docs and verification
 
-- `Design.md`: 4.6 (new functions and damage model), section 2 system map (skills row), section 8 (HUD cooldown), P12 shop section (skill stall), section 11 (the `description` fix).
+- `docs/Design.md`: 4.6 (new functions and damage model), section 2 system map (skills row), section 8 (HUD cooldown), P12 shop section (skill stall), section 11 (the `description` fix).
 - `README.md`, `plan.md`: new test counts.
 - Full suite green, then manual playtest: cast each skill once in `test_arena`, then check the shop stall and boss drop in a run.
 
@@ -150,7 +150,7 @@ Balance notes:
 2. **Count.** 10 new (15 total) is assumed. Confirm or cut to 10 total.
 3. **Healing skills.** Excluded so Restore stays the only sustain. Confirm.
 4. **Spirit drop rate (8%) and skill price (60 Qi)** are placeholders; both depend on the P12 economy numbers.
-5. **Future, not in scope:** skill runes (Design.md 16.2: build together with the modifier catalogue), DoT/summon skills, enemy skill casters, and skill upgrades in the shop.
+5. **Future, not in scope:** skill runes (docs/Design.md 16.2: build together with the modifier catalogue), DoT/summon skills, enemy skill casters, and skill upgrades in the shop.
 
 ## P14 verification record
 

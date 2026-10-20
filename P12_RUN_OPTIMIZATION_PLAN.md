@@ -1,6 +1,6 @@
 # P12 — Run Optimization (agent brief)
 
-Source of truth for architecture: `Design.md`. Execution log: `plan.md` / `AGENT_PLAN.md`.
+Source of truth for architecture: `docs/Design.md`. Execution log: `plan.md` / `AGENT_PLAN.md`.
 This file is a task list for a CLI coding agent. Do the phases **in order**; each phase must leave the
 game runnable and the full GUT suite green before moving on. One commit per phase.
 
@@ -10,14 +10,14 @@ game runnable and the full GUT suite green before moving on. One commit per phas
   ```
   & "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit
   ```
-- Follow Design.md §1 and §12: composition over inheritance, no new base classes, never edit `reaction_resolver.gd`,
+- Follow docs/Design.md §1 and §12: composition over inheritance, no new base classes, never edit `reaction_resolver.gd`,
   never mutate a shared `.tres` at runtime (`duplicate()` first), no real physics AoE.
 - Any test touching `SaveManager` or `Player.swap_weapon/swap_skill` must use `test/helpers/save_test_isolation.gd`.
 - Keep these names/signatures stable (existing tests call them): `Hud._open_overlay`, `_overlay_selected_primary`,
   `_confirm_overlay_selection`, `_on_overlay_option_gui_input`, `_can_open_overlay`, `_open_upgrade_menu`,
   `_confirm_upgrade_selection`, `_set_upgrade_selection`, `_all_upgrade_options`, `_upgrade_page_offset`.
 - Do not hand-edit `.uid` files. New scripts get a `.uid` when Godot imports them; commit those.
-- Every phase: update/add tests listed in its "Tests" line. Update `Design.md` only in Phase 9 (one pass).
+- Every phase: update/add tests listed in its "Tests" line. Update `docs/Design.md` only in Phase 9 (one pass).
 - Qi/upgrade state stays out of meta-progression. It may be written to the in-progress run snapshot only
   (already the case via `upgrade_state`).
 
@@ -179,7 +179,7 @@ tracks `_player_in_range`, draws a simple glyph and `"F Shop"` when in range.
   `_player.current_health = minf(current + max_health * RESTORE_HEAL_FRACTION, max_health)`.
 
 **T5.5 Weapon rack**
-- `Player.would_duplicate_weapon(is_primary, candidate) -> bool` per Design.md §15.4 (compare `resource_path`, ignore empty paths).
+- `Player.would_duplicate_weapon(is_primary, candidate) -> bool` per docs/Design.md §15.4 (compare `resource_path`, ignore empty paths).
 - `scripts/items/shop_weapon_pickup.gd`: `class_name ShopWeaponPickup extends WeaponPickup`, `var price: int`.
   - `_do_pickup(player, is_primary)`: return if `player.would_duplicate_weapon(...)`; return if `not UpgradeManager.spend_qi(price)`; else `super(...)`.
   - `_draw()`: `super._draw()`, then `"F %d Qi"` (dim when unaffordable).
@@ -251,9 +251,9 @@ prefer finding options by `type` over fixed indices).
 
 ## Phase 9 — Docs and final verification
 
-**Status: Complete** — Documentation reconciled across `Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`. Full GUT test suite is completely green (257/257 passing tests, 1,658 assertions, 0 failures).
+**Status: Complete** — Documentation reconciled across `docs/Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`. Full GUT test suite is completely green (257/257 passing tests, 1,658 assertions, 0 failures).
 
-- `Design.md`: §4.8.1 (reward table), §4.8.2 (costs, Restore), §6 (open gate, loop persistence, scaling), §8 (shop station input),
+- `docs/Design.md`: §4.8.1 (reward table), §4.8.2 (costs, Restore), §6 (open gate, loop persistence, scaling), §8 (shop station input),
   §19 (shop branch algorithm, shop contents), §11 (move resolved items). Stale "Refresh Shop" references resolved.
 - `plan.md`, `plan-elemental_roguelike.md`, `README.md`: P12 marked complete, test counts updated (257 passing tests, 1,658 assertions).
 - Full suite green; zero errors in the Godot output.

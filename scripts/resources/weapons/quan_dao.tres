@@ -15,7 +15,7 @@ swing_rotation_end_deg = 140.0
 
 [resource]
 script = ExtResource("1")
-weapon_name = "Quan đao"
+weapon_name = "Glaive"
 weight = 2
 damage = 20.0
 perfect_condition = 3

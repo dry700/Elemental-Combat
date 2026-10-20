@@ -1,6 +1,6 @@
 # AGENT_PLAN.md
 
-This is the working checklist for the project. It remains intentionally lightweight while the detailed mechanics live in [Design.md](Design.md).
+This is the working checklist for the project. It remains intentionally lightweight while the detailed mechanics live in [Design.md](docs/Design.md).
 
 ## Status legend
 
@@ -13,7 +13,7 @@ This is the working checklist for the project. It remains intentionally lightwei
 - Work on one phase at a time.
 - Do not mark a task complete without the relevant verification result.
 - Keep design decisions and blockers in the notes section.
-- Use [Design.md](Design.md) as the implementation source of truth.
+- Use [Design.md](docs/Design.md) as the implementation source of truth.
 
 ## Phase order
 
@@ -108,11 +108,11 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 ### P11 — Final verification and closeout
 - [x] Run the full GUT suite.
 - [x] Confirm static diagnostics are clean.
-- [x] Update [Design.md](Design.md) only if the implemented contract diverges from design.
+- [x] Update [Design.md](docs/Design.md) only if the implemented contract diverges from design.
 - [x] Capture blockers and decisions before the final handoff.
 
 ### P12 — Run optimization and economy tuning
-- [x] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](Design.md).
+- [x] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](docs/Design.md).
 - [x] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
 - [x] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
 - [x] Open the gate and generator changes for procedural-room flow, shop dead-end placement, and normal-room transitions.
@@ -155,7 +155,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 
 ## Notes and blockers
 
-- `Design.md` remains the source of truth for behavior and architecture.
+- `docs/Design.md` remains the source of truth for behavior and architecture.
 - `PlaytestMode` remains debug-only and does not replace the in-run shop flow.
 - P12 is fully verified and documented. No blockers remaining.
 - P12 verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.

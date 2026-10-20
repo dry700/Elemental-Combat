@@ -1,6 +1,6 @@
 # Elemental Roguelike Plan
 
-This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). P13 (Perfect Hit and weapon window expansion) is complete; next milestone is P14 (skill system expansion).
+This roadmap is synchronized with [Design.md](docs/Design.md) and [AGENT_PLAN.md](AGENT_PLAN.md). P13 (Perfect Hit and weapon window expansion) is complete; next milestone is P14 (skill system expansion).
 
 ## Current status
 
@@ -45,7 +45,7 @@ This roadmap is synchronized with [Design.md](Design.md) and [AGENT_PLAN.md](AGE
 - P12 full-suite verification: 257/257 tests passed, 1,658 assertions, 0 failures, with 2 expected headless warnings.
 - P13 full-suite verification: 269/269 tests passed, 1,760 assertions, 0 failures, with 2 expected headless warnings.
 - Static diagnostics: clean across all workspace files.
-- Blockers: none; all changes verified against [Design.md](Design.md).
+- Blockers: none; all changes verified against [Design.md](docs/Design.md).
 
 ## Exact next item
 

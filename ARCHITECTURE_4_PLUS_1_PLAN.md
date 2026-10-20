@@ -4,7 +4,7 @@
 
 Produce a report-ready 4+1 architecture model for the Elemental Roguelike.
 The diagrams must describe the implemented Godot architecture, not only the
-original proposal. `Design.md` is the primary source of truth; unresolved or
+original proposal. `docs/Design.md` is the primary source of truth; unresolved or
 planned systems must be shown as planned rather than as implemented.
 
 ## Deliverables
@@ -25,7 +25,7 @@ exports so they can be updated when the implementation changes.
 
 ## UML Diagram Plan
 
-The existing `ARCHITECTURE_4_PLUS_1.drawio` file is the architecture-view
+The existing `docs/ARCHITECTURE_4_PLUS_1.drawio` file is the architecture-view
 model. Add four UML-focused pages to that file, or create a separate UML file
 if the report needs less crowded pages:
 
@@ -453,7 +453,7 @@ refer to individual elements without repeating large diagrams.
 
 1. Freeze the implementation snapshot and record the Godot version and current
    main scene.
-2. Extract names and relationships from `Design.md`, `project.godot`, and the
+2. Extract names and relationships from `docs/Design.md`, `project.godot`, and the
    relevant scene/script folders.
 3. Draw the four scenarios first and validate that every major user-visible
    workflow has an owner.
@@ -481,11 +481,11 @@ refer to individual elements without repeating large diagrams.
       marked `planned` or omitted from the implemented view.
 - [ ] Names and arrows are legible in the final exported files.
 - [ ] The diagrams are reviewed against the latest automated test result and
-      the current `Design.md` revision.
+      the current `docs/Design.md` revision.
 
 ## Source Anchors
 
-- `Design.md` — system map, combat loop, architectural principles, and runtime
+- `docs/Design.md` — system map, combat loop, architectural principles, and runtime
   rules.
 - `project.godot` — main scene, autoload registration, viewport, and engine
   configuration.

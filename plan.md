@@ -1,6 +1,6 @@
 # Current Implementation Plan
 
-Source of truth: [Design.md](Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md).
+Source of truth: [Design.md](docs/Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md).
 
 ## Phase status
 
@@ -32,7 +32,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - Loop persistence and scaling: `RunManager` tracks loops (`loop`); winning runs carry Qi, upgrades, held weapons, and equipped runes (`pending_weapon_rune`, `pending_secondary_weapon_rune`); enemy and boss HP and damage scale by `1.0 + 0.25 * (loop - 1)` via `EnemySpawnPoint.spawn()`; death resets to loop 1.
 - Tuned Qi economy: Normal brawler 5 Qi, Elemental spirit 8 Qi (Kim Spirit HP tuned to 50), Flying/Shooter/Swooper 3 Qi, Boss 30 Qi; Weapon Might and Vitality cost `20 + 12 * rank`; Sinh/Khắc Rank 1 costs 25 Qi, Rank 2 costs 55 Qi.
 - Instrumentation: `[RUNLOG] loop=%d room=%d time=%.1f hp=%d->%d qi_earned=%d qi_spent=%d` logs delta metrics per completed room in debug builds.
-- Documentation fully reconciled across `Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`.
+- Documentation fully reconciled across `docs/Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`.
 - Perfect Hit windows now resolve for the existing and six shop-only weapons; the weapon card displays each window and perfect hits preserve Charge and reaction inputs.
 - P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
 - P14 adds ten skills (15 total), four cast behaviors, cooldown HUD, duplicate prevention, a 60 Qi shop stall, and matching-element spirit/boss drops.
@@ -43,7 +43,7 @@ Source of truth: [Design.md](Design.md). Execution order and repository rules ar
 - [x] Full GUT suite: 257/257 tests passed, 1,658 assertions, 0 failures.
 - [x] Boss phase transitions, armor/charge wiring, and stats verified.
 - [x] Loop scaling and persistence verified with dedicated unit tests.
-- [x] Final Design.md reconciliation complete.
+- [x] Final docs/Design.md reconciliation complete.
 
 ## Exact next item
 
