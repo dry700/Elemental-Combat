@@ -37,6 +37,12 @@ var _cooldown_timer: float = 0.0
 var _state_timer: float = 0.0
 var _base_color: Color
 var _is_flashing: bool = false
+var facing: int = 1:
+	set(value):
+		var new_val := 1 if value >= 0 else -1
+		if new_val != facing:
+			facing = new_val
+			_update_facing()
 
 enum State { HOVER, TELEGRAPH, SWOOP, RECOVER }
 var _state: State = State.HOVER
@@ -46,6 +52,7 @@ var _hitbox: Hitbox
 const DamagePopup = preload("res://scripts/ui/damage_number.gd")
 
 func _ready() -> void:
+	_update_facing()
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	_base_color = visual_polygon.color
 	
@@ -123,6 +130,10 @@ func _process_hover(player: Node2D, delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, float_speed * delta * 5.0)
 		return
 		
+	var dir_val: float = sign(player.global_position.x - global_position.x)
+	if dir_val != 0.0:
+		facing = int(dir_val)
+
 	var dist = global_position.distance_to(player.global_position)
 	var sight_blocked := SteamCloud.blocks_vision(global_position, player.global_position)
 	
@@ -152,6 +163,8 @@ func _start_swoop(player: Node2D) -> void:
 		_swoop_dir = (player.global_position - global_position).normalized()
 	else:
 		_swoop_dir = Vector2.DOWN
+	if _swoop_dir.x != 0.0:
+		facing = int(sign(_swoop_dir.x))
 		
 	# Enable the melee hitbox
 	_hitbox.damage = damage
@@ -222,3 +235,9 @@ func _flash() -> void:
 	await get_tree().create_timer(0.08).timeout
 	_is_flashing = false
 	visual.set_tint(_resting_color())
+
+func _update_facing() -> void:
+	if visual != null:
+		visual.scale.x = absf(visual.scale.x) * facing
+	if visual_polygon != null:
+		visual_polygon.scale.x = absf(visual_polygon.scale.x) * facing
