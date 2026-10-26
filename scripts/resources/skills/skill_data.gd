@@ -19,6 +19,12 @@ enum Function {
 	PROJECTILE_FAN,
 	DASH,
 	BUFF_ARMOR,
+	JUMP_SLAM,
+}
+
+enum CastVFXStyle {
+	BURST,
+	WAVE,
 }
 
 @export var skill_name: String = "Skill"
@@ -26,6 +32,7 @@ enum Function {
 @export var icon: Texture2D
 @export var element: StringName = &"none"
 @export var function: Function = Function.APPLY_SELF
+@export var cast_vfx_style: CastVFXStyle = CastVFXStyle.BURST
 @export var cooldown: float = 10.0
 @export var damage: float = 0.0
 @export var radius: float = 0.0

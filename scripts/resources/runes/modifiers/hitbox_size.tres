@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RuneModifierDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/runes/rune_modifier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"hitbox_size"
+display_name = "Hitbox Size"
+description = "+{v}px hitbox radius"
+value_min = 1.0
+value_max = 3.0
+value_step = 0.5
+applies_to = 0
+elements = []
+

@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/shop_room.gd" id="1_shop_room"]
+[ext_resource type="Script" path="res://scripts/world/room_exit.gd" id="2_room_exit"]
+[ext_resource type="Script" path="res://scripts/items/shop_station.gd" id="3_shop_station"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(450, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
+size = Vector2(10, 30)
+
+[node name="ShopRoom" type="Node2D"]
+script = ExtResource("1_shop_room")
+exit = NodePath("Exit")
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(0, 110)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Visual" type="Polygon2D" parent="Ground"]
+color = Color(0.25, 0.25, 0.3, 1)
+polygon = PackedVector2Array(-225, -10, 225, -10, 225, 10, -225, 10)
+
+[node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
+position = Vector2(-190, 90)
+
+[node name="UpgradeStation" type="Area2D" parent="."]
+position = Vector2(-135, 84)
+script = ExtResource("3_shop_station")
+category = 0
+
+[node name="WeaponStation" type="Area2D" parent="."]
+position = Vector2(-45, 84)
+script = ExtResource("3_shop_station")
+category = 1
+
+[node name="SkillStation" type="Area2D" parent="."]
+position = Vector2(45, 84)
+script = ExtResource("3_shop_station")
+category = 2
+
+[node name="RuneStation" type="Area2D" parent="."]
+position = Vector2(135, 84)
+script = ExtResource("3_shop_station")
+category = 3
+
+[node name="Exit" type="Area2D" parent="."]
+position = Vector2(210, 95)
+collision_layer = 0
+script = ExtResource("2_room_exit")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit"]
+shape = SubResource("RectangleShape2D_exit")
+
+[node name="Visual" type="Polygon2D" parent="Exit"]
+polygon = PackedVector2Array(-5, -15, 5, -15, 5, 15, -5, 15)

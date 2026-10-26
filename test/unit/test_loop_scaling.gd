@@ -16,6 +16,8 @@ func before_each():
 	UpgradeManager.reset()
 	RunManager.loop = 1
 	RunManager._continue_loop = false
+	RunManager._run_active = false
+	RunManager._current_room = null
 	RunManager.skip_scene_transitions = true
 	var player_scene: PackedScene = load("res://scenes/player/player.tscn")
 	player = player_scene.instantiate()
@@ -26,8 +28,16 @@ func before_each():
 func after_each():
 	RunManager.loop = 1
 	RunManager._continue_loop = false
+	RunManager._run_active = false
+	RunManager.set_process(false)
 	RunManager.skip_scene_transitions = false
 	RunManager._player = null
+	RunManager.pending_weapon_path = ""
+	RunManager.pending_secondary_weapon_path = ""
+	RunManager.pending_skill_1_path = ""
+	RunManager.pending_skill_2_path = ""
+	RunManager.pending_weapon_rune = {}
+	RunManager.pending_secondary_weapon_rune = {}
 	UpgradeManager.reset()
 
 func test_loop_1_enemy_stats_untouched():
@@ -93,6 +103,19 @@ func test_start_next_loop_increments_loop_and_preserves_upgrades():
 	assert_true(RunManager._continue_loop)
 	assert_eq(UpgradeManager.qi, qi_before)
 	assert_eq(UpgradeManager.weapon_might_multiplier(), might_before)
+
+func test_start_next_loop_from_active_shop_captures_loadout_and_clears_resume_save():
+	player.weapon = load("res://scripts/resources/weapons/training_dagger.tres")
+	RunManager._sequence = ["res://scenes/world/rooms/boss_shop_room.tscn"]
+	RunManager._run_active = true
+	SaveManager.save_in_progress_run(RunManager._sequence, 0, player.to_save_state(), 12.0)
+
+	RunManager.start_next_loop()
+
+	assert_eq(RunManager.loop, 2)
+	assert_false(RunManager._run_active)
+	assert_false(SaveManager.has_in_progress_run())
+	assert_eq(RunManager.pending_weapon_path, player.weapon.resource_path)
 
 func test_finish_run_win_keeps_upgrades_and_carries_runes():
 	UpgradeManager.award_qi(50.0)

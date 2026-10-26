@@ -22,10 +22,9 @@ metadata/_custom_type_script = "uid://0fjribao1my8"
 
 [resource]
 script = ExtResource("1")
-perfect_condition = 1
-perfect_multiplier = 1.5
 weapon_texture = ExtResource("2_veak4")
 weapon_icon = ExtResource("3_fwfby")
+perfect_condition = 1
 active_window = Vector2(0.06, 0.1)
 innate_element = &"hoa"
 lunge_speed = 95.0

@@ -53,9 +53,16 @@ var _base_color: Color
 var _is_flashing: bool = false
 var _is_telegraphing: bool = false
 var _telegraph_is_special: bool = false
+var facing: int = 1:
+	set(value):
+		var new_val := 1 if value >= 0 else -1
+		if new_val != facing:
+			facing = new_val
+			_update_facing()
 
 
 func _ready() -> void:
+	_update_facing()
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	_base_color = visual_polygon.color
 
@@ -94,6 +101,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y += gravity * delta
 
 	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player != null:
+		var dir_val: float = sign(player.global_position.x - global_position.x)
+		if dir_val != 0.0:
+			facing = int(dir_val)
 	if combat_ai != null and player != null:
 		combat_ai.update(delta, player.global_position)
 
@@ -106,6 +117,13 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, DECEL_WHEN_NOT_CHASING)  ## Holds ground — no patrol behaviour, unlike PatrolDummy.
 
 	move_and_slide()
+
+
+func _update_facing() -> void:
+	if visual != null:
+		visual.scale.x = absf(visual.scale.x) * facing
+	if visual_polygon != null:
+		visual_polygon.scale.x = absf(visual_polygon.scale.x) * facing
 
 
 func _resting_color() -> Color:

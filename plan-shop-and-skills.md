@@ -1,6 +1,6 @@
 # Plan: Shop Rooms, Interactive Exits, Reaction Clues, Maid's Skills, Heavy Hit
 
-Status: **planning only, no code written.** Every number below is a placeholder to tune in playtesting.
+Status: **in progress.** Shop rooms and category-specific offers are implemented; run-sequence integration is complete and shop-state persistence remains. Steps are tracked in `AGENT_PLAN.md`; every number below is a placeholder to tune in playtesting.
 Source of truth for existing systems is [Design.md](docs/Design.md); when this plan is implemented, fold it into docs/Design.md as new sections.
 
 ---
@@ -11,7 +11,7 @@ Source of truth for existing systems is [Design.md](docs/Design.md); when this p
 |---|---|---|
 | 1 | Shop placement | A shop after every normal room and after the boss. The boss shop has two exits: **Stop** (end run, show summary) and **Go deeper** (next loop). It replaces the old boss-loop summary. |
 | 2 | Tab menu | Room-clear Tab upgrade menu is **removed**. Upgrades are bought only at the shop's Upgrade station. |
-| 3 | Currency | Qi for everything. Refresh cost **escalates per category**. |
+| 3 | Currency | Qi for everything. Refresh remains removed under D19. |
 | 4 | Weapon offers | 3 random weapons from the pool. Slot chooser opens on purchase. |
 | 5 | Rune offers | Author starter `RuneModifierDef` assets **first**, then build the shop. |
 | 6 | Save/resume | Shop stock and refresh counts are saved and restored. |
@@ -77,18 +77,18 @@ Currently `RoomExit` advances on `body_entered`.
 
 ### 3.3 Popup (second sketch)
 
-- Generalise the existing room-clear upgrade panel into a **shop panel**: 3 option cards + Refresh bar.
+- Generalise the existing room-clear upgrade panel into a **shop panel**: 3 option cards; no Refresh bar per D19.
 - Upgrade offers come from the existing `_all_upgrade_options` logic.
 - Weapon offers: 3 random from `STARTING_WEAPON_PATHS` + `SaveManager.get_unlocked_weapon_paths()`, excluding duplicates via `Player.would_duplicate_weapon()` (§15.4). On purchase, open the existing slot chooser (`_open_overlay`).
 - Skill offers: 3 random from `STARTING_SKILL_PATHS` + `SaveManager.get_unlocked_skill_paths()`. **Maid's Guard and Maid's Sweep are rare entries** (about 10% chance per Skill station roll, tune later). Skills already equipped in either slot are excluded (two identical skills would share one cooldown, per §15.2). On purchase, the skill chooser path opens (`_open_overlay` SKILL kind) and `swap_skill()` records the unlock.
 - Rune offers: rolled with `RuneRoller` (random element, target WEAPON). On purchase, slot chosen via the chooser.
 - Keep the stable names Hud tests rely on where possible (`_open_overlay`, `_confirm_overlay_selection`, etc.).
 
-### 3.4 Prices and refresh (placeholders)
+### 3.4 Prices (placeholders)
 
 - Upgrade: existing costs (Weapon Might / Vitality curves, reaction ranks 20 / 45).
 - Weapon and rune prices: flat per offer, tune later.
-- Refresh: base 10 Qi, **+10 per refresh, per category**, reset when entering a new shop.
+- Refresh remains removed under the existing D19 decision. Category offers stay fixed for the shop visit.
 - Qi economy needs a re-check: shops after every room mean more spending opportunities than the ~90 to 130 Qi/run estimate (§4.8.1) assumed.
 
 ### 3.5 Remove the old Tab menu
@@ -109,6 +109,8 @@ Currently `RoomExit` advances on `body_entered`.
 - `rooms_cleared` is currently derived from `_current_index`; shops must **not** count as cleared rooms. Fix that calculation.
 - `RunManager._on_room_cleared` no longer opens a menu.
 - Boss-loop summary replaced: the boss shop's two exits take over the stop/continue choice. `run_summary` stays as the Stop destination and the death screen.
+
+Step 4.1 implemented: generated runs now use the interleaved room/shop order above. Shops are excluded from cleared-combat-room counts, and only shop stations can open the upgrade menu. Focused sequence, shop-menu, shop-room, death-count, and boss-shop Stop tests pass (26 tests, 196 assertions). The full suite remains blocked by unrelated existing parse errors in enemy scripts.
 
 ### 4.2 Shop state in the save
 

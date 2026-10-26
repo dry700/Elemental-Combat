@@ -34,6 +34,10 @@ func after_each() -> void:
 		hud._active_shop_station = null
 
 
+func _open_upgrade_shop_for_test(hud: Hud) -> void:
+	hud._open_shop_menu(ShopStation.Category.UPGRADE)
+
+
 func test_shop_station_opens_upgrade_menu_with_pickup_action() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
@@ -46,6 +50,16 @@ func test_shop_station_opens_upgrade_menu_with_pickup_action() -> void:
 
 	assert_true(hud.is_upgrade_menu_active())
 	station.free()
+
+
+func test_swap_key_does_not_open_upgrade_shop_outside_a_station() -> void:
+	var hud := get_node_or_null("/root/Hud")
+	assert_not_null(hud)
+	Input.action_press("swap")
+	hud._handle_room_clear_upgrade_input()
+	Input.action_release("swap")
+
+	assert_false(hud.is_upgrade_menu_active())
 
 
 func test_weapon_pickup_takes_priority_over_shop_station() -> void:
@@ -65,24 +79,26 @@ func test_weapon_pickup_takes_priority_over_shop_station() -> void:
 	station.free()
 
 
-func test_room_clear_shop_closes_open_playtest_panel() -> void:
+func test_room_clear_does_not_open_shop_or_close_playtest_panel() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	assert_not_null(PlaytestMode._panel)
 	PlaytestMode._panel.show()
 	assert_true(PlaytestMode.is_panel_open())
 
-	RunManager._on_room_cleared(RoomController.new())
+	var room := RoomController.new()
+	RunManager._on_room_cleared(room)
+	room.free()
 
-	assert_true(hud.is_upgrade_menu_active())
-	assert_false(PlaytestMode.is_panel_open())
+	assert_false(hud.is_upgrade_menu_active())
+	assert_true(PlaytestMode.is_panel_open())
 
 
 func test_upgrade_card_mouse_click_selects_before_confirming() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	UpgradeManager.award_qi(30.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 	assert_true(hud.is_upgrade_menu_active())
 
 	var click := InputEventMouseButton.new()
@@ -99,14 +115,13 @@ func test_upgrade_card_mouse_click_selects_before_confirming() -> void:
 	assert_true(hud.is_upgrade_menu_active())
 
 
-func test_room_clear_upgrade_menu_opens_on_room_clear_and_purchases_weapon_might() -> void:
+func test_upgrade_shop_purchases_weapon_might() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	assert_not_null(RunManager._player)
 	assert_true(hud.has_method("_can_open_upgrade_menu"))
 	UpgradeManager.award_qi(75.0)
-	var room := RoomController.new()
-	RunManager._on_room_cleared(room)
+	_open_upgrade_shop_for_test(hud)
 	assert_true(hud.is_upgrade_menu_active())
 	assert_true(hud.has_method("_confirm_upgrade_selection"))
 	if hud.has_method("_set_upgrade_selection"):
@@ -120,8 +135,7 @@ func test_room_clear_shop_allows_multiple_purchases_without_refresh() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	UpgradeManager.award_qi(90.0)
-	var room := RoomController.new()
-	RunManager._on_room_cleared(room)
+	_open_upgrade_shop_for_test(hud)
 	assert_true(hud.is_upgrade_menu_active())
 	assert_true(hud._all_upgrade_options.size() > 3)
 	assert_false(hud._all_upgrade_options.any(func(option): return option.get("type") == "refresh"))
@@ -146,7 +160,7 @@ func test_restore_card_heals_thirty_percent_and_charges_escalating_cost() -> voi
 	assert_not_null(hud)
 	player.current_health = 50.0
 	UpgradeManager.award_qi(30.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 
 	assert_eq(hud._all_upgrade_options[2].get("type"), "restore")
 	var restore_index := 2
@@ -165,7 +179,7 @@ func test_restore_at_full_health_does_not_charge() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	UpgradeManager.award_qi(30.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 	hud._set_upgrade_selection(2)
 
 	assert_true(str(hud._all_upgrade_options[2].get("desc")).contains("[Full HP]"))
@@ -181,7 +195,7 @@ func test_room_clear_ui_purchases_sinh_rank_one_and_favored_rank_two() -> void:
 	assert_not_null(hud)
 	var pair: Array[StringName] = [Elements.KIM, Elements.THUY]
 	UpgradeManager.award_qi(100.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 
 	var rank_one_index := -1
 	for index in hud._all_upgrade_options.size():
@@ -214,7 +228,7 @@ func test_room_clear_ui_can_purchase_the_other_sinh_favor_choice() -> void:
 	assert_not_null(hud)
 	var pair: Array[StringName] = [Elements.KIM, Elements.THUY]
 	UpgradeManager.award_qi(80.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 
 	var rank_one_index := -1
 	for index in hud._all_upgrade_options.size():
@@ -248,7 +262,7 @@ func test_room_clear_ui_purchases_khac_ranks_on_later_card_page() -> void:
 	assert_not_null(hud)
 	var pair: Array[StringName] = [Elements.HOA, Elements.KIM]
 	UpgradeManager.award_qi(80.0)
-	RunManager._on_room_cleared(RoomController.new())
+	_open_upgrade_shop_for_test(hud)
 
 	var rank_one_index := -1
 	for index in hud._all_upgrade_options.size():

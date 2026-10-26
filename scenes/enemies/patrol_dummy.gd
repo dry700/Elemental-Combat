@@ -37,9 +37,16 @@ var _is_telegraphing: bool = false
 var _telegraph_is_special: bool = false
 var _spawn_x: float
 var _patrol_direction: int = 1
+var facing: int = 1:
+	set(value):
+		var new_val := 1 if value >= 0 else -1
+		if new_val != facing:
+			facing = new_val
+			_update_facing()
 
 
 func _ready() -> void:
+	_update_facing()
 	hurtbox.hit_received.connect(_on_hurtbox_hit)
 	_base_color = visual_polygon.color
 	_spawn_x = global_position.x
@@ -99,6 +106,10 @@ func _process_combat_movement(player: Node2D) -> void:
 	if elemental.is_disabled():
 		velocity.x = 0.0
 		return
+	if player != null:
+		var dir_val: float = sign(player.global_position.x - global_position.x)
+		if dir_val != 0.0:
+			facing = int(dir_val)
 	if combat_ai.should_chase() and player != null:
 		var dir: float = sign(player.global_position.x - global_position.x)
 		velocity.x = dir * combat_ai.stats.chase_speed * elemental.get_speed_multiplier()
@@ -116,7 +127,17 @@ func _process_patrol() -> void:
 	elif global_position.x <= _spawn_x - patrol_distance:
 		_patrol_direction = 1
 
+	if _patrol_direction != 0:
+		facing = _patrol_direction
+
 	velocity.x = _patrol_direction * patrol_speed * elemental.get_speed_multiplier()
+
+
+func _update_facing() -> void:
+	if visual != null:
+		visual.scale.x = absf(visual.scale.x) * facing
+	if visual_polygon != null:
+		visual_polygon.scale.x = absf(visual_polygon.scale.x) * facing
 
 
 func _resting_color() -> Color:

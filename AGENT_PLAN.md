@@ -17,7 +17,38 @@ This is the working checklist for the project. It remains intentionally lightwei
 
 ## Phase order
 
-P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 (Perfect Hit) → P14 (Skill system)
+P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 (Perfect Hit) → P14 (Skill system) → Shop & Skills Expansion (plan-shop-and-skills.md)
+
+## Shop & Skills Expansion (plan-shop-and-skills.md)
+
+### Step 1 — Rune modifier assets and effect read-sites
+- [x] Author starter `RuneModifierDef` `.tres` assets (`damage_pct`, `reach`, `hitbox_size`, `knockback`, `attack_speed`) under `scripts/resources/runes/modifiers/`.
+- [x] Wire default catalogue loading into `RuneRoller.default()`.
+- [x] Add effect read-sites in `Player._configure_hitbox_for_current_swing()` without altering raw Charge.
+- [x] Verification: Unit tests in `test_rune_modifiers.gd` and `test_rune_roller.gd` pass; 308/308 total tests pass.
+
+### Step 2 — Interactive exits (press F)
+- [x] Rework `RoomExit` to require proximity + F press to trigger `player_entered`.
+- [x] Add pickup-over-exit interaction priority.
+- [x] Add unit and integration tests in `test_room_exit.gd` (5 focused tests pass).
+- [ ] Full-suite verification is blocked by parse errors in existing modified `swooper_enemy.gd` and `test_dummy.gd`; focused exit tests pass.
+
+### Step 3a — Shop room and station foundation
+- [x] Add enemy-free `shop_room.tscn` and suppress the combat room's baseline rune drop there.
+- [x] Add four categorized stations and a boss-shop scene with Stop / Go deeper exits.
+- [x] Route exit kinds through `RunManager` and verify both shop scenes load and unlock correctly (3 focused tests pass).
+
+### Step 3b — Category-specific offers
+- [x] Generate three offers each for Weapon, Skill, and Rune stations; use the existing upgrade offers for Upgrade.
+- [x] Purchase weapons and skills through priced pickups and the slot chooser; charge Qi for runes and mark purchased offers.
+- [x] Keep station stock stable for the room visit and verify shop/upgrade/exit tests (33 focused tests pass, including chooser purchases and active-shop loop handoff).
+- [x] Preserve the existing no-refresh decision (D19); shop offers do not reroll during a visit.
+
+### Step 4.1 — Interleaved shop-room sequence
+- [x] Generate normal room/shop pairs followed by the boss and final boss shop.
+- [x] Keep shop rooms out of cleared-combat-room statistics; the boss shop exits handle Stop / Go deeper.
+- [x] Remove room-clear and swap-key routes to the upgrade menu; only a shop station opens it.
+- [x] Verify sequence, shop-menu, shop-death, and boss-shop Stop accounting with focused GUT tests (26/26 passed, 196 assertions).
 
 ## Phase status
 
@@ -133,7 +164,10 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Implement the skill roadmap in [SKILL_PLAN.md](SKILL_PLAN.md) after the run optimization work is stable.
 - [x] Add the expanded `SkillData` schema, duplicate guards, cooldown readout, and `SkillPool` loader.
 - [x] Add the new cast behaviors, HUD slot rendering, and skill roster in phase order.
-- [x] Verify all new skill behaviors and compatibility checks with the full GUT suite: 287/287 passed, 1,841 assertions, 0 failures.
+- [x] Add shared element-tinted cast feedback for active skills.
+- [x] Add a directional wave visual to Undertow.
+- [x] Change Seismic Slam to leap before a ground impact that resolves its area effect, impact burst, and screen shake.
+- [x] Verify all new skill behaviors and compatibility checks with the full GUT suite: 299/299 passed, 1,898 assertions, 0 failures.
 
 ## Active decision log
 
@@ -161,7 +195,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P12 verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
 - P13 verification: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected warnings.
 - P14 verification: 287/287 tests passed, 1,841 assertions, 0 failures, 2 expected warnings; headless shutdown emits resource leak diagnostics. Manual gameplay checkpoint remains pending.
+- Latest full-suite attempt: 328/333 tests passed; five existing enemy-facing/loop-scaling tests fail after parse errors in modified `swooper_enemy.gd` and `test_dummy.gd`. Step 4.1 focused tests pass (26 tests, 196 assertions).
 
 ## Immediate next action
 
-- P14 follow-up: playtest each skill, shop stall spacing, and boss/spirit drops in game.
+- Proceed to Step 4.2 of plan-shop-and-skills.md: persist shop state across save/resume.

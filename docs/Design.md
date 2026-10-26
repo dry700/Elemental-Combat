@@ -885,17 +885,26 @@ implemented**, stays an explicit stretch goal.
 
 Normal procedural rooms have their exit door **open from the start**
 (`exit.locked = false`, Dead Cells style); the player is free to engage enemies
-for Qi or navigate directly toward the exit. The boss room (`room_boss.tscn`,
+for Qi or navigate directly toward the exit. All room exits require the player
+to stand in range and press F; a nearby pickup takes priority over an exit.
+Locked exits show no prompt and ignore F. The boss room (`room_boss.tscn`,
 using `RoomController`) remains locked until the boss is defeated.
 
 `RunManager` (autoload) owns sequencing: each loop contains
-`ROOMS_PER_RUN = 3` random normal procedural rooms (no immediate repeat) followed by
-`BOSS_ROOM_SCENE_PATH`, which is never part of the random pool. The first-time
-tutorial room is outside this loop and is shown only until its save flag is completed.
+`ROOMS_PER_RUN = 3` random normal procedural rooms (no immediate repeat),
+each followed by an enemy-free shop room, then `BOSS_ROOM_SCENE_PATH` and
+the enemy-free `BOSS_SHOP_ROOM_SCENE_PATH`. Shops are not part of the
+random pool. The first-time tutorial room is outside this loop and is shown
+only until its save flag is completed. Shop rooms expose Upgrade, Weapon,
+Skill, and Rune stations; purchases are made there rather than by
+automatically opening an upgrade menu when a combat room is cleared.
 
-Defeating the boss completes the current loop and opens the run summary screen.
-Choosing "Continue" calls `RunManager.start_next_loop()`, starting another
-three-procedural-room-plus-boss loop (`loop += 1`):
+Defeating the boss opens the boss shop. Its **Stop** exit completes the run
+and opens the run summary screen; its **Go deeper** exit calls
+`RunManager.start_next_loop()` and starts another
+three-room/shop-plus-boss loop (`loop += 1`). A run's `rooms_cleared`
+statistic counts completed combat rooms (including the boss after its
+defeat), never shop rooms:
 - **Loop persistence:** Upgrades, current Qi balance, held weapons, and equipped
   runes (`pending_weapon_rune`, `pending_secondary_weapon_rune`) carry across loops.
 - **Loop scaling:** Enemy and boss difficulty scales across loops:
@@ -1069,18 +1078,26 @@ current bindings. No joypad events (decided: keyboard only).
 
 ### 8.4 Shop & Upgrade Menu HUD
 
-The upgrade menu is accessed directly within the world at the `ShopStation` in the
-shop chunk, replacing the older room-cleared Tab prompt:
-- **Proximity trigger:** When the player is within range of a `ShopStation`, an interaction
-  prompt (`"F Shop"`) is displayed. Pressing `pickup` (F) opens the upgrade menu.
+The shop menu is accessed at one of four categorized `ShopStation`s, replacing the
+older room-cleared Tab prompt:
+- **Proximity trigger:** Each station displays its category (`Upgrade`, `Weapon`,
+  `Skill`, or `Rune`) in the F prompt. Pressing `pickup` (F) opens that category's
+  offers after the room is clear.
 - **Input priority:** If the player is simultaneously within range of a ground pickup
   (weapon, skill, or rune) and a `ShopStation`, the pickup takes priority for the `F` key.
-- **Card layout:** The shop menu displays up to 4 cards per page: Weapon Might,
+- **Card layout:** The shop menu displays 3 cards at a time: Weapon Might,
   Vitality, Restore, Sinh Rank 1/2 (including favored element choice), and Khắc Rank 1/2.
 - **Navigation:** Arrow keys / W/S or mouse hover select cards; pressing `pickup` (F)
   or clicking confirms a purchase; `menu_cancel` (Esc) closes the menu.
+- **Category stock:** Weapon and Skill stations roll up to three eligible resources;
+  Rune stations roll three weapon runes. Weapons and skills open the existing slot
+  chooser on purchase. Offers stay fixed for the visit; refresh remains removed by D19.
 - **Continuous shopping:** Multiple purchases can be made in a single shop visit without
   closing the menu; prices recalculate immediately upon purchase.
+
+Hand-authored shop rooms use `scripts/world/shop_room.gd` and contain no enemies or
+baseline rune drop. The boss-shop variant has Stop and Go deeper exits; `RunManager`
+routes those exit kinds to the run summary and next loop respectively.
 ---
 
 ## 9. Visuals
@@ -1242,7 +1259,7 @@ var _has_dodged := false
   (Kim, Charge 1) becomes active; its `elemental.status.status_cleared`
   firing once advances. Prompt: `"Elements react when they meet — try it"`
   — deliberately vague, names no mechanic.
-- **DONE:** `RoomExit.locked = false`. Walking through it calls
+- **DONE:** `RoomExit.locked = false`. Standing in range and pressing F calls
   `SaveManager.mark_tutorial_completed()`, then
   `get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")`.
 
@@ -1864,7 +1881,7 @@ The room-building algorithm operates on a fixed 4x3 grid of "chunks".
 
 ### 19.4 Shop Contents & Mechanics
 When `_populate_shop()` locates the node in group `"shop_chunk"`, it instantiates the shop fixture at floor level (`floor_y = CHUNK_H - 32 - 15`):
-- **ShopStation (Center, x = 208):** Proximity interaction displaying `"F Shop"`. Opens the upgrade card menu (Weapon Might, Vitality, Restore, Sinh/Khắc mastery). Refresh Shop has been permanently removed; multiple purchases are allowed in a single visit without exit fees.
+- **ShopStation (Center, x = 208):** The procedural shop's Upgrade station displays `"F Upgrade"` and opens the upgrade offer menu. Refresh Shop remains removed; multiple purchases are allowed in one visit.
 - **Free Baseline Rune (x = 128):** A `RunePickup` rolling a random element weapon rune via `RuneRoller.default().roll(...)`.
 - **Skill Stall (x = 288):** One random `SkillPool` skill not already held, priced at 60 Qi.
 - **Weapon Rack Stalls (x = 64, x = 352):** Two `ShopWeaponPickup` stalls spaced across the shop floor.

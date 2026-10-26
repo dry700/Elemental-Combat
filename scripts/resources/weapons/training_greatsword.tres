@@ -22,6 +22,7 @@ perfect_multiplier = 1.75
 attack_duration = 0.45
 active_window = Vector2(0.17, 0.22)
 innate_element = &"kim"
+use_trail_vfx = true
 lunge_speed = 45.0
 reach = 11.0
 hitbox_radius = 7.0

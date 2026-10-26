@@ -5,9 +5,9 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Seismic Slam"
-description = "Strike the ground to damage and stagger nearby enemies with earth."
+description = "Leap up, then slam into the ground to damage and stagger nearby enemies with earth."
 element = &"tho"
-function = 5
+function = 9
 cooldown = 14.0
 damage = 16.0
 radius = 40.0

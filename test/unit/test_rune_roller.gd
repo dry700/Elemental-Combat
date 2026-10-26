@@ -59,6 +59,32 @@ func test_empty_pool_returns_rune_without_modifiers():
 	assert_eq(rune.element, Elements.THO)
 	assert_eq(rune.modifiers.size(), 0, "empty pool should return rune with no modifiers")
 
+func test_default_roller_loads_starter_catalogue():
+	RuneRoller.reset_default()
+	var default_roller := RuneRoller.default()
+	assert_not_null(default_roller)
+	var catalogue := default_roller.get_catalogue()
+	assert_gte(catalogue.size(), 5)
+	var ids: Array[StringName] = []
+	for def in catalogue:
+		ids.append(def.id)
+	assert_has(ids, &"damage_pct")
+	assert_has(ids, &"reach")
+	assert_has(ids, &"hitbox_size")
+	assert_has(ids, &"knockback")
+	assert_has(ids, &"attack_speed")
+
+func test_default_roller_rolls_weapon_rune_with_modifiers():
+	RuneRoller.reset_default()
+	var default_roller := RuneRoller.default()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	var rune: RuneData = default_roller.roll(Elements.HOA, RuneData.Target.WEAPON, rng)
+	assert_not_null(rune)
+	assert_gte(rune.modifiers.size(), 1)
+	for mod in rune.modifiers:
+		assert_gt(mod.value, 0.0)
+
 func _definition(id: StringName, applies_to: RuneModifierDef.AppliesTo, elements: Array[StringName]) -> RuneModifierDef:
 	var definition: RuneModifierDef = RuneModifierDefScript.new()
 	definition.id = id

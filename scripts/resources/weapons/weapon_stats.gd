@@ -36,6 +36,8 @@ enum PerfectCondition {
 ## for what each does — this field alone doesn't do anything by itself.
 @export var rune_element: StringName = &"none"
 
+@export var use_trail_vfx: bool = false  ## Swing weapons only: swap the slash sprite for a tapering trail.
+
 ## --- Lunge, reach, and combo (A.4's "combo style" column, made
 ## mechanical) — previously a single global lunge value on Player and a
 ## fixed hitbox size/offset baked into player.tscn, identical across

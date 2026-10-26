@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RuneModifierDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/runes/rune_modifier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"knockback"
+display_name = "Knockback"
+description = "+{v} knockback strength"
+value_min = 25.0
+value_max = 75.0
+value_step = 25.0
+applies_to = 0
+elements = []
+

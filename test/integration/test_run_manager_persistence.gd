@@ -62,6 +62,43 @@ func test_player_death_triggers_a_loss_record() -> void:
 	assert_eq(history[-1]["outcome"], "loss")
 	assert_eq(history[-1]["rooms_cleared"], 1)
 
+func test_player_death_in_shop_does_not_count_the_shop_as_cleared() -> void:
+	RunManager._sequence = [
+		"res://scenes/world/rooms/procedural_room.tscn",
+		RunManager.SHOP_ROOM_SCENE_PATH,
+		"res://scenes/world/rooms/procedural_room.tscn",
+		RunManager.SHOP_ROOM_SCENE_PATH,
+		RunManager.BOSS_ROOM_SCENE_PATH,
+		RunManager.BOSS_SHOP_ROOM_SCENE_PATH,
+	]
+	RunManager._current_index = 3
+	player._apply_damage(player.max_health)
+	await wait_for_signal(player.died, 1.0)
+
+	var history := SaveManager.get_run_history()
+	assert_eq(history[-1]["outcome"], "loss")
+	assert_eq(history[-1]["rooms_cleared"], 2, "the two preceding combat rooms count, but shops do not")
+
+func test_boss_shop_stop_exit_finishes_with_combat_room_count() -> void:
+	RunManager._sequence = [
+		RunManager.ROOM_SCENE_PATHS[0],
+		RunManager.SHOP_ROOM_SCENE_PATH,
+		RunManager.ROOM_SCENE_PATHS[0],
+		RunManager.SHOP_ROOM_SCENE_PATH,
+		RunManager.ROOM_SCENE_PATHS[0],
+		RunManager.SHOP_ROOM_SCENE_PATH,
+		RunManager.BOSS_ROOM_SCENE_PATH,
+		RunManager.BOSS_SHOP_ROOM_SCENE_PATH,
+	]
+	var stop_exit := RoomExit.new()
+	stop_exit.exit_kind = RoomExit.ExitKind.STOP
+	RunManager._on_room_exit_requested(stop_exit)
+	stop_exit.free()
+
+	var history := SaveManager.get_run_history()
+	assert_eq(history[-1]["outcome"], "win")
+	assert_eq(history[-1]["rooms_cleared"], 4, "three normal rooms and the boss count; four shops do not")
+
 func test_death_after_run_already_finished_does_not_double_record() -> void:
 	RunManager._sequence = ["res://a.tscn"]
 	RunManager._finish_run("win", 1)  # _run_active is now false

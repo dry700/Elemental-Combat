@@ -56,6 +56,14 @@ func test_skill_pool_roll_respects_excluded_paths():
 	excluded.append(allowed_path)
 	assert_null(SkillPoolResource.roll(excluded))
 
+func test_test_arena_has_a_priced_shop_skill_stall():
+	var arena: Node = (load("res://scenes/world/test_arena.tscn") as PackedScene).instantiate()
+	add_child_autofree(arena)
+	var stall := arena.get_node("ShopSkillStall") as ShopSkillPickup
+	assert_not_null(stall)
+	assert_eq(stall.price, 60)
+	assert_eq(stall.skill.resource_path, "res://scripts/resources/skills/earthen_bulwark.tres")
+
 func test_skill_drop_helper_spawns_matching_element_pickup():
 	var parent := Node2D.new()
 	add_child_autofree(parent)

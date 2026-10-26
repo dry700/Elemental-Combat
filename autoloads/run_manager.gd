@@ -22,15 +22,14 @@ const ROOM_SCENE_PATHS: Array[String] = [
 	"res://scenes/world/rooms/procedural_room.tscn",
 ]
 
-## Always the LAST room of a run — never part of the random pool above,
-## and never eligible for the "no immediate repeats" shuffle those go
-## through. A boss encounter should be a guaranteed, telegraphed final
-## room per Section 6.3's Sprint 3 definition of done ("a full run is
-## completable start to finish"), not something that might get skipped
-## or land mid-run depending on the RNG.
+## Guaranteed final combat encounter — never part of the random pool
+## above or eligible for its "no immediate repeats" shuffle. The boss
+## shop follows it as the run's Stop / Go deeper decision room.
 const BOSS_ROOM_SCENE_PATH: String = "res://scenes/world/rooms/room_boss.tscn"
+const SHOP_ROOM_SCENE_PATH: String = "res://scenes/world/rooms/shop_room.tscn"
+const BOSS_SHOP_ROOM_SCENE_PATH: String = "res://scenes/world/rooms/boss_shop_room.tscn"
 
-const ROOMS_PER_RUN: int = 3  ## Normal rooms only — the boss room is appended on top of this count, not included in it.
+const ROOMS_PER_RUN: int = 3  ## Normal combat rooms, each followed by a shop; boss and boss shop are appended.
 
 var _sequence: Array[String] = []
 var _current_index: int = -1
@@ -127,9 +126,20 @@ func _generate_sequence() -> Array[String]:
 			choices.erase(last_path)  ## No immediate repeats.
 		var pick: String = choices[randi() % choices.size()]
 		sequence.append(pick)
+		sequence.append(SHOP_ROOM_SCENE_PATH)
 		last_path = pick
 	sequence.append(BOSS_ROOM_SCENE_PATH)
+	sequence.append(BOSS_SHOP_ROOM_SCENE_PATH)
 	return sequence
+
+
+func _count_combat_rooms_before(sequence: Array[String], sequence_index: int) -> int:
+	var combat_rooms := 0
+	var end_index := mini(maxi(sequence_index, 0), sequence.size())
+	for index in range(end_index):
+		if sequence[index] != SHOP_ROOM_SCENE_PATH and sequence[index] != BOSS_SHOP_ROOM_SCENE_PATH:
+			combat_rooms += 1
+	return combat_rooms
 
 
 ## Rebuilds sequence/elapsed time/player state from a SaveManager
@@ -229,7 +239,7 @@ func _advance() -> void:
 
 	if _current_index >= _sequence.size():
 		print("Run complete!")  ## No hub/meta-progression yet (out of scope, Section 7.1) — a finished run just stops here.
-		_finish_run("win", _sequence.size())
+		_finish_run("win", _count_combat_rooms_before(_sequence, _sequence.size()))
 		return
 
 	var room_scene: PackedScene = load(_sequence[_current_index])
@@ -245,27 +255,38 @@ func _advance() -> void:
 		return
 
 	controller.cleared.connect(_on_room_cleared.bind(controller), CONNECT_ONE_SHOT)
-	if controller.exit != null:
-		controller.exit.player_entered.connect(advance_room, CONNECT_ONE_SHOT)
+	for node in _current_room.find_children("*", "RoomExit", true, false):
+		var room_exit := node as RoomExit
+		if room_exit != null:
+			room_exit.player_entered.connect(_on_room_exit_requested.bind(room_exit), CONNECT_ONE_SHOT)
 
 	_player.global_position = controller.get_player_spawn_position()
 	_autosave()
 	_snapshot_room_start()
 
 
+func _on_room_exit_requested(room_exit: RoomExit) -> void:
+	if room_exit == null:
+		return
+	match room_exit.exit_kind:
+		RoomExit.ExitKind.STOP:
+			_finish_run("win", _count_combat_rooms_before(_sequence, _sequence.size()))
+		RoomExit.ExitKind.DEEPER:
+			start_next_loop()
+		_:
+			advance_room()
+
+
 func _on_room_cleared(_controller: RoomController) -> void:
 	print("Room cleared — exit unlocked")
-	var hud := get_node_or_null("/root/Hud")
-	if hud != null and hud.has_method("_can_open_upgrade_menu") and hud.has_method("_open_upgrade_menu"):
-		if hud._can_open_upgrade_menu():
-			hud._open_upgrade_menu()
 
 
 func _on_player_died() -> void:
 	if not _run_active:
 		return
-	var rooms_cleared := maxi(_current_index, 0)
-	print("Run failed — you died. (%d/%d rooms reached, %.1fs)" % [rooms_cleared, _sequence.size(), _elapsed_sec])
+	var rooms_cleared := _count_combat_rooms_before(_sequence, _current_index)
+	var total_combat_rooms := _count_combat_rooms_before(_sequence, _sequence.size())
+	print("Run failed — you died. (%d/%d rooms reached, %.1fs)" % [rooms_cleared, total_combat_rooms, _elapsed_sec])
 	_finish_run("loss", rooms_cleared)
 
 
@@ -307,11 +328,27 @@ func _finish_run(outcome: String, rooms_cleared: int) -> void:
 		get_tree().change_scene_to_file("res://scenes/ui/run_summary.tscn")
 
 func start_next_loop() -> void:
+	if _run_active and _player != null:
+		_capture_pending_loadout()
+		_run_active = false
+		set_process(false)
+		SaveManager.clear_in_progress_run()
 	_continue_loop = true
 	loop += 1
 	if skip_scene_transitions:
 		return
 	get_tree().change_scene_to_file("res://scenes/world/procedural_run.tscn")
+
+
+func _capture_pending_loadout() -> void:
+	if _player == null:
+		return
+	pending_weapon_path = _player.weapon.resource_path if _player.weapon != null else ""
+	pending_secondary_weapon_path = _player.secondary_weapon.resource_path if _player.secondary_weapon != null else ""
+	pending_skill_1_path = _player.skill_1.resource_path if _player.skill_1 != null else ""
+	pending_skill_2_path = _player.skill_2.resource_path if _player.skill_2 != null else ""
+	pending_weapon_rune = _player.weapon_rune.to_dict() if _player.weapon_rune != null else {}
+	pending_secondary_weapon_rune = _player.secondary_weapon_rune.to_dict() if _player.secondary_weapon_rune != null else {}
 
 
 func _autosave() -> void:

@@ -1,6 +1,6 @@
 # Current Implementation Plan
 
-Source of truth: [Design.md](docs/Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md).
+Source of truth: [Design.md](docs/Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md). The proposed shop-and-skills work is detailed in [plan-shop-and-skills.md](plan-shop-and-skills.md).
 
 ## Phase status
 
@@ -35,29 +35,31 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 - Documentation fully reconciled across `docs/Design.md`, `plan.md`, `AGENT_PLAN.md`, `plan-elemental_roguelike.md`, and `README.md`.
 - Perfect Hit windows now resolve for the existing and six shop-only weapons; the weapon card displays each window and perfect hits preserve Charge and reaction inputs.
 - P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
-- P14 adds ten skills (15 total), four cast behaviors, cooldown HUD, duplicate prevention, a 60 Qi shop stall, and matching-element spirit/boss drops.
-- P14 GUT verification: 287 tests passed, 1,841 assertions, 0 failures; 2 expected warnings. Interactive gameplay was not available in the headless test session.
+- P14 adds ten skills (15 total), five cast behaviors, cooldown HUD, duplicate prevention, a shared element-tinted cast burst, a directional water wave for Undertow, Seismic Slam's jump-and-ground-impact attack with screen shake, a 60 Qi shop stall, and matching-element spirit/boss drops.
+- P14 GUT verification: 299 tests passed, 1,898 assertions, 0 failures; existing headless diagnostics remain.
 
 ## Verification gate
 
-- [x] Full GUT suite: 257/257 tests passed, 1,658 assertions, 0 failures.
+- [x] Full GUT suite: 291/291 tests passed, 1,845 assertions, 0 failures.
 - [x] Boss phase transitions, armor/charge wiring, and stats verified.
 - [x] Loop scaling and persistence verified with dedicated unit tests.
 - [x] Final docs/Design.md reconciliation complete.
 
 ## Exact next item
 
-- Interactive P14 playtest checkpoint: cast all skills in `test_arena`, then check the shop stall and boss skill drop.
+- Next automated implementation: Step 4.2 (persist shop state across save/resume) in `plan-shop-and-skills.md`. The P14 in-game skill visual checkpoint remains pending manual playtesting in `test_arena`.
 
 ## Deferred work
 
-- P14 implementation is complete; use the recorded interactive playtest checkpoint before gameplay balance tuning.
+- P14 implementation and test-arena playtest tooling are complete; finish the recorded interactive checkpoint before gameplay balance tuning.
+- Shop and Skills Expansion: Steps 1–3 and Step 4.1 (interleaved room/shop run sequence) are implemented. Step 4.1 focused coverage passed (26 tests, 196 assertions); the latest full suite has 328/333 passing and remains blocked by pre-existing parse errors in modified enemy scripts, which cause five enemy-facing/loop-scaling test failures.
+- Shop & Skills Expansion Step 3 adds hand-authored shop and boss-shop rooms, categorized stations, category-specific offers and slot-chooser purchases. Focused shop, upgrade-menu, exit, and active-shop loop-handoff tests pass (33 tests, 163 assertions); per-visit offers remain fixed under D19's no-refresh decision.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
 
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- P12 result: 257 passing tests, 1,658 assertions, 0 failures. Two GUT warnings remain.
+- Latest full suite: 333 tests, 328 passing, 5 failing (2,022/2,027 assertions). The failures are in existing enemy-facing and loop-scaling tests after parse errors in modified `swooper_enemy.gd` and `test_dummy.gd`; Step 4.1 focused tests pass (26 tests, 196 assertions).
 - P13 result: 269 passing tests, 1,756 assertions, 0 failures. Two expected headless warnings remain.
 - Static analysis: clean across all workspace files.

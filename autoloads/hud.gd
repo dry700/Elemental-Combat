@@ -38,6 +38,8 @@ extends CanvasLayer
 const UI_SCALE: float = 0.5
 const SHOP_WEAPON_PICKUP_SCRIPT := preload("res://scripts/items/shop_weapon_pickup.gd")
 const SHOP_SKILL_PICKUP_SCRIPT := preload("res://scripts/items/shop_skill_pickup.gd")
+const SHOP_RUNE_PICKUP_SCRIPT := preload("res://scripts/items/shop_rune_pickup.gd")
+const LOADOUT_SELECT_SCRIPT := preload("res://scripts/ui/loadout_select.gd")
 
 const SLOT_SIZE: float = 40.0 * UI_SCALE
 const SLOT_SEPARATION: float = 8.0 * UI_SCALE
@@ -84,6 +86,7 @@ var _active_weapon_pickup: WeaponPickup = null
 var _active_skill_pickup: SkillPickup = null
 var _active_rune_pickup: Node = null
 var _active_shop_station = null
+var _active_room_exit: RoomExit = null
 
 ## --- Pickup selection overlay state ---
 var _overlay_panel: Control
@@ -112,6 +115,11 @@ var _upgrade_card_style: StyleBoxFlat
 var _upgrade_card_selected_style: StyleBoxFlat
 var _upgrade_menu_active: bool = false
 var _upgrade_menu_selected_index: int = 0
+var _upgrade_menu_category: int = ShopStation.Category.UPGRADE
+var _shop_stock_room_id: int = 0
+var _shop_offer_stock: Dictionary = {}
+var _pending_shop_offer: Dictionary = {}
+var _shop_offer_opened_overlay: bool = false
 var _debug_room_clear_state: bool = false
 ## Reaction upgrade menu state — paged list of all available options.
 ## Each entry is a Dictionary: {type, label, desc, cost, pair, favored}
@@ -448,6 +456,12 @@ func _refresh_active_pickups() -> void:
 		if node.get("_player_in_range") != null:
 			_active_shop_station = node
 			break
+	_active_room_exit = null
+	for node in get_tree().get_nodes_in_group("room_exits"):
+		var room_exit := node as RoomExit
+		if room_exit != null and room_exit.is_prompt_visible():
+			_active_room_exit = room_exit
+			break
 
 
 func _update_player_hp() -> void:
@@ -595,9 +609,19 @@ func is_overlay_active() -> bool:
 ## act; every other branch only runs while _overlay_active is already
 ## true.
 func _handle_pickup_overlay_input() -> void:
+	if _shop_offer_opened_overlay:
+		_shop_offer_opened_overlay = false
+		return
 	if not _overlay_active:
 		if _can_open_overlay():
 			var pickup = _active_weapon_pickup if _active_weapon_pickup != null else (_active_skill_pickup if _active_skill_pickup != null else _active_rune_pickup)
+			if pickup == null:
+				if _active_shop_station == null and _active_room_exit != null and Input.is_action_just_pressed("pickup"):
+					_active_room_exit.request_enter()
+				if _inspect_active and (_active_rune_pickup == null or _active_rune_pickup.get("_player_in_range") == null):
+					_inspect_active = false
+					_update_inspect_visuals(null)
+				return
 			if pickup != null:
 				var is_weapon = pickup == _active_weapon_pickup
 				if Input.is_action_just_pressed("inspect"):
@@ -787,14 +811,15 @@ func _make_upgrade_card_style(background: Color, border: Color) -> StyleBoxFlat:
 	return card_style
 
 func _handle_room_clear_upgrade_input() -> void:
+	if _overlay_active:
+		return
 	if not _upgrade_menu_active:
 		if _active_weapon_pickup != null or _active_skill_pickup != null or _active_rune_pickup != null:
 			return
-		if _active_shop_station != null and _can_open_overlay() and Input.is_action_just_pressed("pickup"):
-			_open_upgrade_menu()
+		if _active_shop_station != null and _can_open_upgrade_menu() \
+				and Input.is_action_just_pressed("pickup"):
+			_open_shop_menu(int(_active_shop_station.get("category")))
 			return
-		if _can_open_upgrade_menu() and Input.is_action_just_pressed("swap"):
-			_open_upgrade_menu()
 		return
 
 	if Input.is_action_just_pressed("menu_cancel") or Input.is_action_just_pressed("swap"):
@@ -836,10 +861,21 @@ func is_upgrade_menu_active() -> bool:
 	return _upgrade_menu_active
 
 func _open_upgrade_menu() -> void:
+	_open_shop_menu(ShopStation.Category.UPGRADE)
+
+
+func _open_shop_menu(category: int) -> void:
 	_upgrade_menu_active = true
+	_upgrade_menu_category = category
 	_upgrade_menu_selected_index = 0
 	_upgrade_page_offset = 0
-	_rebuild_all_upgrade_options()
+	_ensure_shop_stock_session()
+	if category == ShopStation.Category.UPGRADE:
+		_rebuild_all_upgrade_options()
+	else:
+		if not _shop_offer_stock.has(category):
+			_shop_offer_stock[category] = _roll_shop_offers(category)
+		_all_upgrade_options = _shop_offer_stock[category].duplicate()
 	PlaytestMode.close_panel()
 	if get_tree() != null:
 		get_tree().paused = true
@@ -847,6 +883,7 @@ func _open_upgrade_menu() -> void:
 
 func _close_upgrade_menu() -> void:
 	_upgrade_menu_active = false
+	_upgrade_menu_category = ShopStation.Category.UPGRADE
 	if get_tree() != null:
 		get_tree().paused = false
 	_update_upgrade_menu_visuals()
@@ -864,6 +901,10 @@ func _confirm_upgrade_selection() -> void:
 	if not _upgrade_menu_active or _all_upgrade_options.is_empty():
 		return
 	var opt := _all_upgrade_options[_upgrade_menu_selected_index]
+	if str(opt.get("type", "")).begins_with("shop_"):
+		_open_shop_offer(opt)
+		_update_upgrade_menu_visuals()
+		return
 	var purchased := false
 	match opt.get("type", ""):
 		"weapon":
@@ -893,6 +934,124 @@ func _confirm_upgrade_selection() -> void:
 		_rebuild_all_upgrade_options()
 		_upgrade_menu_selected_index = mini(_upgrade_menu_selected_index, _all_upgrade_options.size() - 1)
 	_update_upgrade_menu_visuals()
+
+
+func _ensure_shop_stock_session() -> void:
+	var room_id := RunManager._current_room.get_instance_id() if RunManager != null and RunManager._current_room != null else 0
+	if room_id != _shop_stock_room_id:
+		_shop_stock_room_id = room_id
+		_shop_offer_stock.clear()
+
+
+func _roll_shop_offers(category: int) -> Array[Dictionary]:
+	var offers: Array[Dictionary] = []
+	if category == ShopStation.Category.WEAPON:
+		var paths: Array[String] = LOADOUT_SELECT_SCRIPT.STARTING_WEAPON_PATHS.duplicate()
+		for path in SaveManager.get_unlocked_weapon_paths():
+			if not paths.has(str(path)):
+				paths.append(str(path))
+		var held_paths: Array[String] = []
+		if _player != null:
+			for held in [_player.weapon, _player.secondary_weapon]:
+				if held != null and not held.resource_path.is_empty():
+					held_paths.append(held.resource_path)
+		var candidates: Array[WeaponStats] = []
+		for path in paths:
+			if held_paths.has(path):
+				continue
+			var weapon := load(path) as WeaponStats
+			if weapon != null:
+				candidates.append(weapon)
+		candidates.shuffle()
+		for index in mini(3, candidates.size()):
+			var weapon: WeaponStats = candidates[index]
+			var price := _shop_weapon_price(weapon)
+			offers.append({
+				"type": "shop_weapon", "label": weapon.weapon_name.to_upper(),
+				"desc": "Weapon\nCost: %d Qi" % price, "cost": price,
+				"weapon": weapon, "purchased": false,
+			})
+	elif category == ShopStation.Category.SKILL:
+		var paths: Array[String] = LOADOUT_SELECT_SCRIPT.STARTING_SKILL_PATHS.duplicate()
+		for path in SaveManager.get_unlocked_skill_paths():
+			if not paths.has(str(path)):
+				paths.append(str(path))
+		var held_paths: Array[String] = []
+		if _player != null:
+			for held in [_player.skill_1, _player.skill_2]:
+				if held != null and not held.resource_path.is_empty():
+					held_paths.append(held.resource_path)
+		var candidates: Array[SkillData] = []
+		for path in paths:
+			if held_paths.has(path):
+				continue
+			var skill := load(path) as SkillData
+			if skill != null:
+				candidates.append(skill)
+		candidates.shuffle()
+		for index in mini(3, candidates.size()):
+			var skill: SkillData = candidates[index]
+			offers.append({
+				"type": "shop_skill", "label": skill.skill_name.to_upper(),
+				"desc": "%s skill\nCost: 60 Qi" % String(skill.element).to_upper(),
+				"cost": 60, "skill": skill, "purchased": false,
+			})
+	elif category == ShopStation.Category.RUNE:
+		for _index in 3:
+			var element: StringName = Elements.ALL[randi() % Elements.ALL.size()]
+			var rune := RuneRoller.default().roll(element, RuneData.Target.WEAPON)
+			offers.append({
+				"type": "shop_rune", "label": "%s RUNE" % String(element).to_upper(),
+				"desc": "%s\nCost: 30 Qi" % "\n".join(rune.describe_lines()),
+				"cost": 30, "rune": rune, "purchased": false,
+			})
+	return offers
+
+
+func _shop_weapon_price(weapon: WeaponStats) -> int:
+	match weapon.weight:
+		WeaponStats.Weight.LIGHT:
+			return 35
+		WeaponStats.Weight.MEDIUM:
+			return 45
+		WeaponStats.Weight.HEAVY:
+			return 55
+	return 45
+
+
+func _open_shop_offer(offer: Dictionary) -> void:
+	if _player == null or bool(offer.get("purchased", false)) or UpgradeManager.qi < float(offer.get("cost", 0)):
+		return
+	var parent: Node = RunManager._current_room if RunManager != null and RunManager._current_room != null else get_tree().current_scene
+	if parent == null:
+		return
+	var pickup: Node = null
+	var is_weapon := false
+	match str(offer.get("type", "")):
+		"shop_weapon":
+			var weapon_pickup := SHOP_WEAPON_PICKUP_SCRIPT.new() as ShopWeaponPickup
+			weapon_pickup.weapon = offer.get("weapon")
+			weapon_pickup.price = int(offer.get("cost", 0))
+			pickup = weapon_pickup
+			is_weapon = true
+		"shop_skill":
+			var skill_pickup := SHOP_SKILL_PICKUP_SCRIPT.new() as ShopSkillPickup
+			skill_pickup.skill = offer.get("skill")
+			skill_pickup.price = int(offer.get("cost", 0))
+			pickup = skill_pickup
+		"shop_rune":
+			var rune_pickup = SHOP_RUNE_PICKUP_SCRIPT.new()
+			rune_pickup.rune = offer.get("rune")
+			rune_pickup.price = int(offer.get("cost", 0))
+			pickup = rune_pickup
+	if pickup == null:
+		return
+	pickup.global_position = _player.global_position
+	parent.add_child(pickup)
+	pickup.set("_player_in_range", _player)
+	_pending_shop_offer = offer
+	_open_overlay(pickup, is_weapon)
+	_shop_offer_opened_overlay = true
 
 ## Builds the full list of available upgrade options from scratch.
 ## Called on open and after every purchase/refresh.
@@ -1011,7 +1170,8 @@ func _update_upgrade_menu_visuals() -> void:
 		return
 
 	var total := _all_upgrade_options.size()
-	_upgrade_title.text = "Upgrade — Qi: %d  (%d/%d options)" % [
+	var category_label := ShopStation.CATEGORY_LABELS[_upgrade_menu_category]
+	_upgrade_title.text = "%s — Qi: %d  (%d/%d offers)" % [category_label,
 		int(UpgradeManager.qi), _upgrade_menu_selected_index + 1, total]
 
 	for card_i in UPGRADE_CARDS_VISIBLE:
@@ -1026,6 +1186,8 @@ func _update_upgrade_menu_visuals() -> void:
 		var affordable: bool = UpgradeManager.qi >= opt.get("cost", 0.0)
 		var label: String = opt.get("label", "")
 		var desc: String = opt.get("desc", "")
+		if bool(opt.get("purchased", false)):
+			desc += "\n[PURCHASED]"
 		if not affordable:
 			desc += "\n[Not enough Qi]"
 		if card.has_method("set_upgrade"):
@@ -1054,6 +1216,7 @@ func _open_overlay(pickup: Node, is_weapon: bool) -> void:
 func _close_overlay() -> void:
 	_overlay_active = false
 	_overlay_pickup = null
+	_pending_shop_offer = {}
 
 
 func _confirm_overlay_selection() -> void:
@@ -1068,11 +1231,20 @@ func _confirm_overlay_selection() -> void:
 		return
 	var is_shop_weapon: bool = _overlay_pickup.get_script() == SHOP_WEAPON_PICKUP_SCRIPT
 	var is_shop_skill: bool = _overlay_pickup.get_script() == SHOP_SKILL_PICKUP_SCRIPT
-	var pickup_result: Variant = _overlay_pickup.call("_do_pickup", _player, _overlay_selected_primary)
+	var is_shop_rune: bool = _overlay_pickup.get_script() == SHOP_RUNE_PICKUP_SCRIPT
+	var pickup_result: Variant
+	if is_shop_rune:
+		pickup_result = _overlay_pickup.call("purchase", _player, _overlay_selected_primary)
+	else:
+		pickup_result = _overlay_pickup.call("_do_pickup", _player, _overlay_selected_primary)
 	if is_shop_weapon and not bool(pickup_result):
 		return
 	if is_shop_skill and not bool(pickup_result):
 		return
+	if is_shop_rune and not bool(pickup_result):
+		return
+	if not _pending_shop_offer.is_empty():
+		_pending_shop_offer["purchased"] = true
 	_close_overlay()
 
 

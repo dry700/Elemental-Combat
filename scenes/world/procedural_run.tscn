@@ -11,5 +11,26 @@ script = ExtResource("2_script")
 [node name="RoomContainer" type="Node2D" parent="." unique_id=2017555854]
 
 [node name="Player" parent="." unique_id=361648020 instance=ExtResource("1_player")]
+max_speed = null
+acceleration = null
+friction = null
+air_acceleration = null
+jump_velocity = null
+coyote_time = null
+jump_buffer_time = null
+max_air_jumps = null
+wall_slide_speed = null
+wall_jump_push_force = null
+wall_jump_up_force = null
+min_plunge_height = null
+max_plunge_height = null
+plunge_gravity_multiplier = null
+dodge_speed = null
+dodge_duration = null
+dodge_cooldown = null
+dodge_iframe_window = null
 weapon = ExtResource("3_mfidv")
 secondary_weapon = ExtResource("4_6ap3y")
+max_health = null
+starting_armor = null
+drop_through_duration = null

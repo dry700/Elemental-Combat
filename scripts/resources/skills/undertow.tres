@@ -8,6 +8,7 @@ skill_name = "Undertow"
 description = "Pull a wave through nearby enemies, slowing them and applying water."
 element = &"thuy"
 function = 5
+cast_vfx_style = 1
 cooldown = 12.0
 radius = 60.0
 slow_multiplier = 0.5

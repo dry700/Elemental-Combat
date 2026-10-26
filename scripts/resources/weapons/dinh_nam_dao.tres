@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bracdq202ikas" path="res://scripts/resources/weapons/weapon_stats.gd" id="1"]
 [ext_resource type="Script" uid="uid://0fjribao1my8" path="res://scripts/resources/weapons/combo_step_data.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://bwaig4u8wis75" path="res://assets/sprites/weapons/glaive.png" id="3_kvwf1"]
+[ext_resource type="Texture2D" uid="uid://ctck8bmnpul6r" path="res://assets/sprites/weapons/icons/dinh_nam_dao.tres" id="3_qun1v"]
 
 [sub_resource type="Resource" id="strike"]
 script = ExtResource("2")
@@ -11,6 +13,8 @@ swing_rotation_end_deg = 60.0
 [resource]
 script = ExtResource("1")
 weapon_name = "Southern Pacification Saber"
+weapon_texture = ExtResource("3_kvwf1")
+weapon_icon = ExtResource("3_qun1v")
 weight = 2
 damage = 28.0
 perfect_condition = 11
@@ -18,6 +22,7 @@ perfect_multiplier = 2.0
 attack_duration = 0.85
 active_window = Vector2(0.34, 0.44)
 innate_element = &"tho"
+use_trail_vfx = true
 lunge_speed = 25.0
 reach = 22.0
 hitbox_radius = 9.0

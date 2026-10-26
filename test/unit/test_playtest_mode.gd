@@ -98,3 +98,29 @@ func test_playtest_can_buy_sinh_rank_two_favoring_the_other_element() -> void:
 
 	assert_true(UpgradeManager.sinh_tier2_forced(pair))
 	assert_eq(UpgradeManager.sinh_favored_element(pair), other)
+
+
+func test_playtest_skill_selector_lists_and_equips_every_skill_without_unlocking_it() -> void:
+	assert_not_null(PlaytestMode._skill_target)
+	assert_eq(PlaytestMode._skill_target.item_count, SkillPool.SKILL_PATHS.size())
+	var unlocked_before := SaveManager.get_unlocked_skill_paths()
+
+	for index in SkillPool.SKILL_PATHS.size():
+		PlaytestMode._skill_target.select(index)
+		PlaytestMode._equip_selected_skill(true)
+		var selected_path := str(PlaytestMode._skill_target.get_item_metadata(index))
+		assert_eq(player.skill_1.resource_path, selected_path)
+
+	assert_eq(SaveManager.get_unlocked_skill_paths(), unlocked_before)
+
+
+func test_playtest_skill_selector_blocks_duplicate_in_other_slot() -> void:
+	PlaytestMode._skill_target.select(0)
+	PlaytestMode._equip_selected_skill(true)
+	var equipped := player.skill_1
+
+	PlaytestMode._skill_target.select(0)
+	PlaytestMode._equip_selected_skill(false)
+
+	assert_null(player.skill_2)
+	assert_eq(player.skill_1, equipped)

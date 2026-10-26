@@ -2,6 +2,7 @@ extends CanvasLayer
 ## Debug-build-only tools for playtesting procedural runs.
 
 const GRANT_QI_AMOUNT: float = 1000.0
+const SKILL_POOL_SCRIPT := preload("res://scripts/resources/skills/skill_pool.gd")
 const REACTIONS: Array[Dictionary] = [
 	{"name": "Condensation", "pair": [&"kim", &"thuy"], "sinh": true},
 	{"name": "Overgrowth", "pair": [&"thuy", &"moc"], "sinh": true},
@@ -18,6 +19,7 @@ const REACTIONS: Array[Dictionary] = [
 var _panel: PanelContainer
 var _invincibility_button: Button
 var _teleport_target: OptionButton
+var _skill_target: OptionButton
 var _reaction_target: OptionButton
 var _status: Label
 var _invincibility_enabled: bool = false
@@ -98,6 +100,18 @@ func _build_panel() -> void:
 	_add_button(content, "Teleport", _on_teleport_pressed)
 	_add_button(content, "+1000 Qi", _on_grant_qi_pressed)
 
+	_skill_target = OptionButton.new()
+	for skill_path in SKILL_POOL_SCRIPT.SKILL_PATHS:
+		var skill := load(skill_path) as SkillData
+		if skill == null:
+			push_error("PlaytestMode: could not load skill resource %s" % skill_path)
+			continue
+		_skill_target.add_item(skill.skill_name)
+		_skill_target.set_item_metadata(_skill_target.item_count - 1, skill_path)
+	content.add_child(_skill_target)
+	_add_button(content, "Equip Q Skill", _on_equip_primary_skill_pressed)
+	_add_button(content, "Equip E Skill", _on_equip_secondary_skill_pressed)
+
 	var stat_row := HBoxContainer.new()
 	content.add_child(stat_row)
 	_add_button(stat_row, "Buy HP", _on_buy_vitality_pressed)
@@ -120,7 +134,7 @@ func _build_panel() -> void:
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.text = "F12 closes this panel."
+	_status.text = "F12 closes. Select a skill, equip it to Q/E, then cast. Use +1000 Qi for the arena stall."
 	content.add_child(_status)
 
 
@@ -172,6 +186,42 @@ func _on_teleport_pressed() -> void:
 func _on_grant_qi_pressed() -> void:
 	UpgradeManager.award_qi(GRANT_QI_AMOUNT)
 	_set_status("Granted %d Qi." % int(GRANT_QI_AMOUNT))
+
+
+func _on_equip_primary_skill_pressed() -> void:
+	_equip_selected_skill(true)
+
+
+func _on_equip_secondary_skill_pressed() -> void:
+	_equip_selected_skill(false)
+
+
+func _equip_selected_skill(is_primary: bool) -> void:
+	var player := _get_live_player()
+	if player == null or _skill_target == null or _skill_target.item_count == 0:
+		_set_status("No player or test skill is available.")
+		return
+	var skill_path := str(_skill_target.get_item_metadata(_skill_target.selected))
+	var skill := load(skill_path) as SkillData
+	if skill == null:
+		push_error("PlaytestMode: selected skill resource could not be loaded: %s" % skill_path)
+		_set_status("Could not load selected skill.")
+		return
+	if player.would_duplicate_skill(is_primary, skill):
+		_set_status("%s is already equipped in the other slot." % skill.skill_name)
+		return
+	var previous := player.skill_1 if is_primary else player.skill_2
+	if previous != null:
+		player._skill_cooldowns.erase(previous)
+	if is_primary:
+		player.skill_1 = skill
+	else:
+		player.skill_2 = skill
+	player.skill_changed.emit(is_primary, skill)
+	var slot_key := "Q" if is_primary else "E"
+	_set_status("Equipped %s to %s. Close the panel and cast with %s." % [
+		skill.skill_name, slot_key, slot_key,
+	])
 
 
 func _on_buy_vitality_pressed() -> void:

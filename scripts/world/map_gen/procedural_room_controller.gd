@@ -46,6 +46,8 @@ func _enter_tree() -> void:
 		var exit_node = Area2D.new()
 		exit_node.set_script(exit_script)
 		exit_node.name = "Exit"
+		exit_node.set("label", "Next")
+		exit_node.set("exit_kind", RoomExit.ExitKind.NEXT)
 		exit_node.collision_layer = 0
 		exit_node.collision_mask = 1
 		

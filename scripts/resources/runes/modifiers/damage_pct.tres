@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RuneModifierDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/runes/rune_modifier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"damage_pct"
+display_name = "Damage"
+description = "+{v}% weapon damage"
+value_min = 10.0
+value_max = 25.0
+value_step = 5.0
+applies_to = 0
+elements = []
+

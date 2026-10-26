@@ -7,7 +7,7 @@ extends CharacterBody2D
 ## weight — tune these starting numbers via actual playtesting (Section 8),
 ## don't take them as final.
 
-enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED, WALL_SLIDE, PLUNGE }
+enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED, WALL_SLIDE, PLUNGE, SKILL_SLAM }
 
 ## Emitted whenever a weapon slot changes — currently only WeaponPickup
 ## calls swap_weapon() below, but this is exposed generally in case
@@ -28,6 +28,15 @@ signal skill_changed(is_primary: bool, new_skill: SkillData)
 signal died
 
 const DamagePopup = preload("res://scripts/ui/damage_number.gd")
+const DashShadowScript: Script = preload("res://scripts/combat/dash_shadow.gd")
+const SkillCastVFXScript: Script = preload("res://scripts/combat/skill_cast_vfx.gd")
+const SkillWaveVFXScript: Script = preload("res://scripts/combat/skill_wave_vfx.gd")
+const DASH_SHADOW_INTERVAL: float = 0.045
+const NORMAL_DASH_SHADOW_COLOR := Color(0.72, 0.82, 1.0)
+const SKILL_SLAM_LAUNCH_VELOCITY: float = -260.0
+const SKILL_SLAM_DESCENT_VELOCITY: float = 420.0
+const SKILL_SLAM_SHAKE_INTENSITY: float = 6.0
+const SKILL_SLAM_SHAKE_DURATION: float = 0.24
 
 ## --- Movement tuning (starting points) ---
 @export var max_speed: float = 110.0
@@ -104,7 +113,12 @@ var _active_dodge_duration: float = 0.0
 var _active_dodge_iframe_window: Vector2 = Vector2.ZERO
 var _dodge_cooldown_timer: float = 0.0
 var _last_dodge_end_time: float = -999.0
+var _dash_shadow_active: bool = false
+var _dash_shadow_timer: float = 0.0
+var _dash_shadow_color: Color = Color.WHITE
 var _attack_timer: float = 0.0
+var _current_attack_duration: float = 0.25
+var _current_active_window: Vector2 = Vector2(0.08, 0.16)
 var _combo_step: int = 0
 var _combo_window_timer: float = 0.0
 var _attack_buffered: bool = false
@@ -113,6 +127,9 @@ var _perfect_streak_count: int = 0
 var _perfect_streak_last_hit_time: float = -999.0
 var _drop_through_timer: float = 0.0
 var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
+var _skill_slam_skill: SkillData
+var _skill_slam_charge: int = 0
+var _skill_slam_descending: bool = false
 ## Set on ANY jump-key press during State.DISABLED (however early in the
 ## stagger/stun/root it happens), consumed the instant the disable ends.
 ## Exists because the ordinary jump buffer (jump_buffer_time, ~0.1s) is
@@ -187,7 +204,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor() and state in [State.IDLE, State.RUN]:
 		state = State.FALL
 
-	if elemental.is_disabled() and state not in [State.DODGE, State.ATTACK]:
+	if elemental.is_disabled() and state not in [State.DODGE, State.ATTACK, State.SKILL_SLAM]:
 		if state != State.DISABLED:
 			_combo_window_timer = 0.0  # Getting staggered breaks any pending combo continuation.
 		state = State.DISABLED
@@ -220,6 +237,8 @@ func _physics_process(delta: float) -> void:
 			_try_start_attack()
 		State.PLUNGE:
 			_process_plunge(delta)
+		State.SKILL_SLAM:
+			_process_skill_slam(delta)
 		State.DODGE:
 			_process_dodge(delta)
 		State.ATTACK:
@@ -287,7 +306,7 @@ func _update_timers(delta: float) -> void:
 
 
 func _apply_gravity(delta: float) -> void:
-	if state in [State.DODGE, State.WALL_SLIDE, State.PLUNGE]:
+	if state in [State.DODGE, State.WALL_SLIDE, State.PLUNGE, State.SKILL_SLAM]:
 		return  # Handled locally or overrides vertical movement
 	if not is_on_floor():
 		var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
@@ -468,10 +487,12 @@ func _try_start_dodge() -> void:
 		_active_dodge_duration = dodge_duration
 		_active_dodge_iframe_window = dodge_iframe_window
 		velocity = Vector2(facing * dodge_speed, 0.0)
+		_start_dash_shadows(NORMAL_DASH_SHADOW_COLOR)
 
 
 func _process_dodge(delta: float) -> void:
 	_dodge_timer += delta
+	_process_dash_shadows(delta)
 	var in_iframe_window := _dodge_timer >= _active_dodge_iframe_window.x and _dodge_timer <= _active_dodge_iframe_window.y
 	var was_in_iframe := hurtbox.invulnerable
 	hurtbox.invulnerable = in_iframe_window
@@ -486,6 +507,7 @@ func _process_dodge(delta: float) -> void:
 				remove_collision_exception_with(enemy)
 
 	if _dodge_timer >= _active_dodge_duration:
+		_dash_shadow_active = false
 		_last_dodge_end_time = Time.get_ticks_msec() / 1000.0
 		state = State.IDLE if is_on_floor() else State.FALL
 
@@ -534,8 +556,8 @@ func _process_attack(delta: float) -> void:
 	_attack_timer += delta
 	weapon_sprite.visible = weapon_sprite.texture != null
 
-	var active_start: float = _active_weapon.active_window.x
-	var active_end: float = _active_weapon.active_window.y
+	var active_start: float = _current_active_window.x
+	var active_end: float = _current_active_window.y
 
 	if weapon_sprite.texture != null:
 		var t := _swing_progress(active_start, active_end)
@@ -564,10 +586,11 @@ func _process_attack(delta: float) -> void:
 		elif not hitbox.monitoring:
 			hitbox.enable()
 			_spawn_slash_vfx()
+			_spawn_trail_vfx()
 	else:
 		hitbox.disable()
 
-	if _attack_timer >= _active_weapon.attack_duration:
+	if _attack_timer >= _current_attack_duration:
 		hitbox.disable()
 		_end_or_chain_attack()
 
@@ -587,6 +610,8 @@ func _swing_progress(active_start: float, active_end: float) -> float:
 ## Fires once per swing, the instant its active window opens — visible
 ## whether or not the swing actually lands a hit, unlike HitSpark.
 func _spawn_slash_vfx() -> void:
+	if _active_weapon.use_trail_vfx and _current_combo_step_data().style == WeaponStats.AttackStyle.SWING:
+		return
 	if _active_weapon.weapon_texture == null:
 		return
 	var step := _current_combo_step_data()
@@ -597,6 +622,21 @@ func _spawn_slash_vfx() -> void:
 		vfx = SlashVFX.new()
 	vfx.element = hitbox.element
 	hitbox.add_child(vfx)
+	
+func _spawn_trail_vfx() -> void:
+	if _active_weapon == null or not _active_weapon.use_trail_vfx:
+		return
+	if _current_combo_step_data().style != WeaponStats.AttackStyle.SWING:
+		return
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		return
+	var trail := TrailVFX.new()
+	trail.tip_source = hitbox
+	trail.tip_offset = Vector2(hitbox.weapon_reach, 0.0)
+	trail.element = hitbox.element
+	trail.sample_duration = _current_active_window.y - _current_active_window.x + 0.02
+	scene_root.add_child(trail)
 
 ## SHOOT-style swing: spawns one arrow at the start of the active window.
 ## Damage/element/charge come from the Hitbox values already configured for
@@ -660,7 +700,8 @@ func _end_or_chain_attack() -> void:
 ## while the hitbox sat still.
 func _configure_hitbox_for_current_swing() -> void:
 	_shot_fired = false
-	hitbox.damage = _active_weapon.damage * UpgradeManager.weapon_might_multiplier() * _combo_damage_multiplier()
+	var bonus_damage_pct := _get_active_rune_modifier_value(&"damage_pct")
+	hitbox.damage = _active_weapon.damage * UpgradeManager.weapon_might_multiplier() * _combo_damage_multiplier() * (1.0 + bonus_damage_pct / 100.0)
 	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
 	hitbox.perfect_condition = _active_weapon.perfect_condition
 	hitbox.perfect_multiplier = _active_weapon.perfect_multiplier
@@ -670,9 +711,20 @@ func _configure_hitbox_for_current_swing() -> void:
 	hitbox.charge = swing.charge
 	hitbox.position.x = WEAPON_GRIP_OFFSET
 	hitbox.rotation = 0.0
+
+	var bonus_knockback := _get_active_rune_modifier_value(&"knockback")
+	hitbox.knockback_strength = 150.0 + bonus_knockback
+
+	var bonus_attack_speed := _get_active_rune_modifier_value(&"attack_speed")
+	var speed_mult: float = 1.0 + (bonus_attack_speed / 100.0) if bonus_attack_speed > 0.0 else 1.0
+	_current_attack_duration = _active_weapon.attack_duration / speed_mult
+	_current_active_window = _active_weapon.active_window / speed_mult
+
 	var actual_reach := _active_weapon.reach
 	if _active_weapon.weapon_texture != null:
 		actual_reach = float(_active_weapon.weapon_texture.get_width())
+	var bonus_reach := _get_active_rune_modifier_value(&"reach")
+	actual_reach += bonus_reach
 
 	hitbox.combo_step = _combo_step
 	hitbox.is_finisher = (_combo_step == _active_weapon.combo_steps.size())
@@ -684,9 +736,12 @@ func _configure_hitbox_for_current_swing() -> void:
 	hitbox.attack_origin = global_position
 	hitbox.weapon_reach = actual_reach
 
+	var bonus_hitbox_size := _get_active_rune_modifier_value(&"hitbox_size")
+	var actual_radius := _active_weapon.hitbox_radius + bonus_hitbox_size
+
 	var rect := hitbox_shape.shape as RectangleShape2D
 	if rect != null:
-		rect.size = Vector2(actual_reach, _active_weapon.hitbox_radius * 2.0)
+		rect.size = Vector2(actual_reach, actual_radius * 2.0)
 	hitbox_shape.position.x = actual_reach / 2.0  # extends OUTWARD from the grip, not centered on it
 	weapon_sprite.texture = _active_weapon.weapon_texture
 	if weapon_sprite.texture != null:
@@ -694,6 +749,17 @@ func _configure_hitbox_for_current_swing() -> void:
 	weapon_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	weapon_sprite.position = Vector2.ZERO  # sits at Hitbox's own origin now — Hitbox's transform does the moving
 	weapon_sprite.rotation = 0.0
+
+
+func _get_active_rune_modifier_value(modifier_id: StringName) -> float:
+	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune
+	if active_rune == null:
+		return 0.0
+	var total: float = 0.0
+	for mod in active_rune.modifiers:
+		if mod.get("id", &"") == modifier_id:
+			total += float(mod.get("value", 0.0))
+	return total
 
 
 ## 1.0 for the first hit, compounding by combo_damage_step_multiplier for
@@ -773,6 +839,8 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 			elemental.cast_apply_area(skill.element, skill.zone_radius, skill.zone_lifetime)
 		SkillData.Function.AREA_BURST:
 			elemental.cast_area_burst(skill.element, skill.radius, skill.damage, skill.control_duration, skill.slow_multiplier, skill.slow_duration, charge)
+		SkillData.Function.JUMP_SLAM:
+			_start_skill_slam(skill, charge)
 		SkillData.Function.PROJECTILE_FAN:
 			var fan_direction := Vector2(facing, 0)
 			var fan_target := _find_skill_target(skill.cast_range)
@@ -784,8 +852,77 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 		SkillData.Function.BUFF_ARMOR:
 			elemental.cast_buff_armor(skill.armor_bonus, skill.buff_duration)
 
+	if skill.function != SkillData.Function.JUMP_SLAM:
+		_spawn_skill_cast_vfx(skill.element, skill.cast_vfx_style, facing, skill.radius)
 	_skill_cooldowns[skill] = skill.cooldown
 	print("Cast ", skill.skill_name)
+
+
+func _spawn_skill_cast_vfx(
+	element: StringName,
+	style: SkillData.CastVFXStyle = SkillData.CastVFXStyle.BURST,
+	wave_direction: int = 1,
+	wave_distance: float = 90.0
+) -> Node2D:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var parent: Node = tree.current_scene if tree.current_scene != null else get_parent()
+	if parent == null:
+		return null
+
+	var vfx: Node2D
+	if style == SkillData.CastVFXStyle.WAVE:
+		vfx = SkillWaveVFXScript.new() as Node2D
+		vfx.call("set_wave_direction", wave_direction)
+		vfx.call("set_wave_distance", wave_distance * 1.5)
+	else:
+		vfx = SkillCastVFXScript.new() as Node2D
+	vfx.call("set_element", element)
+	parent.add_child(vfx)
+	vfx.global_position = global_position
+	return vfx
+
+
+func _start_skill_slam(skill: SkillData, charge: int) -> void:
+	_skill_slam_skill = skill
+	_skill_slam_charge = charge
+	_skill_slam_descending = false
+	state = State.SKILL_SLAM
+	velocity = Vector2(0.0, SKILL_SLAM_LAUNCH_VELOCITY)
+
+
+func _process_skill_slam(delta: float) -> void:
+	if _skill_slam_skill == null:
+		state = State.IDLE if is_on_floor() else State.FALL
+		return
+
+	if _skill_slam_descending and is_on_floor():
+		_finish_skill_slam()
+		return
+
+	velocity.y += ProjectSettings.get_setting("physics/2d/default_gravity") * delta
+	if not _skill_slam_descending and velocity.y >= 0.0:
+		_skill_slam_descending = true
+		velocity.y = maxf(velocity.y, SKILL_SLAM_DESCENT_VELOCITY)
+
+
+func _finish_skill_slam() -> void:
+	var skill := _skill_slam_skill
+	var charge := _skill_slam_charge
+	_skill_slam_skill = null
+	_skill_slam_charge = 0
+	_skill_slam_descending = false
+	state = State.IDLE
+	velocity.y = 0.0
+	if skill == null:
+		return
+
+	elemental.cast_area_burst(skill.element, skill.radius, skill.damage, skill.control_duration, skill.slow_multiplier, skill.slow_duration, charge)
+	ScreenShake.shake(SKILL_SLAM_SHAKE_INTENSITY, SKILL_SLAM_SHAKE_DURATION)
+	var impact_vfx := _spawn_skill_cast_vfx(skill.element)
+	if impact_vfx != null:
+		impact_vfx.global_position.y += 8.0
 
 
 ## A.3's rune-to-skill bonus: a same-element rune's +1 Charge applies to
@@ -826,6 +963,35 @@ func _start_skill_dash(skill: SkillData) -> void:
 	_active_dodge_duration = dash_duration
 	_active_dodge_iframe_window = Vector2(0.0, skill.dash_iframes)
 	velocity = Vector2(facing * skill.dash_distance / dash_duration, 0.0)
+	_start_dash_shadows(ElementIndicator.ELEMENT_COLOR.get(skill.element, Color(0.9, 0.9, 1.0)))
+
+
+func _start_dash_shadows(tint: Color) -> void:
+	_dash_shadow_color = tint
+	_dash_shadow_active = true
+	_dash_shadow_timer = DASH_SHADOW_INTERVAL
+	_spawn_dash_shadow()
+
+
+func _process_dash_shadows(delta: float) -> void:
+	if not _dash_shadow_active:
+		return
+	_dash_shadow_timer -= delta
+	while _dash_shadow_timer <= 0.0:
+		_spawn_dash_shadow()
+		_dash_shadow_timer += DASH_SHADOW_INTERVAL
+
+
+func _spawn_dash_shadow() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var parent: Node = tree.current_scene if tree.current_scene != null else get_parent()
+	if parent == null:
+		return
+	var shadow := DashShadowScript.new() as Node2D
+	parent.add_child(shadow)
+	shadow.call("capture", self, _dash_shadow_color)
 
 
 ## No aim/targeting system exists anywhere else in this project (same
@@ -922,7 +1088,7 @@ func get_skill_cooldown_ratio(skill: SkillData) -> float:
 	return clampf(float(_skill_cooldowns.get(skill, 0.0)) / skill.cooldown, 0.0, 1.0)
 
 func _update_facing() -> void:
-	if state in [State.DODGE, State.ATTACK]:
+	if state in [State.DODGE, State.ATTACK, State.SKILL_SLAM]:
 		return  # Don't flip mid-action — avoids the hitbox flipping under an active swing.
 	
 	var input_dir := Input.get_axis("move_left", "move_right")
