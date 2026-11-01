@@ -1357,7 +1357,7 @@ func get_health_ratio() -> float:
 func _on_hurtbox_hit(hit_data: HitData) -> void:
 	if playtest_invincible:
 		return
-	if elemental.shield.absorb_hit(hit_data.source):
+	if elemental.try_absorb_hit(hit_data.source):
 		var absorbed_weight: StringName = &"heavy" if hit_data.perfect else hit_data.weapon_weight
 		HitStop.freeze_for_weight(absorbed_weight)
 		ScreenShake.shake(3.0, 0.12)

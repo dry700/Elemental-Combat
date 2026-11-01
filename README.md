@@ -17,6 +17,8 @@ The project is beyond the initial prototype stage. The verified codebase include
 - Run loop persistence and enemy/boss scaling across loops (`1.0 + 0.25 * (loop - 1)`)
 - `UpgradeManager` with tuned Qi economy numbers and spend tracking
 - Perfect Hit windows for the weapon roster, including six shop-unlock weapons and a five-arrow scattershot crossbow
+- Hold-and-release Heavy Hits for the bow, greatsword, and hammer
+- Support enemies, starting with a shielder that protects nearby allies and retreats from the player
 - Runtime debug instrumentation (`[RUNLOG]`) logging room performance metrics
 
 P14 (Skill system expansion) is implemented. The implementation matches the design contract in [Design.md](docs/Design.md); an interactive playtest checkpoint remains for the next game session.

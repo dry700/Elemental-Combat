@@ -4,6 +4,7 @@ extends RefCounted
 
 signal broken(attacker: Node)
 signal expired
+signal changed(active: bool)
 
 var active: bool = false
 var _remaining_duration: float = 0.0
@@ -12,6 +13,7 @@ var _remaining_duration: float = 0.0
 func apply(duration: float) -> void:
 	_remaining_duration = duration
 	active = true
+	changed.emit(true)
 
 
 func tick(delta: float) -> void:
@@ -36,5 +38,8 @@ func get_remaining_duration() -> float:
 
 
 func clear() -> void:
+	var was_active := active
 	active = false
 	_remaining_duration = 0.0
+	if was_active:
+		changed.emit(false)

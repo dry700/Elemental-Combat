@@ -1,6 +1,6 @@
 # Plan: Shop Rooms, Interactive Exits, Reaction Clues, Maid's Skills, Heavy Hit
 
-Status: **in progress.** Shop rooms, run-sequence integration, and shop-state persistence are implemented. Steps 1–8 are complete; Step 9 (support enemies, starting with the shielder) is next. Steps are tracked in `AGENT_PLAN.md`; every number below is a placeholder to tune in playtesting.
+Status: **implemented.** Steps 1–9 are complete, including the shielder support enemy; the full GUT suite passes. Remaining work is manual playtesting and tuning the placeholder values. Steps are tracked in `AGENT_PLAN.md`.
 Source of truth for existing systems is [Design.md](docs/Design.md); when this plan is implemented, fold it into docs/Design.md as new sections.
 
 ---
@@ -263,6 +263,8 @@ Goal: enemies that help other enemies, starting with a **shielder**. Later types
 - **Room clear:** supports are in the `"enemies"` group, so they must be killed for the exit to unlock. They must not hide or flee out of reach.
 - **Placement:** add them to chunk spawn points (`build_chunks.gd` and the chunk `.tscn` files).
 - **Reaction interplay:** a shielded ally negates the reaction on the absorbed hit, so shields delay status setup. Light weapons waste a hit on a shield, which makes heavy hits and projectiles more valuable.
+
+Step 9 implemented: `SupportAI` shields the nearest unshielded enemy ally in range using the shared `ShieldEffect`, then moves away from the player to maintain spacing without stepping off platform edges. The shielder is a killable `CharacterBody2D` with authored `EnemyStats`, is counted in the room's `enemies` group, and is placed in `chunk_crossroads_v2` (also added to the chunk builder). Player and all enemy hurtbox callbacks use `ElementalCombatant.try_absorb_hit()` so an absorbed hit causes no damage, knockback, or reaction; support shields do not enable Maid's Guard's explosion. The target now displays a pulsing ellipse while shielded, and a faint lightning arc links the shielder to its ally when the shield is applied. Focused `test_support_ai.gd` passes (6 tests, 26 assertions). Final full-suite verification passes (382 tests, 2,338 assertions).
 
 ---
 

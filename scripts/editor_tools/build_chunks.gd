@@ -15,6 +15,8 @@ var patrol_scene = preload("res://scenes/enemies/patrol_dummy.tscn")
 var patrol_stats = preload("res://scripts/resources/enemies/neutral_brawler_stats.tres")
 var kim_scene = preload("res://scenes/enemies/test_dummy.tscn")
 var kim_stats = preload("res://scripts/resources/enemies/kim_spirit_stats.tres")
+var shielder_scene = preload("res://scenes/enemies/shielder_enemy.tscn")
+var shielder_stats = preload("res://scripts/resources/enemies/shielder_stats.tres")
 var tileset = preload("res://scenes/world/chunks/chunk_tileset.tres")
 
 func _init():
@@ -86,6 +88,16 @@ func add_enemy(root, x, y, is_patrol=true):
         sp.set("enemy_scene", kim_scene)
         sp.set("enemy_stats", kim_stats)
         sp.set("starting_element", "kim")
+    root.add_child(sp)
+    sp.owner = root
+
+func add_shielder(root, x, y):
+    var sp = Node2D.new()
+    sp.set_script(spawn_script)
+    sp.name = "SpawnPoint_Shielder"
+    sp.position = Vector2(x * 16.0 + 8.0, y * 16.0)
+    sp.set("enemy_scene", shielder_scene)
+    sp.set("enemy_stats", shielder_stats)
     root.add_child(sp)
     sp.owner = root
 
@@ -177,3 +189,4 @@ func _build_crossroads_v2(tm, root):
     add_enemy(root, 13, 4.5)
     add_enemy(root, 5, 13.0)
     add_enemy(root, 21, 13.0)
+    add_shielder(root, 13, 13.0)

@@ -6,6 +6,8 @@
 [ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="5_jsqsn"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="6_os1j5"]
 [ext_resource type="Resource" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="7_3s0ka"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shielder_enemy.tscn" id="8_shielder_scene"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/shielder_stats.tres" id="9_shielder_stats"]
 
 [node name="Node2D" type="Node2D" unique_id=1852270514]
 script = ExtResource("1_2ktr3")
@@ -54,3 +56,9 @@ enemy_stats = ExtResource("7_3s0ka")
 [node name="_StaticBody2D_37" parent="." unique_id=2094238512 instance=ExtResource("3_413c1")]
 position = Vector2(187, 311)
 width_tiles = 4
+
+[node name="SpawnPoint_Shielder" type="Node2D" parent="."]
+position = Vector2(216, 208)
+script = ExtResource("5_jsqsn")
+enemy_scene = ExtResource("8_shielder_scene")
+enemy_stats = ExtResource("9_shielder_stats")

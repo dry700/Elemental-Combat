@@ -45,3 +45,12 @@ enum Tier { NORMAL, ELITE }
 ## Qi awarded to the player when this enemy is killed (§4.8.1).
 ## 0.0 = no reward (e.g. neutral/training enemies that should not contribute).
 @export var qi_reward: float = 0.0
+
+## Support-enemy behavior. A zero support_range disables support behavior.
+@export var support_range: float = 0.0
+@export var support_cooldown: float = 5.0
+@export var support_shield_duration: float = 4.0
+@export var support_keep_distance: float = 100.0
+@export var support_move_speed: float = 40.0
+@export var support_retreat_interval: float = 3.0
+@export var support_retreat_duration: float = 0.5

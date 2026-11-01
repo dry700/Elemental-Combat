@@ -207,6 +207,9 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - Shop & Skills Expansion Step 5 is implemented: reaction ranks are shown on upgrade cards, combat popups, and the HUD strip. Focused UpgradeManager, shop HUD, combat reaction, and persistence tests pass; the full suite passes.
 - Shop & Skills Expansion Step 6 (Maid's Guard) is implemented. Focused shield tests pass (7 tests, 27 assertions).
 - Shop & Skills Expansion Step 7 (Energy system and Maid's Sweep) is implemented. Focused `test_maid_sweep.gd` tests pass (15 tests); the full suite passes (370/370).
+- Shop & Skills Expansion Step 8 (Heavy Hit) is implemented; focused tests pass (6 tests, 32 assertions).
+- Shop & Skills Expansion Step 9 (shielder support enemy) is implemented; focused tests pass (6 tests, 26 assertions), including a platform-edge regression and shield visual checks. Full GUT suite: 382/382 passed, 2,338 assertions, 0 failures.
+- Manual playtest setup: `scenes/world/test_arena.tscn` now includes a Bow pickup and the shielder with nearby enemy allies. Retreat movement checks for ground ahead; the arena starts in a headless smoke check. Human gameplay timing/spacing feedback remains pending.
 
 ### Step 8 — Heavy Hit
 - [x] Add per-weapon heavy settings to the bow, greatsword, and hammer; short presses remain normal swings.
@@ -215,6 +218,12 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Add the weapon tell and tap-to-charge accessibility option.
 - [x] Verification: focused `test_heavy_attack.gd` passes (6 tests, 32 assertions).
 
+### Step 9 — Support enemies
+- [x] Add `SupportAI` and authored `EnemyStats` support fields; the shielder shields the nearest unshielded enemy ally and keeps its distance from the player.
+- [x] Add the shielder as a killable enemy and place it in `chunk_crossroads_v2` and the chunk builder.
+- [x] Route Player and every enemy hit callback through the shared one-hit shield gate; absorbed hits skip damage, knockback, and reaction resolution.
+- [x] Verification: focused `test_support_ai.gd` passes (5 tests, 21 assertions).
+
 ## Immediate next action
 
-- Proceed to Step 9 of plan-shop-and-skills.md: implement support enemies, starting with the shielder.
+- Manual playtest and tune placeholder values for the Shop & Skills Expansion; automated implementation and verification are complete.

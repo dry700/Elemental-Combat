@@ -15,6 +15,9 @@
 [ext_resource type="Resource" uid="uid://dfm6byo2aewp" path="res://scripts/resources/enemies/ember_tide_boss_stats.tres" id="14_t4h2l"]
 [ext_resource type="Script" path="res://scripts/items/shop_skill_pickup.gd" id="15_shop_skill"]
 [ext_resource type="Resource" path="res://scripts/resources/skills/earthen_bulwark.tres" id="16_skill_stall"]
+[ext_resource type="Resource" uid="uid://cbtr2tyj70csu" path="res://scripts/resources/weapons/training_bow.tres" id="17_bow"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shielder_enemy.tscn" id="18_shielder"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/shielder_stats.tres" id="19_shielder_stats"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(400, 20)
@@ -66,6 +69,12 @@ script = ExtResource("10_pickup")
 weapon = ExtResource("12_hammer")
 slot = 1
 
+[node name="BowPickup" type="Area2D" parent="."]
+position = Vector2(-66, 95)
+script = ExtResource("10_pickup")
+weapon = ExtResource("17_bow")
+slot = 1
+
 [node name="ShopSkillStall" type="Area2D" parent="."]
 position = Vector2(-180, 95)
 script = ExtResource("15_shop_skill")
@@ -99,3 +108,7 @@ enemy_stats = ExtResource("9_enemystats2")
 [node name="Boss" parent="." unique_id=2139997490 instance=ExtResource("13_gghxo")]
 position = Vector2(-42, 85)
 boss_stats = ExtResource("14_t4h2l")
+
+[node name="ShielderEnemy" parent="." instance=ExtResource("18_shielder")]
+position = Vector2(120, 90)
+enemy_stats = ExtResource("19_shielder_stats")

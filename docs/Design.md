@@ -69,7 +69,8 @@ changes needed there for the Final Report beyond good writing.
 | Projectiles | `scripts/combat/base_projectile.gd` + `fragment_projectile.gd` (Ore Surge) + `skill_projectile.gd` (Ignite Dart) | Travel/lifetime/collision, per-type hit resolution |
 | Skills | `scripts/resources/skills/skill_data.gd`, `skill_pool.gd` + `.tres` assets | A.5 function dispatch, roster/acquisition pool, cooldown state |
 | Enemy AI | `scenes/enemies/enemy_combat_ai.gd`, `scenes/enemies/enemy_stats.gd` | Aggro/telegraph/attack/cooldown state machine, shared by all enemy types |
-| Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss,flying_enemy,shooter_enemy}.gd` | Health/death/flash, wires `ElementalCombatant` + `EnemyCombatAI` together |
+| Support AI | `scenes/enemies/support_ai.gd`, `scenes/enemies/shielder_enemy.gd` | Shields the nearest unshielded enemy ally and retreats to maintain spacing from the player |
+| Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss,flying_enemy,shooter_enemy,swooper_enemy,shielder_enemy}.gd` | Health/death/flash, wires `ElementalCombatant` and the relevant combat/support component together |
 | Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
 | Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, room lifecycle, run sequencing, autosave hook |
 | Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume including procedural map layout — local JSON |
@@ -100,8 +101,9 @@ overlaps a `Hurtbox` → builds `HitData` → `Hurtbox.take_hit()` →
 `hit_received` signal → owner's `_on_hurtbox_hit` applies raw
 damage/knockback + `HitStop.freeze(0.05)` + `elemental.handle_hit(hit_data)`.
 
-Every enemy body (`TestDummy`/`PatrolDummy`/`Boss`) repeats this exact
-`_on_hurtbox_hit` shape. `EnemyCombatAI` drives its own internal `Hitbox`
+Every enemy body calls `ElementalCombatant.try_absorb_hit()` before damage
+or reaction handling. An absorbed hit stops before damage, knockback, and
+reaction resolution. `EnemyCombatAI` drives its own internal `Hitbox`
 the same way, through its own `TELEGRAPH → ACTIVE → COOLDOWN` states.
 
 ```gdscript
@@ -886,6 +888,18 @@ the new status (bypasses reaction resolution — a scripted shift, not a
 reaction), retargets `EnemyCombatAI.element_override`. Fires once,
 guarded by `_current_phase`. Dual-simultaneous-element attacks: **not
 implemented**, stays an explicit stretch goal.
+
+Support enemies compose `ElementalCombatant` with `SupportAI`; they do not
+inherit from `EnemyCombatAI` or another enemy. `EnemyStats.support_range`,
+`support_cooldown`, and `support_shield_duration` tune the support action.
+`SupportAI` searches the `enemies` group and applies the shared refresh-only
+`ShieldEffect` to the nearest unshielded ally. The support shield absorbs one
+hit and has no explosion; only Maid's Guard enables its break/expiry blast.
+When no ally needs a shield, the shielder uses its configured keep-distance
+and movement-speed fields to retreat from nearby players. It remains in the
+`enemies` group, so it must be killed to clear a room. The first shielder
+spawn is authored in `chunk_crossroads_v2` and reproduced by
+`scripts/editor_tools/build_chunks.gd`.
 
 ---
 

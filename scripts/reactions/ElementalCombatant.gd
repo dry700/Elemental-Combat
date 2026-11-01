@@ -1,6 +1,7 @@
 class_name ElementalCombatant
 extends Node2D
 const WildfireOverloadBurstScript = preload("res://scripts/reactions/wildfire_overload_burst.gd")
+const ShieldEllipseVFXScript = preload("res://scripts/reactions/shield_ellipse_vfx.gd")
 ## Composed component — NOT a base class. Player is a CharacterBody2D and
 ## TestDummy is a StaticBody2D (PatrolDummy is CharacterBody2D too, but
 ## the split already rules out a single shared ancestor), so inheritance
@@ -121,6 +122,7 @@ var _shield_explosion_damage: float = 0.0
 var _shield_explosion_radius: float = 0.0
 var _shield_explosion_stagger: float = 0.0
 var _shield_explosion_bystander: ElementalCombatant
+var _shield_ellipse_vfx: Node2D
 
 
 func _ready() -> void:
@@ -139,6 +141,10 @@ func _ready() -> void:
 	reaction_triggered.connect(_on_reaction_triggered)
 	shield.broken.connect(_on_shield_broken)
 	shield.expired.connect(_on_shield_expired)
+	_shield_ellipse_vfx = ShieldEllipseVFXScript.new()
+	_shield_ellipse_vfx.name = "ShieldEllipseVFX"
+	add_child(_shield_ellipse_vfx)
+	shield.changed.connect(_shield_ellipse_vfx.set_active)
 
 	_dot_indicator = DotIndicator.new()
 	_dot_indicator.position = indicator_offset + Vector2(10, -6)
@@ -267,6 +273,12 @@ func _update_debug_readout() -> void:
 
 func is_disabled() -> bool:
 	return disable_effect.is_active()
+
+
+## Shared one-hit shield gate for player and enemy hurtbox callbacks. An
+## absorbed hit must stop before damage, knockback, or reaction handling.
+func try_absorb_hit(attacker: Node = null) -> bool:
+	return shield.absorb_hit(attacker)
 
 
 func is_slowed() -> bool:
