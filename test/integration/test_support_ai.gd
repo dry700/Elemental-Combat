@@ -110,18 +110,18 @@ func test_shielder_retreats_in_cycles_and_holds_position_between_them() -> void:
 	stats.support_keep_distance = 100.0
 	stats.support_move_speed = 40.0
 	stats.support_retreat_interval = 1.0
-	stats.support_retreat_duration = 0.3
+	stats.support_retreat_duration = 0.5
 	shielder.support_ai.stats = stats
 	var player := Node2D.new()
 	player.position = Vector2(30, -12)
 	add_child_autofree(player)
-	shielder.support_ai.update(0.1, player)
+	shielder.support_ai.update(0.25, player)
 	assert_almost_eq(shielder.velocity.x, 0.0, 0.01, "waits before the first retreat cycle")
-	for _frame in range(8):
-		shielder.support_ai.update(0.1, player)
+	for _frame in range(3):
+		shielder.support_ai.update(0.25, player)
 	assert_lt(shielder.velocity.x, 0.0, "retreats when the cycle begins")
-	for _frame in range(4):
-		shielder.support_ai.update(0.1, player)
+	for _frame in range(2):
+		shielder.support_ai.update(0.25, player)
 	assert_almost_eq(shielder.velocity.x, 0.0, 0.01, "holds position after the retreat burst")
 	shielder.velocity.x = -20.0
 	player.position = Vector2(200, -12)
