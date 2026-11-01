@@ -1,5 +1,5 @@
 {
-  "updatedAt": 1793021306701,
+  "updatedAt": 1793504564652,
   "running": 0,
   "queued": 0,
   "maxWorkers": 3,
@@ -7,7 +7,7 @@
   "cliStatus": {
     "state": "unknown",
     "message": "Checking Gemini CLI...",
-    "lastChecked": 1793021306695,
+    "lastChecked": 1793504564647,
     "mode": "unknown"
   },
   "tasks": []
