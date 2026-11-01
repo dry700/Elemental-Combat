@@ -196,7 +196,8 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P13 verification: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected warnings.
 - P14 verification: 287/287 tests passed, 1,841 assertions, 0 failures, 2 expected warnings; headless shutdown emits resource leak diagnostics. Manual gameplay checkpoint remains pending.
 - Latest full-suite attempt: 328/333 tests passed; five existing enemy-facing/loop-scaling tests fail after parse errors in modified `swooper_enemy.gd` and `test_dummy.gd`. Step 4.1 focused tests pass (26 tests, 196 assertions).
+- Shop & Skills Expansion Step 4.2 is implemented: shop state survives save/resume, purchases autosave, and legacy snapshots remain supported. Focused persistence tests pass (6 tests, 34 assertions).
 
 ## Immediate next action
 
-- Proceed to Step 4.2 of plan-shop-and-skills.md: persist shop state across save/resume.
+- Proceed to Step 5 of plan-shop-and-skills.md: add reaction-upgrade visual clues to shop cards, combat popups, and the HUD.

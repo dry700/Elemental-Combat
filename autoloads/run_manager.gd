@@ -39,6 +39,7 @@ var _player: Player = null
 var _elapsed_sec: float = 0.0
 var _run_active: bool = false
 var _map_structure_to_restore: Dictionary = {}
+var _shop_state_to_restore: Dictionary = {}
 
 var loop: int = 1
 var _continue_loop: bool = false
@@ -155,6 +156,8 @@ func _resume_from_save(saved: Dictionary) -> void:
 	_elapsed_sec = saved.get("elapsed_sec", 0.0)
 	var saved_map_structure: Variant = saved.get("map_structure", {})
 	_map_structure_to_restore = saved_map_structure.duplicate(true) if saved_map_structure is Dictionary else {}
+	var saved_shop_state: Variant = saved.get("shop_state", {})
+	_shop_state_to_restore = saved_shop_state.duplicate(true) if saved_shop_state is Dictionary else {}
 	# Restore upgrade state before the player state so the vitality bonus is
 	# already included when the save snapshot applies the player's health.
 	UpgradeManager.apply_save_state(saved.get("upgrade_state", {}))
@@ -248,6 +251,9 @@ func _advance() -> void:
 		_current_room.saved_map_structure = _map_structure_to_restore.duplicate(true)
 	_map_structure_to_restore.clear()
 	_room_container.add_child(_current_room)
+	if Hud != null and not _shop_state_to_restore.is_empty():
+		Hud.apply_shop_stock_save_state(_shop_state_to_restore)
+	_shop_state_to_restore.clear()
 
 	var controller := _current_room as RoomController
 	if controller == null:
@@ -351,10 +357,17 @@ func _capture_pending_loadout() -> void:
 	pending_secondary_weapon_rune = _player.secondary_weapon_rune.to_dict() if _player.secondary_weapon_rune != null else {}
 
 
+func save_mid_run() -> void:
+	_autosave()
+
+
 func _autosave() -> void:
 	if _player == null or _current_room == null:
 		return
 	var map_structure: Dictionary = {}
 	if _current_room is ProceduralRoomController and _current_room.map_gen != null:
 		map_structure = _current_room.map_gen.to_dict()
-	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure, UpgradeManager.to_save_state(), loop)
+	var shop_state: Dictionary = {}
+	if Hud != null:
+		shop_state = Hud.get_shop_stock_save_state()
+	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure, UpgradeManager.to_save_state(), loop, shop_state)

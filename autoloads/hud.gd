@@ -933,6 +933,8 @@ func _confirm_upgrade_selection() -> void:
 	if purchased:
 		_rebuild_all_upgrade_options()
 		_upgrade_menu_selected_index = mini(_upgrade_menu_selected_index, _all_upgrade_options.size() - 1)
+		if RunManager != null:
+			RunManager.save_mid_run()
 	_update_upgrade_menu_visuals()
 
 
@@ -1006,6 +1008,162 @@ func _roll_shop_offers(category: int) -> Array[Dictionary]:
 				"cost": 30, "rune": rune, "purchased": false,
 			})
 	return offers
+
+
+func get_shop_stock_save_state() -> Dictionary:
+	if _shop_offer_stock.is_empty():
+		return {}
+	var serialized_stock: Dictionary = {}
+	for category_key in _shop_offer_stock:
+		var category_int: int = int(category_key)
+		var cat_name: String
+		match category_int:
+			ShopStation.Category.WEAPON:
+				cat_name = "weapon"
+			ShopStation.Category.SKILL:
+				cat_name = "skill"
+			ShopStation.Category.RUNE:
+				cat_name = "rune"
+			_:
+				cat_name = str(category_key)
+		var raw_offers: Array = _shop_offer_stock[category_key]
+		var serialized_offers: Array[Dictionary] = []
+		for offer in raw_offers:
+			if not offer is Dictionary:
+				continue
+			var offer_type: String = str(offer.get("type", ""))
+			var cost: int = int(offer.get("cost", 0))
+			var purchased: bool = bool(offer.get("purchased", false))
+			if offer_type == "shop_weapon":
+				var weapon = offer.get("weapon")
+				var weapon_path: String = weapon.resource_path if weapon != null else ""
+				serialized_offers.append({
+					"type": "shop_weapon",
+					"weapon_path": weapon_path,
+					"cost": cost,
+					"purchased": purchased,
+				})
+			elif offer_type == "shop_skill":
+				var skill = offer.get("skill")
+				var skill_path: String = skill.resource_path if skill != null else ""
+				serialized_offers.append({
+					"type": "shop_skill",
+					"skill_path": skill_path,
+					"cost": cost,
+					"purchased": purchased,
+				})
+			elif offer_type == "shop_rune":
+				var rune = offer.get("rune")
+				var rune_dict: Dictionary = rune.to_dict() if rune is RuneData else {}
+				serialized_offers.append({
+					"type": "shop_rune",
+					"rune": rune_dict,
+					"cost": cost,
+					"purchased": purchased,
+				})
+		serialized_stock[cat_name] = serialized_offers
+	return {
+		"stock": serialized_stock,
+		"refresh_counts": {},
+	}
+
+
+func apply_shop_stock_save_state(saved_state: Dictionary) -> void:
+	_shop_offer_stock.clear()
+	var current_room: Node = RunManager._current_room if RunManager != null else null
+	_shop_stock_room_id = current_room.get_instance_id() if current_room != null else 0
+	if saved_state.is_empty():
+		return
+
+	var raw_stock: Dictionary = saved_state.get("stock", saved_state) if saved_state is Dictionary else {}
+	for cat_key in raw_stock:
+		var cat_int: int = _category_from_key(cat_key)
+		if cat_int < 0:
+			continue
+		var raw_offers: Variant = raw_stock[cat_key]
+		if not raw_offers is Array:
+			continue
+		var restored_offers: Array[Dictionary] = []
+		for item in raw_offers:
+			if not item is Dictionary:
+				continue
+			var item_type := str(item.get("type", ""))
+			var cost := int(item.get("cost", 0))
+			var purchased := bool(item.get("purchased", false))
+			if item_type == "shop_weapon":
+				var weapon_path := str(item.get("weapon_path", ""))
+				if weapon_path.is_empty() or not ResourceLoader.exists(weapon_path):
+					continue
+				var weapon := load(weapon_path) as WeaponStats
+				if weapon == null:
+					continue
+				if cost <= 0:
+					cost = _shop_weapon_price(weapon)
+				restored_offers.append({
+					"type": "shop_weapon",
+					"label": weapon.weapon_name.to_upper(),
+					"desc": "Weapon\nCost: %d Qi" % cost,
+					"cost": cost,
+					"weapon": weapon,
+					"purchased": purchased,
+				})
+			elif item_type == "shop_skill":
+				var skill_path := str(item.get("skill_path", ""))
+				if skill_path.is_empty() or not ResourceLoader.exists(skill_path):
+					continue
+				var skill := load(skill_path) as SkillData
+				if skill == null:
+					continue
+				if cost <= 0:
+					cost = 60
+				restored_offers.append({
+					"type": "shop_skill",
+					"label": skill.skill_name.to_upper(),
+					"desc": "%s skill\nCost: %d Qi" % [String(skill.element).to_upper(), cost],
+					"cost": cost,
+					"skill": skill,
+					"purchased": purchased,
+				})
+			elif item_type == "shop_rune":
+				var rune_dict: Variant = item.get("rune", {})
+				if not rune_dict is Dictionary:
+					continue
+				var rune := RuneData.from_dict(rune_dict)
+				if rune == null:
+					continue
+				if cost <= 0:
+					cost = 30
+				restored_offers.append({
+					"type": "shop_rune",
+					"label": "%s RUNE" % String(rune.element).to_upper(),
+					"desc": "%s\nCost: %d Qi" % ["\n".join(rune.describe_lines()), cost],
+					"cost": cost,
+					"rune": rune,
+					"purchased": purchased,
+				})
+		if not restored_offers.is_empty():
+			_shop_offer_stock[cat_int] = restored_offers
+
+
+func _category_from_key(key: Variant) -> int:
+	if key is int:
+		return key
+	var s := str(key).to_lower()
+	match s:
+		"upgrade", "0":
+			return ShopStation.Category.UPGRADE
+		"weapon", "1":
+			return ShopStation.Category.WEAPON
+		"skill", "2":
+			return ShopStation.Category.SKILL
+		"rune", "3":
+			return ShopStation.Category.RUNE
+	return -1
+
+
+func clear_shop_stock() -> void:
+	_shop_offer_stock.clear()
+	_shop_stock_room_id = 0
 
 
 func _shop_weapon_price(weapon: WeaponStats) -> int:
@@ -1245,6 +1403,9 @@ func _confirm_overlay_selection() -> void:
 		return
 	if not _pending_shop_offer.is_empty():
 		_pending_shop_offer["purchased"] = true
+	if is_shop_weapon or is_shop_skill or is_shop_rune or not _pending_shop_offer.is_empty():
+		if RunManager != null:
+			RunManager.save_mid_run()
 	_close_overlay()
 
 

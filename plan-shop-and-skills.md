@@ -120,6 +120,8 @@ Step 4.1 implemented: generated runs now use the interleaved room/shop order abo
 - Qi and ranks already persist through `UpgradeManager.to_save_state()`.
 - Tests: save/resume round trip in `test_run_manager_persistence.gd`; legacy snapshots without shop state still load.
 
+Step 4.2 implemented: shop stock and purchased flags are included in run snapshots and restored on resume; shop purchases trigger an immediate save. Legacy snapshots without shop state continue to load. Focused persistence tests pass (6 tests, 34 assertions).
+
 ---
 
 ## 5. Reaction upgrade visual clues

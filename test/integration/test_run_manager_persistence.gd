@@ -187,3 +187,154 @@ func test_playtest_regenerates_current_procedural_room():
 	assert_not_null(RunManager._current_room)
 	assert_ne(RunManager._current_room, room)
 	assert_true(RunManager._current_room is ProceduralRoomController)
+
+func test_save_snapshot_round_trips_shop_state():
+	var shop_state := {
+		"stock": {
+			"weapon": [
+				{"type": "shop_weapon", "weapon_path": "res://scripts/resources/weapons/training_dagger.tres", "cost": 35, "purchased": true},
+				{"type": "shop_weapon", "weapon_path": "res://scripts/resources/weapons/training_spear.tres", "cost": 45, "purchased": false},
+			],
+			"skill": [
+				{"type": "shop_skill", "skill_path": "res://scripts/resources/skills/ember_burst.tres", "cost": 60, "purchased": false},
+			],
+			"rune": [
+				{"type": "shop_rune", "rune": {"element": "hoa", "target": 0, "modifiers": [{"id": "damage_pct", "value": 15.0}]}, "cost": 30, "purchased": false},
+			]
+		},
+		"refresh_counts": {}
+	}
+	SaveManager.save_in_progress_run(
+		[RunManager.SHOP_ROOM_SCENE_PATH], 0, {}, 10.0, {}, {}, 1, shop_state
+	)
+	var saved: Dictionary = SaveManager.load_in_progress_run()
+	assert_not_null(saved)
+	assert_eq(saved["shop_state"]["stock"]["weapon"].size(), 2)
+	assert_true(saved["shop_state"]["stock"]["weapon"][0]["purchased"])
+	assert_eq(saved["shop_state"]["stock"]["skill"][0]["skill_path"], "res://scripts/resources/skills/ember_burst.tres")
+	assert_eq(saved["shop_state"]["stock"]["rune"][0]["rune"]["element"], "hoa")
+
+func test_legacy_snapshot_without_shop_state_still_loads_cleanly():
+	var room_container := Node2D.new()
+	add_child_autofree(room_container)
+	RunManager._room_container = room_container
+	var saved := {
+		"sequence": [RunManager.SHOP_ROOM_SCENE_PATH],
+		"current_index": 0,
+		"elapsed_sec": 15.0,
+		"player": {"current_health": 40.0},
+		"upgrade_state": {},
+		"loop": 1,
+	}
+	# Has no "shop_state" key — legacy format.
+	RunManager._resume_from_save(saved)
+	assert_not_null(RunManager._current_room)
+	assert_true(RunManager._current_room is ShopRoom)
+	assert_eq(player.current_health, 40.0)
+
+	# When opening a shop station, missing stock rolls fresh without error
+	Hud._player = player
+	Hud._open_shop_menu(ShopStation.Category.WEAPON)
+	assert_eq(Hud._all_upgrade_options.size(), 3)
+	Hud._close_upgrade_menu()
+	Hud.clear_shop_stock()
+	Hud._player = null
+
+func test_resume_in_shop_room_restores_exact_station_offers_and_purchased_flags():
+	var room_container := Node2D.new()
+	add_child_autofree(room_container)
+	RunManager._room_container = room_container
+	var shop_state := {
+		"stock": {
+			"weapon": [
+				{"type": "shop_weapon", "weapon_path": "res://scripts/resources/weapons/training_dagger.tres", "cost": 35, "purchased": true},
+				{"type": "shop_weapon", "weapon_path": "res://scripts/resources/weapons/training_spear.tres", "cost": 45, "purchased": false},
+			],
+			"skill": [
+				{"type": "shop_skill", "skill_path": "res://scripts/resources/skills/ember_burst.tres", "cost": 60, "purchased": false},
+			],
+			"rune": [
+				{"type": "shop_rune", "rune": {"element": "hoa", "target": 0, "modifiers": [{"id": "damage_pct", "value": 20.0}]}, "cost": 30, "purchased": true},
+			]
+		}
+	}
+	var saved := {
+		"sequence": [RunManager.SHOP_ROOM_SCENE_PATH],
+		"current_index": 0,
+		"elapsed_sec": 20.0,
+		"player": {"current_health": 50.0},
+		"upgrade_state": {},
+		"loop": 1,
+		"shop_state": shop_state,
+	}
+	RunManager._resume_from_save(saved)
+	assert_not_null(RunManager._current_room)
+	assert_true(RunManager._current_room is ShopRoom)
+
+	Hud._player = player
+
+	# Check weapon stock
+	Hud._open_shop_menu(ShopStation.Category.WEAPON)
+	assert_eq(Hud._all_upgrade_options.size(), 2)
+	assert_eq(Hud._all_upgrade_options[0]["weapon"].resource_path, "res://scripts/resources/weapons/training_dagger.tres")
+	assert_true(Hud._all_upgrade_options[0]["purchased"])
+	assert_eq(Hud._all_upgrade_options[1]["weapon"].resource_path, "res://scripts/resources/weapons/training_spear.tres")
+	assert_false(Hud._all_upgrade_options[1]["purchased"])
+	Hud._close_upgrade_menu()
+
+	# Check skill stock
+	Hud._open_shop_menu(ShopStation.Category.SKILL)
+	assert_eq(Hud._all_upgrade_options.size(), 1)
+	assert_eq(Hud._all_upgrade_options[0]["skill"].resource_path, "res://scripts/resources/skills/ember_burst.tres")
+	assert_false(Hud._all_upgrade_options[0]["purchased"])
+	Hud._close_upgrade_menu()
+
+	# Check rune stock
+	Hud._open_shop_menu(ShopStation.Category.RUNE)
+	assert_eq(Hud._all_upgrade_options.size(), 1)
+	assert_eq(Hud._all_upgrade_options[0]["rune"].element, "hoa")
+	assert_true(Hud._all_upgrade_options[0]["purchased"])
+	Hud._close_upgrade_menu()
+
+	Hud.clear_shop_stock()
+	Hud._player = null
+
+func test_shop_purchase_triggers_autosave_so_resume_preserves_purchase():
+	var room_container := Node2D.new()
+	add_child_autofree(room_container)
+	RunManager._room_container = room_container
+	RunManager._sequence = [RunManager.SHOP_ROOM_SCENE_PATH]
+	RunManager._current_index = -1
+	RunManager._advance()
+
+	Hud._player = player
+	UpgradeManager.reset()
+	UpgradeManager.award_qi(100)
+
+	# Open weapon shop and roll offers
+	Hud._open_shop_menu(ShopStation.Category.WEAPON)
+	assert_eq(Hud._all_upgrade_options.size(), 3)
+	var target_offer: Dictionary = Hud._all_upgrade_options[0]
+	assert_false(target_offer["purchased"])
+
+	# Purchase the first offer
+	Hud._open_shop_offer(target_offer)
+	assert_true(Hud._overlay_active)
+	Hud._confirm_overlay_selection()
+
+	# Verify it marked purchased in memory
+	assert_true(target_offer["purchased"])
+
+	# Verify autosave was triggered and written to SaveManager
+	var saved: Dictionary = SaveManager.load_in_progress_run()
+	assert_not_null(saved, "mid-run save should exist immediately after purchase")
+	var saved_shop_state: Dictionary = saved.get("shop_state", {})
+	assert_false(saved_shop_state.is_empty(), "saved shop state should not be empty")
+	var saved_weapons: Array = saved_shop_state.get("stock", {}).get("weapon", [])
+	assert_gte(saved_weapons.size(), 1)
+	assert_true(saved_weapons[0]["purchased"], "saved offer should be marked purchased to prevent exploit")
+
+	Hud._close_upgrade_menu()
+	Hud.clear_shop_stock()
+	Hud._player = null
+	UpgradeManager.reset()

@@ -47,12 +47,12 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 
 ## Exact next item
 
-- Next automated implementation: Step 4.2 (persist shop state across save/resume) in `plan-shop-and-skills.md`. The P14 in-game skill visual checkpoint remains pending manual playtesting in `test_arena`.
+- Next automated implementation: Step 5 (reaction-upgrade visual clues) in `plan-shop-and-skills.md`. Step 4.2 shop-state persistence is implemented and its focused tests pass (6 tests, 34 assertions). The P14 in-game skill visual checkpoint remains pending manual playtesting in `test_arena`.
 
 ## Deferred work
 
 - P14 implementation and test-arena playtest tooling are complete; finish the recorded interactive checkpoint before gameplay balance tuning.
-- Shop and Skills Expansion: Steps 1–3 and Step 4.1 (interleaved room/shop run sequence) are implemented. Step 4.1 focused coverage passed (26 tests, 196 assertions); the latest full suite has 328/333 passing and remains blocked by pre-existing parse errors in modified enemy scripts, which cause five enemy-facing/loop-scaling test failures.
+- Shop and Skills Expansion: Steps 1–3, Step 4.1 (interleaved room/shop run sequence), and Step 4.2 (shop-state persistence) are implemented. Step 4.2 focused tests pass (6 tests, 34 assertions); the latest full suite has 328/333 passing and remains blocked by pre-existing parse errors in modified enemy scripts, which cause five enemy-facing/loop-scaling test failures.
 - Shop & Skills Expansion Step 3 adds hand-authored shop and boss-shop rooms, categorized stations, category-specific offers and slot-chooser purchases. Focused shop, upgrade-menu, exit, and active-shop loop-handoff tests pass (33 tests, 163 assertions); per-visit offers remain fixed under D19's no-refresh decision.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
