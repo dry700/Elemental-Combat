@@ -203,6 +203,25 @@ func build_map(parent: Node2D) -> void:
 			chunk_node.add_to_group("shop_chunk")
 
 
+func get_map_bounds() -> Rect2:
+	if grid.is_empty():
+		return Rect2()
+
+	var min_cell := Vector2i(grid_w, grid_h)
+	var max_cell := Vector2i(-1, -1)
+	for cell: Vector2i in grid:
+		min_cell.x = mini(min_cell.x, cell.x)
+		min_cell.y = mini(min_cell.y, cell.y)
+		max_cell.x = maxi(max_cell.x, cell.x)
+		max_cell.y = maxi(max_cell.y, cell.y)
+
+	var position := Vector2(min_cell.x * CHUNK_W, min_cell.y * CHUNK_H)
+	var size := Vector2(
+			(max_cell.x - min_cell.x + 1) * CHUNK_W,
+			(max_cell.y - min_cell.y + 1) * CHUNK_H)
+	return Rect2(position, size)
+
+
 func to_dict() -> Dictionary:
 	var cells: Array[Dictionary] = []
 	for y in range(grid_h):

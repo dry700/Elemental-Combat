@@ -37,11 +37,12 @@ func test_skill_cooldown_ratio_is_zero_when_ready_and_one_when_just_cast():
 	player._skill_cooldowns[skill] = 2.0
 	assert_almost_eq(player.get_skill_cooldown_ratio(skill), 0.25, 0.001)
 
-func test_skill_pool_contains_fifteen_described_resources_across_all_elements():
-	assert_eq(SkillPoolResource.SKILL_PATHS.size(), 15)
+func test_skill_pool_contains_seventeen_described_resources_across_all_elements():
+	assert_eq(SkillPoolResource.SKILL_PATHS.size(), 17)
 	var elements := [Elements.HOA, Elements.THUY, Elements.MOC, Elements.KIM, Elements.THO]
 	for element in elements:
-		assert_eq(SkillPoolResource.by_element(element).size(), 3, "each element should have three skills")
+		var expected_count := 5 if element == Elements.THO else 3
+		assert_eq(SkillPoolResource.by_element(element).size(), expected_count)
 	for path in SkillPoolResource.SKILL_PATHS:
 		var skill := load(path) as SkillData
 		assert_not_null(skill, "skill resource should load: " + path)

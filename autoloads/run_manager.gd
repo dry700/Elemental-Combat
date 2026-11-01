@@ -267,6 +267,9 @@ func _advance() -> void:
 			room_exit.player_entered.connect(_on_room_exit_requested.bind(room_exit), CONNECT_ONE_SHOT)
 
 	_player.global_position = controller.get_player_spawn_position()
+	var camera := _player.get_node_or_null("Camera2D") as Camera2D
+	if camera != null:
+		camera.reset_smoothing()
 	_autosave()
 	_snapshot_room_start()
 
@@ -362,7 +365,6 @@ func save_mid_run() -> bool:
 		push_warning("RunManager: cannot save because no run is active")
 		return false
 	return _autosave()
-
 
 func _autosave() -> bool:
 	if _player == null or _current_room == null:

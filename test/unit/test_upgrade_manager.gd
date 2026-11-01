@@ -90,6 +90,20 @@ func test_reaction_mastery_sorting_ensures_order_independence():
 	um.purchase_khac_rank1([Elements.THUY, Elements.MOC])
 	assert_true(um.khac_graze_erased([Elements.MOC, Elements.THUY]))
 
+func test_reaction_rank_reports_sinh_and_khac_rank_independent_of_pair_order():
+	var um := _make_um()
+	var sinh_pair: Array[StringName] = [Elements.KIM, Elements.THUY]
+	var khac_pair: Array[StringName] = [Elements.HOA, Elements.KIM]
+	assert_eq(um.reaction_rank(sinh_pair), 0)
+	assert_eq(um.reaction_rank([Elements.THUY]), 0)
+	um.qi = 200.0
+	assert_true(um.purchase_sinh_rank1(sinh_pair))
+	assert_eq(um.reaction_rank([Elements.THUY, Elements.KIM]), 1)
+	assert_true(um.purchase_sinh_rank2(sinh_pair, Elements.THUY))
+	assert_eq(um.reaction_rank(sinh_pair), 2)
+	assert_true(um.purchase_khac_rank1(khac_pair))
+	assert_eq(um.reaction_rank([Elements.KIM, Elements.HOA]), 1)
+
 func test_sinh_mastery_ranks_and_favored_element():
 	var um := _make_um()
 	var pair := [Elements.KIM, Elements.THUY]

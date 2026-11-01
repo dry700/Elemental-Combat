@@ -2,6 +2,28 @@ extends GutTest
 
 const SHOP_ROOM_PATH := "res://scenes/world/rooms/shop_room.tscn"
 const BOSS_SHOP_ROOM_PATH := "res://scenes/world/rooms/boss_shop_room.tscn"
+const BOSS_ROOM_PATH := "res://scenes/world/rooms/room_boss.tscn"
+
+
+func test_shop_and_boss_rooms_have_tall_solid_side_boundaries() -> void:
+	for scene_path in [SHOP_ROOM_PATH, BOSS_SHOP_ROOM_PATH, BOSS_ROOM_PATH]:
+		var room: Node2D = load(scene_path).instantiate()
+		add_child_autofree(room)
+		for boundary_name in ["BoundaryLeft", "BoundaryRight"]:
+			var boundary := room.get_node_or_null(boundary_name) as StaticBody2D
+			assert_not_null(boundary, "%s should have %s" % [scene_path, boundary_name])
+			var collision: CollisionShape2D = boundary.get_node("CollisionShape2D")
+			assert_true(collision.shape is RectangleShape2D)
+			var wall_shape := collision.shape as RectangleShape2D
+			assert_gte(wall_shape.size.y, 400.0, "wall should be too tall to jump over")
+			assert_ne(boundary.collision_layer & 1, 0, "player collision must include the boundary")
+			assert_true(boundary.is_in_group("unclimbable_walls"))
+			assert_almost_eq(absf(boundary.position.x), 225.0, 0.01)
+			assert_true(boundary.get_node_or_null("Visual") is Polygon2D)
+		for node in room.get_children():
+			if node is RoomExit:
+				assert_lt(absf(node.position.x), 225.0, "room exit must remain inside the boundary")
+				assert_lte(225.0 - absf(node.position.x), 20.0, "room exit should stay reachable at the wall")
 
 
 func test_shop_room_starts_cleared_without_baseline_rune() -> void:
@@ -11,6 +33,21 @@ func test_shop_room_starts_cleared_without_baseline_rune() -> void:
 	assert_true(room._is_cleared)
 	assert_false(room.exit.locked)
 	assert_true(room.get_tree().get_nodes_in_group("rune_pickups").is_empty())
+
+
+func test_fixed_room_applies_horizontal_camera_limits() -> void:
+	var player := load("res://scenes/player/player.tscn").instantiate() as Player
+	add_child_autofree(player)
+	RunManager._player = player
+
+	var room := load(SHOP_ROOM_PATH).instantiate() as RoomController
+	add_child_autofree(room)
+	var camera := player.get_node("Camera2D") as Camera2D
+	assert_eq(camera.limit_left, -235)
+	assert_eq(camera.limit_right, 235)
+	assert_eq(camera.limit_top, RoomController.CAMERA_LIMIT_TOP_UNRESTRICTED)
+	assert_eq(camera.limit_bottom, RoomController.CAMERA_LIMIT_BOTTOM_UNRESTRICTED)
+	RunManager._player = null
 
 
 func test_shop_room_has_one_station_for_each_category() -> void:
@@ -61,6 +98,8 @@ func test_weapon_offer_uses_slot_chooser_and_charges_only_on_confirm() -> void:
 	Hud._player = player
 	UpgradeManager.reset()
 	UpgradeManager.award_qi(45)
+	Hud._open_shop_menu(ShopStation.Category.WEAPON)
+	assert_true(Hud._upgrade_panel.visible)
 	var offer := {
 		"type": "shop_weapon",
 		"cost": 45,
@@ -69,14 +108,20 @@ func test_weapon_offer_uses_slot_chooser_and_charges_only_on_confirm() -> void:
 	}
 
 	Hud._open_shop_offer(offer)
+	Hud._update_overlay_visuals()
 	assert_true(Hud._overlay_active)
+	assert_true(Hud._overlay_panel.visible)
+	assert_false(Hud._upgrade_panel.visible, "shop cards should hide behind the slot chooser")
 	assert_eq(UpgradeManager.qi, 45.0)
 	Hud._confirm_overlay_selection()
 
 	assert_eq(player.secondary_weapon.weapon_name, "Training Spear")
 	assert_eq(UpgradeManager.qi, 0.0)
 	assert_true(offer["purchased"])
+	assert_false(Hud._overlay_active)
+	assert_true(Hud._upgrade_panel.visible, "the shop should return after choosing a slot")
 	Hud._close_overlay()
+	Hud._close_upgrade_menu()
 	Hud._shop_offer_opened_overlay = false
 	Hud._player = null
 	RunManager._current_room = null
@@ -112,6 +157,8 @@ func test_skill_offer_uses_slot_chooser_and_charges_only_on_confirm() -> void:
 	Hud._player = player
 	UpgradeManager.reset()
 	UpgradeManager.award_qi(60)
+	Hud._open_shop_menu(ShopStation.Category.SKILL)
+	assert_true(Hud._upgrade_panel.visible)
 	var offer := {
 		"type": "shop_skill",
 		"cost": 60,
@@ -120,14 +167,56 @@ func test_skill_offer_uses_slot_chooser_and_charges_only_on_confirm() -> void:
 	}
 
 	Hud._open_shop_offer(offer)
+	Hud._update_overlay_visuals()
 	assert_true(Hud._overlay_active)
+	assert_false(Hud._upgrade_panel.visible)
 	assert_eq(UpgradeManager.qi, 60.0)
 	Hud._confirm_overlay_selection()
 
 	assert_eq(player.skill_1.skill_name, "Ember Burst")
 	assert_eq(UpgradeManager.qi, 0.0)
 	assert_true(offer["purchased"])
+	assert_false(Hud._overlay_active)
+	assert_true(Hud._upgrade_panel.visible)
 	Hud._close_overlay()
+	Hud._close_upgrade_menu()
+	Hud._shop_offer_opened_overlay = false
+	Hud._player = null
+	RunManager._current_room = null
+	UpgradeManager.reset()
+
+
+func test_rune_offer_slot_chooser_hides_and_restores_shop_menu() -> void:
+	var room := load(SHOP_ROOM_PATH).instantiate() as RoomController
+	add_child_autofree(room)
+	var player := load("res://scenes/player/player.tscn").instantiate() as Player
+	room.add_child(player)
+	player.weapon = load("res://scripts/resources/weapons/training_dagger.tres")
+	RunManager._current_room = room
+	Hud._player = player
+	UpgradeManager.reset()
+	UpgradeManager.award_qi(30)
+	Hud._open_shop_menu(ShopStation.Category.RUNE)
+	assert_true(Hud._upgrade_panel.visible)
+	var offer := {
+		"type": "shop_rune",
+		"cost": 30,
+		"rune": RuneData.new(Elements.KIM, RuneData.Target.WEAPON),
+		"purchased": false,
+	}
+
+	Hud._open_shop_offer(offer)
+	Hud._update_overlay_visuals()
+	assert_true(Hud._overlay_active)
+	assert_false(Hud._upgrade_panel.visible)
+	Hud._confirm_overlay_selection()
+
+	assert_eq(player.weapon_rune.element, Elements.KIM)
+	assert_true(offer["purchased"])
+	assert_false(Hud._overlay_active)
+	assert_true(Hud._upgrade_panel.visible)
+	Hud._close_overlay()
+	Hud._close_upgrade_menu()
 	Hud._shop_offer_opened_overlay = false
 	Hud._player = null
 	RunManager._current_room = null

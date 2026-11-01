@@ -67,23 +67,29 @@ func _ready() -> void:
 	_base_color = visual_polygon.color
 
 	elemental.indicator_offset = Vector2(0, -20)
-	elemental.armor = boss_stats.armor
-	elemental.innate_charge = boss_stats.innate_charge
-	elemental.innate_element = boss_stats.element  ## Phase 1 starts as boss_stats.element, same field EnemyStats already uses.
-	add_child(elemental)
-	elemental.cc_resistance.configure(boss_stats.cc_free_hits, boss_stats.cc_window_seconds)
-	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
-	elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge)
+	if boss_stats != null:
+		elemental.armor = boss_stats.armor
+		elemental.innate_charge = boss_stats.innate_charge
+		elemental.innate_element = boss_stats.element  ## Phase 1 starts as boss_stats.element, same field EnemyStats already uses.
+		add_child(elemental)
+		elemental.cc_resistance.configure(boss_stats.cc_free_hits, boss_stats.cc_window_seconds)
+		elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
+		elemental.apply_starting_status(boss_stats.element, boss_stats.innate_charge)
 
-	_current_health = boss_stats.max_health
-	health_bar.value = 100.0
-	add_to_group("enemies")  ## Same group RoomController waits on for a normal enemy.
-	add_to_group("bosses")   ## Lets Hud find this specifically, separate from ordinary enemies.
-	combat_ai = EnemyCombatAI.new()
-	combat_ai.stats = boss_stats
-	combat_ai.can_chase = true
-	add_child(combat_ai)
-	combat_ai.telegraph_started.connect(_on_telegraph_started)
+		_current_health = boss_stats.max_health
+		health_bar.value = 100.0
+		add_to_group("enemies")  ## Same group RoomController waits on for a normal enemy.
+		add_to_group("bosses")   ## Lets Hud find this specifically, separate from ordinary enemies.
+		combat_ai = EnemyCombatAI.new()
+		combat_ai.stats = boss_stats
+		combat_ai.can_chase = true
+		add_child(combat_ai)
+		combat_ai.telegraph_started.connect(_on_telegraph_started)
+	else:
+		elemental.armor = armor
+		elemental.innate_charge = innate_charge
+		add_child(elemental)
+		health_bar.visible = false
 
 
 func _physics_process(delta: float) -> void:

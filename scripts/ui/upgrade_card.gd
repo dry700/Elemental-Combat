@@ -5,10 +5,18 @@ extends PanelContainer
 @onready var _desc_label: Label = $MarginContainer/VBox/Description
 @onready var _icon_tex: TextureRect = $MarginContainer/VBox/IconBackground/Icon
 
+const REACTION_PAIR_INDICATOR_SCRIPT := preload("res://scripts/ui/reaction_pair_indicator.gd")
+
+var _reaction_visual: Control
 var default_bg_color = Color(0.12, 0.14, 0.18)
 var selected_bg_color = Color(0.12, 0.22, 0.3)
 var default_border = Color(0.34, 0.39, 0.46)
 var selected_border = Color(0.45, 0.82, 1.0)
+
+func _ready() -> void:
+	_reaction_visual = REACTION_PAIR_INDICATOR_SCRIPT.new()
+	_reaction_visual.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	$MarginContainer/VBox/IconBackground.add_child(_reaction_visual)
 
 func set_upgrade(title: String, desc: String, icon: Texture2D = null) -> void:
 	_title_label.text = title
@@ -17,6 +25,10 @@ func set_upgrade(title: String, desc: String, icon: Texture2D = null) -> void:
 		_icon_tex.texture = icon
 	else:
 		_icon_tex.texture = null
+
+func set_reaction_visual(pair: Array, rank: int, favored: StringName = &"") -> void:
+	if _reaction_visual != null:
+		_reaction_visual.call("set_reaction", pair, rank, favored)
 
 func set_selected(selected: bool) -> void:
 	if not has_theme_stylebox_override("panel"):

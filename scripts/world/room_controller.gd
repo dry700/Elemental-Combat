@@ -17,6 +17,10 @@ extends Node2D
 signal cleared
 
 @export var exit: RoomExit
+@export var camera_horizontal_limits: Vector2 = Vector2.ZERO
+
+const CAMERA_LIMIT_TOP_UNRESTRICTED: int = -10000000
+const CAMERA_LIMIT_BOTTOM_UNRESTRICTED: int = 10000000
 
 var _spawn_points: Array[EnemySpawnPoint] = []
 var _is_cleared: bool = false
@@ -24,6 +28,9 @@ var _baseline_rune_spawned: bool = false
 
 
 func _ready() -> void:
+	if camera_horizontal_limits.x < camera_horizontal_limits.y:
+		_apply_camera_horizontal_limits(camera_horizontal_limits)
+
 	# Defensive fallback: a hand-edited/resaved .tscn can silently drop a
 	# typed Node-export's NodePath assignment without any parse error,
 	# leaving `exit` null while everything else keeps working — which is
@@ -47,6 +54,27 @@ func _ready() -> void:
 		spawn_point.spawn()
 
 	_check_cleared()
+
+
+func _apply_camera_horizontal_limits(limits: Vector2) -> void:
+	var player: Player = RunManager._player if RunManager != null else null
+	if player == null:
+		player = get_tree().get_first_node_in_group("player") as Player
+	if player == null:
+		return
+
+	var camera := player.get_node_or_null("Camera2D") as Camera2D
+	if camera == null:
+		push_warning("RoomController on %s could not find the player's Camera2D" % scene_file_path)
+		return
+
+	var left_edge := to_global(Vector2(limits.x, 0.0)).x
+	var right_edge := to_global(Vector2(limits.y, 0.0)).x
+	camera.limit_left = floori(minf(left_edge, right_edge))
+	camera.limit_right = ceili(maxf(left_edge, right_edge))
+	camera.limit_top = CAMERA_LIMIT_TOP_UNRESTRICTED
+	camera.limit_bottom = CAMERA_LIMIT_BOTTOM_UNRESTRICTED
+	camera.reset_smoothing()
 
 
 func _process(_delta: float) -> void:

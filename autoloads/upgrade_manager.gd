@@ -42,8 +42,10 @@ func reset() -> void:
 	_weapon_might_rank = 0
 	_vitality_rank = 0
 	qi_changed.emit(qi)
+	reaction_ranks_changed.emit()
 
 signal qi_changed(new_total: float)
+signal reaction_ranks_changed
 
 ## ── Upgrade costs (§4.8 values) ──────────────────────────────────────
 const SINH_RANK1_COST: float  = 25.0
@@ -86,6 +88,12 @@ func sinh_favored_element(reaction_pair: Array) -> StringName:
 	if _sinh_ranks.get(_pair_key(reaction_pair), 0) < 2:
 		return &""
 	return _sinh_favored_elements.get(_pair_key(reaction_pair), &"")
+
+func reaction_rank(reaction_pair: Array) -> int:
+	if reaction_pair.size() != 2:
+		return 0
+	var key := _pair_key(reaction_pair)
+	return maxi(int(_sinh_ranks.get(key, 0)), int(_khac_ranks.get(key, 0)))
 
 ## B. Reaction Mastery — Khắc Specialization
 func khac_graze_erased(reaction_pair: Array) -> bool:
@@ -134,6 +142,7 @@ func purchase_sinh_rank1(reaction_pair: Array) -> bool:
 	if not spend_qi(SINH_RANK1_COST):
 		return false
 	_sinh_ranks[key] = 1
+	reaction_ranks_changed.emit()
 	return true
 
 func purchase_sinh_rank2(reaction_pair: Array, favored_element: StringName) -> bool:
@@ -146,6 +155,7 @@ func purchase_sinh_rank2(reaction_pair: Array, favored_element: StringName) -> b
 		return false
 	_sinh_ranks[key] = 2
 	_sinh_favored_elements[key] = favored_element
+	reaction_ranks_changed.emit()
 	return true
 
 func purchase_khac_rank1(reaction_pair: Array) -> bool:
@@ -155,6 +165,7 @@ func purchase_khac_rank1(reaction_pair: Array) -> bool:
 	if not spend_qi(KHAC_RANK1_COST):
 		return false
 	_khac_ranks[key] = 1
+	reaction_ranks_changed.emit()
 	return true
 
 func purchase_khac_rank2(reaction_pair: Array) -> bool:
@@ -166,6 +177,7 @@ func purchase_khac_rank2(reaction_pair: Array) -> bool:
 	if not spend_qi(KHAC_RANK2_COST):
 		return false
 	_khac_ranks[key] = 2
+	reaction_ranks_changed.emit()
 	return true
 
 func purchase_weapon_might() -> bool:
@@ -228,6 +240,7 @@ func apply_save_state(saved: Dictionary) -> void:
 	for k in saved.get("khac_ranks", {}):
 		_khac_ranks[str(k)] = int(saved["khac_ranks"][k])
 	qi_changed.emit(qi)
+	reaction_ranks_changed.emit()
 
 ## ── Internal favored-element storage ─────────────────────────────────
 var _sinh_favored_elements: Dictionary = {}

@@ -1,6 +1,6 @@
 # Plan: Shop Rooms, Interactive Exits, Reaction Clues, Maid's Skills, Heavy Hit
 
-Status: **in progress.** Shop rooms and category-specific offers are implemented; run-sequence integration is complete and shop-state persistence remains. Steps are tracked in `AGENT_PLAN.md`; every number below is a placeholder to tune in playtesting.
+Status: **in progress.** Shop rooms, run-sequence integration, and shop-state persistence are implemented. Steps 1–8 are complete; Step 9 (support enemies, starting with the shielder) is next. Steps are tracked in `AGENT_PLAN.md`; every number below is a placeholder to tune in playtesting.
 Source of truth for existing systems is [Design.md](docs/Design.md); when this plan is implemented, fold it into docs/Design.md as new sections.
 
 ---
@@ -134,11 +134,18 @@ All three read from `UpgradeManager`. Add a small `reaction_rank(pair)` getter (
 
 Tests: rank getter; popup text includes rank; HUD strip lists only upgraded pairs.
 
+Step 5 implemented: the pair-rank getter drives reaction-card glyphs and pips, ranked
+combat popups with rank-scaled glow rings, and a HUD strip refreshed on purchases and
+save-state restore. Focused UpgradeManager, shop HUD, combat reaction, and run-persistence
+tests pass; the full GUT suite passes (340 tests, 2,109 assertions).
+
+Upgrade offers are randomized on menu open and after purchases. The first page always
+includes an available reaction upgrade while any remain, and the rest of the offer list
+remains accessible through the existing page navigation.
+
 ---
 
-## 6. Maid's Guard (skill)
-
-Placeholder name; may change.
+## 6. Maid's Guard (implemented)
 
 - Cooldown skill. New `SkillData.Function.APPLY_SHIELD`, new `.tres` asset.
 - New component `scripts/reactions/shield_effect.gd` (refresh-only, `apply()` / `tick()` / `clear()` / signal), living on `ElementalCombatant` as `shield`.
@@ -147,8 +154,9 @@ Placeholder name; may change.
 - **Explodes** when it breaks **or** expires (~12s), identical either way: fixed damage burst (via `bonus_damage_dealt`) plus a short stagger (`apply_control`) on nearby enemies. Radius check via `distance_to` against `ALL_COMBATANTS_GROUP`, bystander-excluded per §1.
 - Placeholders: duration 12s, damage 12, radius 45px, stagger 0.5s, cooldown 18s.
 - Entry point: `ElementalCombatant.cast_apply_shield()`, dispatched from `Player._try_cast_skill()`.
-- Interactions to check: dodge i-frames, `playtest_invincible`, hit-stop and screen shake on an absorbed hit (probably still play a distinct feedback).
+- Interactions checked: dodge i-frames and `playtest_invincible` take priority; absorbed hits retain hit-stop and use distinct screen-shake feedback.
 - Tests: absorbs exactly one hit, DoT passes through, reaction not applied on absorbed hit, explosion on break, explosion on expiry, bystander exclusion, refresh-only.
+- Verification: 7 focused GUT tests pass (27 assertions), covering the shield lifecycle, explosion targeting, invincibility, feedback, and skill dispatch.
 
 ---
 
@@ -175,6 +183,8 @@ Placeholder name; may change.
 - Placeholders: duration 15s, damage x1.4, reach x1.5, energy_max tuned so a few Thổ reactions fill it.
 - Tests: meter fills only from matching-element reactions, not from Vũ or enemy-caused reactions, cast resets meter, buff expires, swing element is Thổ while active.
 
+Step 7 implemented: each energy skill carries its own meter (keyed on the equipped `SkillData` instance), filled only by player-triggered reactions whose pair contains the skill's element — Vũ (reversed) and enemy-caused reactions are excluded. Fill amounts are 5 (Khắc partial), 10 (Sinh Tier 1 / Khắc full clear), and 20 (Sinh Tier 2 / Thừa). `Maid's Sweep` is energy-gated with no cooldown: casting consumes the full meter and applies a refresh-only `SweepBuffEffect` that, while active, forces Thổ swings at `Player._configure_hitbox_for_current_swing()` with ×1.4 damage and ×1.5 reach/hitbox (never touching raw Charge, and skipping the rune alternation flip via a new `advance_alternation` flag on `resolve_swing`). Meters persist across save/resume (keyed by resource path) and reset only on cast/new run. The HUD renders a radial energy ring (`SkillEnergyRing`) around the skill icon with a non-color full cue (thicker outline plus a complete ring). Focused `test_maid_sweep.gd` tests pass (15 tests); the full GUT suite passes (370/370, 2,280 assertions).
+
 ---
 
 ## 8. Heavy hit (weapon-specific)
@@ -190,6 +200,8 @@ Placeholder name; may change.
 - Accessibility: offer a toggle or tap-to-charge option (the project already cites WCAG for Break-Free).
 - Both slots can hold (left and right click); the existing "expected action" buffering check already distinguishes them.
 - Tests: threshold enters windup, release strikes, dodge cancels, disable cancels, weapons without the field ignore holding, damage scales and caps, Charge unchanged.
+
+Step 8 implemented: bow, greatsword, and hammer have separate hold caps. Short presses stay normal swings; holds past the threshold show a pulsing weapon tell and release a capped heavy hit. Damage, reach/knockback and bow projectile speed scale with hold; charged hits reuse the heavy hit-stop/shake weight. Dodge and disable cancel windup, reaction Charge is unchanged, and tap-to-charge is available as a player setting. Focused `test_heavy_attack.gd` passes (6 tests, 32 assertions).
 
 ---
 

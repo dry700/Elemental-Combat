@@ -20,6 +20,8 @@ enum Function {
 	DASH,
 	BUFF_ARMOR,
 	JUMP_SLAM,
+	APPLY_SHIELD,
+	APPLY_SWEEP_BUFF,    ## Maid's Sweep: energy-gated self-buff that makes weapon swings Thổ with bigger reach/hitbox and a damage multiplier (plan-shop-and-skills §7).
 }
 
 enum CastVFXStyle {
@@ -34,6 +36,15 @@ enum CastVFXStyle {
 @export var function: Function = Function.APPLY_SELF
 @export var cast_vfx_style: CastVFXStyle = CastVFXStyle.BURST
 @export var cooldown: float = 10.0
+## Energy-gated skills (plan-shop-and-skills §7): no cooldown — cast only
+## when the per-skill energy meter is full, then reset it. Filled by
+## player-triggered reactions involving this skill's element.
+@export var uses_energy: bool = false
+@export var energy_max: float = 100.0
+## APPLY_SWEEP_BUFF (Maid's Sweep): multipliers read at the hitbox-config
+## read-site only, never applied to raw reaction Charge (§7.2).
+@export var sweep_damage_mult: float = 1.0
+@export var sweep_reach_mult: float = 1.0
 @export var damage: float = 0.0
 @export var radius: float = 0.0
 @export var control_duration: float = 0.0

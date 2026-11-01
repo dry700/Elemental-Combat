@@ -40,6 +40,8 @@ const SHOP_WEAPON_PICKUP_SCRIPT := preload("res://scripts/items/shop_weapon_pick
 const SHOP_SKILL_PICKUP_SCRIPT := preload("res://scripts/items/shop_skill_pickup.gd")
 const SHOP_RUNE_PICKUP_SCRIPT := preload("res://scripts/items/shop_rune_pickup.gd")
 const LOADOUT_SELECT_SCRIPT := preload("res://scripts/ui/loadout_select.gd")
+const REACTION_PAIR_INDICATOR_SCRIPT := preload("res://scripts/ui/reaction_pair_indicator.gd")
+const SKILL_ENERGY_RING_SCRIPT := preload("res://scripts/ui/skill_energy_ring.gd")
 
 const SLOT_SIZE: float = 40.0 * UI_SCALE
 const SLOT_SEPARATION: float = 8.0 * UI_SCALE
@@ -57,6 +59,7 @@ var _player_hp_bg: Control
 var _player_hp_fill: Control
 var _player_hp_label: Label
 var _qi_label: Label
+var _reaction_strip: HBoxContainer
 
 var _boss_panel: Control
 var _boss_name_label: Label
@@ -126,13 +129,13 @@ var _debug_room_clear_state: bool = false
 var _all_upgrade_options: Array[Dictionary] = []
 var _upgrade_page_offset: int = 0  ## First visible option index.
 const UPGRADE_CARDS_VISIBLE: int = 3  ## Physical card count — unchanged.
-
-
 var _pause_menu_active: bool = false
 var _pause_overlay: Control
 var _pause_weapon_cards: Array[PickupCard] = []
 var _pause_skill_cards: Array[PickupCard] = []
 var _pause_status_label: Label
+
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 110  # Above VisionBlocker's own darkness overlay (layer 100) — HUD chrome stays visible even inside a steam cloud's blackout.
@@ -144,16 +147,19 @@ func _ready() -> void:
 
 	_build_player_hp_bar(root)
 	_build_qi_label(root)
+	_build_reaction_strip(root)
 	_build_slots(root)
 	_build_boss_panel(root)
 	_build_overlay(root)
 	_build_upgrade_menu(root)
+	_build_pause_menu(root)
 
 	var um := get_node_or_null("/root/UpgradeManager")
 	if um != null:
-	_build_pause_menu(root)
 		um.qi_changed.connect(_on_qi_changed)
+		um.reaction_ranks_changed.connect(_refresh_reaction_strip)
 		_on_qi_changed(um.qi)
+		_refresh_reaction_strip()
 
 
 func _build_player_hp_bar(root: Control) -> void:
@@ -193,6 +199,41 @@ func _build_qi_label(root: Control) -> void:
 func _on_qi_changed(new_total: float) -> void:
 	if _qi_label != null:
 		_qi_label.text = "Qi: %d" % int(new_total)
+
+
+func _build_reaction_strip(root: Control) -> void:
+	_reaction_strip = HBoxContainer.new()
+	_reaction_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_reaction_strip.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_reaction_strip.position = Vector2(12.0, -180.0) * UI_SCALE
+	_reaction_strip.add_theme_constant_override("separation", 1)
+	root.add_child(_reaction_strip)
+	for _index in 10:
+		var indicator: Control = REACTION_PAIR_INDICATOR_SCRIPT.new()
+		_reaction_strip.add_child(indicator)
+		indicator.call("set_reaction", [], 0)
+
+
+func _refresh_reaction_strip() -> void:
+	if _reaction_strip == null:
+		return
+	var visible_index := 0
+	for definition in _reaction_upgrade_definitions():
+		var pair: Array = definition["pair"]
+		var rank := UpgradeManager.reaction_rank(pair)
+		if rank <= 0:
+			continue
+		var favored: StringName = UpgradeManager.sinh_favored_element(pair) \
+				if definition["branch"] == "sinh" else &""
+		var indicator: Control = _reaction_strip.get_child(visible_index)
+		indicator.call("set_reaction", pair, rank, favored)
+		indicator.tooltip_text = "%s - Rank %d" % [definition["name"], rank]
+		visible_index += 1
+
+	for index in range(visible_index, _reaction_strip.get_child_count()):
+		_reaction_strip.get_child(index).call("set_reaction", [], 0)
+
+	_reaction_strip.visible = visible_index > 0
 
 
 func _build_slots(root: Control) -> void:
@@ -398,8 +439,9 @@ func _process(_delta: float) -> void:
 	_refresh_player_ref()
 	_refresh_boss_ref()
 	
-	self.visible = (_player != null) or _upgrade_menu_active or _overlay_active
+	self.visible = (_player != null) or _upgrade_menu_active or _overlay_active or _pause_menu_active
 	
+	_handle_pause_input()
 	_refresh_active_pickups()
 	_handle_room_clear_upgrade_input()
 	_handle_pickup_overlay_input()
@@ -412,47 +454,6 @@ func _process(_delta: float) -> void:
 	_update_upgrade_menu_visuals()
 
 
-func _refresh_player_ref() -> void:
-	if _player != null and is_instance_valid(_player):
-		return
-	if RunManager != null and RunManager._player != null and is_instance_valid(RunManager._player):
-		_player = RunManager._player
-		return
-	var tree := get_tree()
-	if tree == null:
-		return
-	_player = tree.get_first_node_in_group("player") as Player
-
-
-func _refresh_boss_ref() -> void:
-	if _boss != null and is_instance_valid(_boss) and not _boss.is_dead():
-		return
-	var candidates := get_tree().get_nodes_in_group("bosses")
-	_boss = candidates[0] as Boss if not candidates.is_empty() else null
-
-
-## Scans for any WeaponPickup/SkillPickup currently prompting the player
-## (i.e. the player is standing in its range — see each pickup's own
-## _player_in_range) so the HUD knows what "pickup" (F) should open, and
-## can highlight both candidate slots as a preview even before F is
-## pressed. Group membership (not a shared static list like SteamCloud/
-## ReactionZone use) keeps this simple — no lifetime/eviction
-## bookkeeping to duplicate here, just "is anything in this group
-## currently prompting."
-func _refresh_active_pickups() -> void:
-	_handle_pause_input()
-	_active_weapon_pickup = null
-	for node in get_tree().get_nodes_in_group("weapon_pickups"):
-		var pickup := node as WeaponPickup
-		if pickup != null and pickup.get("_player_in_range") != null:
-			_active_weapon_pickup = pickup
-			break
-	_active_skill_pickup = null
-	for node in get_tree().get_nodes_in_group("skill_pickups"):
-		var pickup := node as SkillPickup
-		if pickup != null and pickup.get("_player_in_range") != null:
-			_active_skill_pickup = pickup
-			break
 func _build_pause_menu(root: Control) -> void:
 	_pause_overlay = Control.new()
 	_pause_overlay.name = "PauseOverlay"
@@ -600,6 +601,46 @@ func _on_pause_save_exit_pressed() -> void:
 	_pause_overlay.visible = false
 
 
+func _refresh_player_ref() -> void:
+	if _player != null and is_instance_valid(_player):
+		return
+	if RunManager != null and RunManager._player != null and is_instance_valid(RunManager._player):
+		_player = RunManager._player
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
+	_player = tree.get_first_node_in_group("player") as Player
+
+
+func _refresh_boss_ref() -> void:
+	if _boss != null and is_instance_valid(_boss) and not _boss.is_dead():
+		return
+	var candidates := get_tree().get_nodes_in_group("bosses")
+	_boss = candidates[0] as Boss if not candidates.is_empty() else null
+
+
+## Scans for any WeaponPickup/SkillPickup currently prompting the player
+## (i.e. the player is standing in its range — see each pickup's own
+## _player_in_range) so the HUD knows what "pickup" (F) should open, and
+## can highlight both candidate slots as a preview even before F is
+## pressed. Group membership (not a shared static list like SteamCloud/
+## ReactionZone use) keeps this simple — no lifetime/eviction
+## bookkeeping to duplicate here, just "is anything in this group
+## currently prompting."
+func _refresh_active_pickups() -> void:
+	_active_weapon_pickup = null
+	for node in get_tree().get_nodes_in_group("weapon_pickups"):
+		var pickup := node as WeaponPickup
+		if pickup != null and pickup.get("_player_in_range") != null:
+			_active_weapon_pickup = pickup
+			break
+	_active_skill_pickup = null
+	for node in get_tree().get_nodes_in_group("skill_pickups"):
+		var pickup := node as SkillPickup
+		if pickup != null and pickup.get("_player_in_range") != null:
+			_active_skill_pickup = pickup
+			break
 	_active_rune_pickup = null
 	for node in get_tree().get_nodes_in_group("rune_pickups"):
 		if node.get("_player_in_range") != null:
@@ -715,6 +756,12 @@ func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 		cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cooldown_overlay.anchor_right = 1.0
 		box.add_child(cooldown_overlay)
+	var energy_ring := box.find_child("SkillEnergyRing", false, false) as SkillEnergyRing
+	if energy_ring == null:
+		energy_ring = SKILL_ENERGY_RING_SCRIPT.new()
+		energy_ring.name = "SkillEnergyRing"
+		energy_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(energy_ring)
 	var key_label := box.find_child("SkillKeyLabel", false, false) as Label
 	if key_label == null:
 		key_label = Label.new()
@@ -734,6 +781,8 @@ func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 		label.text = ""
 		tex_rect.texture = null
 		cooldown_overlay.visible = false
+		energy_ring.ratio = 0.0
+		energy_ring.visible = false
 		return
 	if box is ColorRect: box.color = ElementIndicator.ELEMENT_COLOR.get(skill.element, SLOT_EMPTY_COLOR)
 	tex_rect.texture = skill.icon
@@ -742,6 +791,16 @@ func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 	cooldown_overlay.position = Vector2.ZERO
 	cooldown_overlay.size = Vector2(box.size.x, box.size.y * cooldown_ratio)
 	cooldown_overlay.visible = cooldown_ratio > 0.0
+	# §7.1 — radial energy fill for energy-gated skills (Maid's Sweep). The
+	# ring growing to a full circle is the primary cue; the thicker outline
+	# plus complete ring at full is a non-color cue (A.1: color secondary).
+	if skill.uses_energy:
+		energy_ring.ring_color = ElementIndicator.ELEMENT_COLOR.get(skill.element, energy_ring.ring_color)
+		energy_ring.ratio = _player.get_skill_energy_ratio(skill) if _player != null else 0.0
+		energy_ring.visible = true
+	else:
+		energy_ring.ratio = 0.0
+		energy_ring.visible = false
 
 
 func _update_pickup_prompts() -> void:
@@ -1086,7 +1145,8 @@ func _confirm_upgrade_selection() -> void:
 			purchased = UpgradeManager.purchase_khac_rank2(opt.get("pair", []))
 	if purchased:
 		_rebuild_all_upgrade_options()
-		_upgrade_menu_selected_index = mini(_upgrade_menu_selected_index, _all_upgrade_options.size() - 1)
+		_upgrade_menu_selected_index = 0
+		_upgrade_page_offset = 0
 		if RunManager != null:
 			RunManager.save_mid_run()
 	_update_upgrade_menu_visuals()
@@ -1365,8 +1425,8 @@ func _open_shop_offer(offer: Dictionary) -> void:
 	_open_overlay(pickup, is_weapon)
 	_shop_offer_opened_overlay = true
 
-## Builds the full list of available upgrade options from scratch.
-## Called on open and after every purchase/refresh.
+## Builds and randomizes available upgrades so reaction offers can appear
+## alongside the repeatable stat and healing upgrades on the first card page.
 func _rebuild_all_upgrade_options() -> void:
 	_all_upgrade_options.clear()
 
@@ -1400,65 +1460,41 @@ func _rebuild_all_upgrade_options() -> void:
 		"cost": restore_cost,
 	})
 
-	# Reaction upgrades — all 5 Sinh pairs then all 5 Khắc pairs.
-	var sinh_pairs: Array[Array] = [
-		[Elements.KIM, Elements.THUY],   # Condensation
-		[Elements.THUY, Elements.MOC],   # Overgrowth
-		[Elements.MOC, Elements.HOA],    # Wildfire
-		[Elements.HOA, Elements.THO],    # Cinder Bloom
-		[Elements.THO, Elements.KIM],    # Ore Surge
-	]
-	var sinh_names := ["Condensation", "Overgrowth", "Wildfire", "Cinder Bloom", "Ore Surge"]
-	for i in sinh_pairs.size():
-		var pair: Array = sinh_pairs[i]
-		var name: String = sinh_names[i]
-		var rank: int = 0
-		if UpgradeManager.sinh_tier2_forced(pair):
-			rank = 1
-		if UpgradeManager.sinh_favored_element(pair) != &"":
-			rank = 2
-		if rank < 1:
-			_all_upgrade_options.append({
-				"type": "sinh_rank1",
-				"label": name.to_upper() + " I",
-				"desc": "Always Tier 2 magnitude\nCost: %d Qi" % int(UpgradeManager.SINH_RANK1_COST),
-				"cost": UpgradeManager.SINH_RANK1_COST,
-				"pair": pair,
-			})
-		if rank == 1:
-			# Offer both favored-element choices.
-			var typed_pair: Array[StringName] = [StringName(pair[0]), StringName(pair[1])]
-			var generated := Elements.sinh_generated_element(typed_pair)
-			var other: StringName = typed_pair[0] if typed_pair[1] == generated else typed_pair[1]
-			_all_upgrade_options.append({
-				"type": "sinh_rank2",
-				"label": name.to_upper() + " II (%s)" % generated.to_upper(),
-				"desc": "Favor %s bonus\nCost: %d Qi" % [generated.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
-				"cost": UpgradeManager.SINH_RANK2_COST,
-				"pair": pair,
-				"favored": generated,
-			})
-			_all_upgrade_options.append({
-				"type": "sinh_rank2",
-				"label": name.to_upper() + " II (%s)" % other.to_upper(),
-				"desc": "Favor %s bonus\nCost: %d Qi" % [other.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
-				"cost": UpgradeManager.SINH_RANK2_COST,
-				"pair": pair,
-				"favored": other,
-			})
-
-	var khac_pairs: Array[Array] = [
-		[Elements.HOA, Elements.KIM],    # Molten
-		[Elements.THO, Elements.THUY],   # Silt
-		[Elements.MOC, Elements.THO],    # Root Break
-		[Elements.KIM, Elements.MOC],    # Sever
-		[Elements.THUY, Elements.HOA],   # Douse
-	]
-	var khac_names := ["Molten", "Silt", "Root Break", "Sever", "Douse"]
-	for i in khac_pairs.size():
-		var pair: Array = khac_pairs[i]
-		var name: String = khac_names[i]
-		if not UpgradeManager.khac_graze_erased(pair):
+	for definition in _reaction_upgrade_definitions():
+		var pair: Array = definition["pair"]
+		var name: String = definition["name"]
+		var branch: String = definition["branch"]
+		var rank := UpgradeManager.reaction_rank(pair)
+		if branch == "sinh":
+			if rank == 0:
+				_all_upgrade_options.append({
+					"type": "sinh_rank1",
+					"label": name.to_upper() + " I",
+					"desc": "Always Tier 2 magnitude\nCost: %d Qi" % int(UpgradeManager.SINH_RANK1_COST),
+					"cost": UpgradeManager.SINH_RANK1_COST,
+					"pair": pair,
+				})
+			elif rank == 1:
+				var typed_pair: Array[StringName] = [StringName(pair[0]), StringName(pair[1])]
+				var generated := Elements.sinh_generated_element(typed_pair)
+				var other: StringName = typed_pair[0] if typed_pair[1] == generated else typed_pair[1]
+				_all_upgrade_options.append({
+					"type": "sinh_rank2",
+					"label": name.to_upper() + " II (%s)" % generated.to_upper(),
+					"desc": "Favor %s bonus\nCost: %d Qi" % [generated.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
+					"cost": UpgradeManager.SINH_RANK2_COST,
+					"pair": pair,
+					"favored": generated,
+				})
+				_all_upgrade_options.append({
+					"type": "sinh_rank2",
+					"label": name.to_upper() + " II (%s)" % other.to_upper(),
+					"desc": "Favor %s bonus\nCost: %d Qi" % [other.to_upper(), int(UpgradeManager.SINH_RANK2_COST)],
+					"cost": UpgradeManager.SINH_RANK2_COST,
+					"pair": pair,
+					"favored": other,
+				})
+		elif rank == 0:
 			_all_upgrade_options.append({
 				"type": "khac_rank1",
 				"label": name.to_upper() + " I",
@@ -1466,7 +1502,7 @@ func _rebuild_all_upgrade_options() -> void:
 				"cost": UpgradeManager.KHAC_RANK1_COST,
 				"pair": pair,
 			})
-		elif not UpgradeManager.khac_overwhelm_forced(pair):
+		elif rank == 1:
 			_all_upgrade_options.append({
 				"type": "khac_rank2",
 				"label": name.to_upper() + " II",
@@ -1475,9 +1511,77 @@ func _rebuild_all_upgrade_options() -> void:
 				"pair": pair,
 			})
 
+	_randomize_upgrade_options()
+
+
+func _randomize_upgrade_options() -> void:
+	_all_upgrade_options.shuffle()
+	if _all_upgrade_options.size() <= UPGRADE_CARDS_VISIBLE:
+		return
+
+	var first_page_has_reaction := false
+	for index in UPGRADE_CARDS_VISIBLE:
+		if _is_reaction_upgrade(_all_upgrade_options[index]):
+			first_page_has_reaction = true
+			break
+	if first_page_has_reaction:
+		return
+
+	var reaction_indices: Array[int] = []
+	for index in range(UPGRADE_CARDS_VISIBLE, _all_upgrade_options.size()):
+		if _is_reaction_upgrade(_all_upgrade_options[index]):
+			reaction_indices.append(index)
+	if reaction_indices.is_empty():
+		return
+
+	var first_page_index := randi_range(0, UPGRADE_CARDS_VISIBLE - 1)
+	var reaction_index: int = reaction_indices[randi_range(0, reaction_indices.size() - 1)]
+	var displaced_option: Dictionary = _all_upgrade_options[first_page_index]
+	_all_upgrade_options[first_page_index] = _all_upgrade_options[reaction_index]
+	_all_upgrade_options[reaction_index] = displaced_option
+
+
+func _is_reaction_upgrade(option: Dictionary) -> bool:
+	return str(option.get("type", "")).begins_with("sinh_") \
+			or str(option.get("type", "")).begins_with("khac_")
+
+
+func _reaction_upgrade_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	var sinh_pairs: Array[Array] = [
+		[Elements.KIM, Elements.THUY],
+		[Elements.THUY, Elements.MOC],
+		[Elements.MOC, Elements.HOA],
+		[Elements.HOA, Elements.THO],
+		[Elements.THO, Elements.KIM],
+	]
+	var sinh_names := ["Condensation", "Overgrowth", "Wildfire", "Cinder Bloom", "Ore Surge"]
+	for index in sinh_pairs.size():
+		definitions.append({
+			"branch": "sinh",
+			"pair": sinh_pairs[index],
+			"name": sinh_names[index],
+		})
+
+	var khac_pairs: Array[Array] = [
+		[Elements.HOA, Elements.KIM],
+		[Elements.THO, Elements.THUY],
+		[Elements.MOC, Elements.THO],
+		[Elements.KIM, Elements.MOC],
+		[Elements.THUY, Elements.HOA],
+	]
+	var khac_names := ["Molten", "Silt", "Root Break", "Sever", "Douse"]
+	for index in khac_pairs.size():
+		definitions.append({
+			"branch": "khac",
+			"pair": khac_pairs[index],
+			"name": khac_names[index],
+		})
+	return definitions
+
 
 func _update_upgrade_menu_visuals() -> void:
-	_upgrade_panel.visible = _upgrade_menu_active
+	_upgrade_panel.visible = _upgrade_menu_active and not _overlay_active
 	if not _upgrade_menu_active:
 		return
 
@@ -1504,6 +1608,17 @@ func _update_upgrade_menu_visuals() -> void:
 			desc += "\n[Not enough Qi]"
 		if card.has_method("set_upgrade"):
 			card.set_upgrade(label, desc)
+		if card.has_method("set_reaction_visual"):
+			var reaction_rank := 0
+			match str(opt.get("type", "")):
+				"sinh_rank1", "khac_rank1":
+					reaction_rank = 1
+				"sinh_rank2", "khac_rank2":
+					reaction_rank = 2
+			card.set_reaction_visual(
+					opt.get("pair", []),
+					reaction_rank,
+					StringName(opt.get("favored", &"")))
 		if card.has_method("set_selected"):
 			card.set_selected(opt_i == _upgrade_menu_selected_index)
 
@@ -1518,6 +1633,8 @@ func _update_upgrade_menu_visuals() -> void:
 func _open_overlay(pickup: Node, is_weapon: bool) -> void:
 	_overlay_active = true
 	_overlay_pickup = pickup
+	if _upgrade_panel != null:
+		_upgrade_panel.visible = false
 	if pickup is RunePickup:
 		_overlay_kind = OverlayKind.RUNE
 	else:
@@ -1529,6 +1646,8 @@ func _close_overlay() -> void:
 	_overlay_active = false
 	_overlay_pickup = null
 	_pending_shop_offer = {}
+	if _upgrade_panel != null:
+		_upgrade_panel.visible = _upgrade_menu_active
 
 
 func _confirm_overlay_selection() -> void:

@@ -50,6 +50,13 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Remove room-clear and swap-key routes to the upgrade menu; only a shop station opens it.
 - [x] Verify sequence, shop-menu, shop-death, and boss-shop Stop accounting with focused GUT tests (26/26 passed, 196 assertions).
 
+### Step 7 — Energy system and Maid's Sweep
+- [x] Add `uses_energy`/`energy_max` and `APPLY_SWEEP_BUFF` to `SkillData`; add the `SweepBuffEffect` refresh-only component (mirrors `ShieldEffect`) on `ElementalCombatant`.
+- [x] Fill energy meters from player-triggered reactions involving the skill's element (duck-typed `on_reaction_caused` hook in `handle_hit`); exclude Tương Vũ and enemy-caused reactions; amounts 5/10/20 by tier.
+- [x] Maid's Sweep cast consumes the full meter (no cooldown), forces Thổ swings with bigger reach/hitbox and ×1.4/×1.5 multipliers at the hitbox-config read-site only, and skips rune alternation while active.
+- [x] Persist meters across save/resume; HUD radial energy ring with a non-color full cue.
+- [x] Verification: `test_maid_sweep.gd` (15 focused tests); full GUT suite 370/370 passed, 2,280 assertions, 0 failures.
+
 ## Phase status
 
 ### P0 — Repo hygiene and design cleanup
@@ -195,9 +202,19 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - P12 verification: 257/257 tests passed, 1,658 assertions, 0 failures, 2 expected warnings.
 - P13 verification: 269/269 tests passed, 1,760 assertions, 0 failures, 2 expected warnings.
 - P14 verification: 287/287 tests passed, 1,841 assertions, 0 failures, 2 expected warnings; headless shutdown emits resource leak diagnostics. Manual gameplay checkpoint remains pending.
-- Latest full-suite attempt: 328/333 tests passed; five existing enemy-facing/loop-scaling tests fail after parse errors in modified `swooper_enemy.gd` and `test_dummy.gd`. Step 4.1 focused tests pass (26 tests, 196 assertions).
+- Latest full-suite run: 370/370 tests passed, 2,280 assertions, 0 failures. Headless output includes the expected SpriteVisual fallback error from its negative-path test and existing shutdown resource diagnostics.
 - Shop & Skills Expansion Step 4.2 is implemented: shop state survives save/resume, purchases autosave, and legacy snapshots remain supported. Focused persistence tests pass (6 tests, 34 assertions).
+- Shop & Skills Expansion Step 5 is implemented: reaction ranks are shown on upgrade cards, combat popups, and the HUD strip. Focused UpgradeManager, shop HUD, combat reaction, and persistence tests pass; the full suite passes.
+- Shop & Skills Expansion Step 6 (Maid's Guard) is implemented. Focused shield tests pass (7 tests, 27 assertions).
+- Shop & Skills Expansion Step 7 (Energy system and Maid's Sweep) is implemented. Focused `test_maid_sweep.gd` tests pass (15 tests); the full suite passes (370/370).
+
+### Step 8 — Heavy Hit
+- [x] Add per-weapon heavy settings to the bow, greatsword, and hammer; short presses remain normal swings.
+- [x] Add thresholded hold/release, scaling damage and impact reach/knockback (plus bow projectile speed), and cap charge time.
+- [x] Make dodge and disable cancel windup; preserve reaction Charge and non-heavy weapon behavior.
+- [x] Add the weapon tell and tap-to-charge accessibility option.
+- [x] Verification: focused `test_heavy_attack.gd` passes (6 tests, 32 assertions).
 
 ## Immediate next action
 
-- Proceed to Step 5 of plan-shop-and-skills.md: add reaction-upgrade visual clues to shop cards, combat popups, and the HUD.
+- Proceed to Step 9 of plan-shop-and-skills.md: implement support enemies, starting with the shielder.

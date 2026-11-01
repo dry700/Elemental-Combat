@@ -18,6 +18,8 @@ const SKILL_PATHS: Array[String] = [
 	"res://scripts/resources/skills/shard_field.tres",
 	"res://scripts/resources/skills/seismic_slam.tres",
 	"res://scripts/resources/skills/earthen_bulwark.tres",
+	"res://scripts/resources/skills/maid_guard.tres",
+	"res://scripts/resources/skills/maid_sweep.tres",
 ]
 
 static func by_element(element: StringName) -> Array[String]:

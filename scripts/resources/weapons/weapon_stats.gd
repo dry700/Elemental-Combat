@@ -59,6 +59,18 @@ enum PerfectCondition {
 ## landing hit 1 on cooldown. 1.0 = no scaling.
 @export var combo_damage_step_multiplier: float = 1.0
 
+## --- Heavy hit (plan-shop-and-skills §8): hold the attack button past
+## heavy_threshold to wind up a charge; release strikes, scaling up to
+## heavy_max_hold. Only weapons with has_heavy_attack=true participate;
+## others are untouched. Never raises reaction Charge. ---
+@export var has_heavy_attack: bool = false
+@export var heavy_threshold: float = 0.28  ## Hold time before the heavy windup begins (short tap = normal swing).
+@export var heavy_max_hold: float = 1.0     ## Hold time after the threshold to reach full power.
+@export var heavy_damage_mult: float = 1.5  ## Max damage multiplier at full charge (lerped from 1.0).
+@export var heavy_reach_mult: float = 1.0   ## Max reach multiplier at full charge (melee).
+@export var heavy_knockback_mult: float = 1.5  ## Max knockback multiplier at full charge.
+@export var heavy_projectile_speed_mult: float = 1.0  ## Max arrow speed multiplier at full charge (SHOOT only).
+
 
 
 ## Each entry is one hit in the combo string. Array size IS the combo
@@ -129,7 +141,7 @@ func get_projectile_angles() -> Array[float]:
 ## elements, deliberately weaker than cross-source ones) possible from a
 ## single weapon. Call once per attack (not per frame) — the alternation
 ## only advances when a swing actually happens.
-func resolve_swing(slot_rune: RuneData = null) -> Dictionary:
+func resolve_swing(slot_rune: RuneData = null, advance_alternation: bool = true) -> Dictionary:
 	var base_charge := 2 if weight == Weight.HEAVY else 1
 	var effective_rune_element := slot_rune.element if slot_rune != null else rune_element
 
@@ -145,5 +157,6 @@ func resolve_swing(slot_rune: RuneData = null) -> Dictionary:
 	# Different-element rune: alternate elements, no Charge bonus — "at
 	# the cost of that Charge bonus" (A.4).
 	var element := innate_element if _next_swing_uses_innate else effective_rune_element
-	_next_swing_uses_innate = not _next_swing_uses_innate
+	if advance_alternation:
+		_next_swing_uses_innate = not _next_swing_uses_innate
 	return {"element": element, "charge": base_charge}

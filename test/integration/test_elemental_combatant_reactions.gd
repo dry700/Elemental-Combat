@@ -43,6 +43,31 @@ func test_condensation_tier2_slows_more_at_charge_2():
 	target.handle_hit(_hit(Elements.KIM, 2))
 	assert_almost_eq(target.slow_effect.speed_multiplier, 0.5, 0.01)
 
+func test_upgraded_reaction_popup_shows_rank_and_glow():
+	UpgradeManager.reset()
+	UpgradeManager.award_qi(100.0)
+	var pair: Array[StringName] = [Elements.THUY, Elements.MOC]
+	assert_true(UpgradeManager.purchase_sinh_rank1(pair))
+	assert_true(UpgradeManager.purchase_sinh_rank2(pair, Elements.MOC))
+
+	target.status.apply(Elements.MOC, 1)
+	target.handle_hit(_hit(Elements.THUY, 1))
+
+	var popup: Label = null
+	var ring: Line2D = null
+	for child in target.get_children():
+		if child is Label and child.text.begins_with("Overgrowth"):
+			popup = child
+		elif child is Line2D:
+			ring = child
+	assert_not_null(popup)
+	assert_eq(popup.text, "Overgrowth II")
+	assert_not_null(ring)
+	assert_eq(ring.width, 4.0)
+	assert_eq(ring.default_color, ElementIndicator.ELEMENT_COLOR.get(
+			Elements.sinh_generated_element(pair), Color.WHITE))
+	UpgradeManager.reset()
+
 func test_overgrowth_roots_dots_and_tags_self():
 	target.status.apply(Elements.MOC, 1)
 	target.handle_hit(_hit(Elements.THUY, 1))

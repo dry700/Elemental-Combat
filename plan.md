@@ -37,6 +37,8 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 - P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
 - P14 adds ten skills (15 total), five cast behaviors, cooldown HUD, duplicate prevention, a shared element-tinted cast burst, a directional water wave for Undertow, Seismic Slam's jump-and-ground-impact attack with screen shake, a 60 Qi shop stall, and matching-element spirit/boss drops.
 - P14 GUT verification: 299 tests passed, 1,898 assertions, 0 failures; existing headless diagnostics remain.
+- In-run pause menu: Esc pauses gameplay and displays both equipped weapon and skill slots; Continue resumes, while Save and Exit persists a resumable snapshot and returns to the main menu. Save failures keep the pause menu open.
+- Step 7 energy system and Maid's Sweep: each energy-gated skill has a per-skill meter filled only by player-triggered reactions involving its element (Vũ and enemy-caused reactions excluded; 5/10/20 by tier); Maid's Sweep consumes the full meter to apply a refresh-only Thổ weapon buff (×1.4 damage, ×1.5 reach/hitbox, ~15s) read only at the hitbox-config site, never on raw Charge. Meters persist across save/resume; the HUD shows a radial energy ring with a non-color full cue.
 
 ## Verification gate
 
@@ -47,12 +49,14 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 
 ## Exact next item
 
-- Next automated implementation: Step 5 (reaction-upgrade visual clues) in `plan-shop-and-skills.md`. Step 4.2 shop-state persistence is implemented and its focused tests pass (6 tests, 34 assertions). The P14 in-game skill visual checkpoint remains pending manual playtesting in `test_arena`.
+- Next automated implementation: Step 9 (support enemies, starting with the shielder) in `plan-shop-and-skills.md`. Step 8 (heavy hit for bow, greatsword, and hammer) is implemented and focused `test_heavy_attack.gd` passes (6 tests, 32 assertions). Steps 1–7, including shop-state persistence, are implemented. The P14 in-game skill visual checkpoint remains pending manual playtesting in `test_arena`.
 
 ## Deferred work
 
 - P14 implementation and test-arena playtest tooling are complete; finish the recorded interactive checkpoint before gameplay balance tuning.
-- Shop and Skills Expansion: Steps 1–3, Step 4.1 (interleaved room/shop run sequence), and Step 4.2 (shop-state persistence) are implemented. Step 4.2 focused tests pass (6 tests, 34 assertions); the latest full suite has 328/333 passing and remains blocked by pre-existing parse errors in modified enemy scripts, which cause five enemy-facing/loop-scaling test failures.
+- Shop and Skills Expansion: Steps 1–3, Step 4.1 (interleaved room/shop run sequence), Step 4.2 (shop-state persistence), Step 5 (reaction-upgrade visual clues), Step 6 (Maid's Guard one-hit shield), and Step 7 (energy system and Maid's Sweep) are implemented.
+- Shop & Skills Expansion Step 5 (reaction-upgrade visual clues) is implemented. Its focused UpgradeManager, shop HUD, combat reaction, and run-persistence tests pass. At Step 5 completion, the suite had 340/340 tests and 2,109 assertions; the SpriteVisual fallback error is expected by its negative-path test.
+- Step 6 (Maid's Guard) passes 7 focused tests with 27 assertions. Latest full suite: 355/355 tests, 2,236 assertions, 0 failures.
 - Shop & Skills Expansion Step 3 adds hand-authored shop and boss-shop rooms, categorized stations, category-specific offers and slot-chooser purchases. Focused shop, upgrade-menu, exit, and active-shop loop-handoff tests pass (33 tests, 163 assertions); per-visit offers remain fixed under D19's no-refresh decision.
 - Refine the tutorial room's layout and presentation in a later pass.
 - Retired unused hand-placed normal-room scenes; procedural rooms remain the active run path.
@@ -60,6 +64,6 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- Latest full suite: 333 tests, 328 passing, 5 failing (2,022/2,027 assertions). The failures are in existing enemy-facing and loop-scaling tests after parse errors in modified `swooper_enemy.gd` and `test_dummy.gd`; Step 4.1 focused tests pass (26 tests, 196 assertions).
+- Latest full suite: 370 tests passed, 2,280 assertions, 0 failures. The SpriteVisual fallback error is expected by its negative-path test; headless shutdown still reports resource diagnostics.
 - P13 result: 269 passing tests, 1,756 assertions, 0 failures. Two expected headless warnings remain.
 - Static analysis: clean across all workspace files.

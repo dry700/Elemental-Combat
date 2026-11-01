@@ -110,10 +110,17 @@ var cc_resistance = preload("res://scripts/reactions/cc_resistance.gd").new()
 ## §4.8.7 — Wildfire Overload tracker. Only does anything when the player
 ## has purchased favor-Hỏa for the Mộc+Hỏa (Wildfire) pair.
 var wildfire_overload := preload("res://scripts/reactions/wildfire_overload.gd").new()
+var shield := ShieldEffect.new()
+var sweep_buff := SweepBuffEffect.new()
 
 var _element_indicator: ElementIndicator
 var _dot_indicator: DotIndicator
 var _debug_label: Label
+var _shield_explosion_enabled: bool = false
+var _shield_explosion_damage: float = 0.0
+var _shield_explosion_radius: float = 0.0
+var _shield_explosion_stagger: float = 0.0
+var _shield_explosion_bystander: ElementalCombatant
 
 
 func _ready() -> void:
@@ -129,17 +136,9 @@ func _ready() -> void:
 	# §4.8.7 — when Overload reaches level 3 it fires this signal.
 	wildfire_overload.exploded.connect(_on_wildfire_overload_exploded)
 	wildfire_overload.changed.connect(_on_wildfire_overload_changed)
-	reaction_triggered.connect(func(outcome: Reactions.Outcome, pair: Array[StringName]):
-		var r_name = Reactions.get_reaction_name(outcome, pair)
-		if r_name != "":
-			var color = Color(0.8, 0.8, 0.8) # Default color
-			if outcome == Reactions.Outcome.SINH_TIER_1 or outcome == Reactions.Outcome.SINH_TIER_2:
-				color = ElementIndicator.ELEMENT_COLOR.get(Elements.sinh_generated_element(pair), color)
-			elif outcome in [Reactions.Outcome.KHAC_FULL_CLEAR, Reactions.Outcome.KHAC_THUA, Reactions.Outcome.KHAC_PARTIAL, Reactions.Outcome.KHAC_VU]:
-				# The overcoming element is the first in the pair
-				color = ElementIndicator.ELEMENT_COLOR.get(pair[0], color)
-			_spawn_text_popup(r_name, color)
-	)
+	reaction_triggered.connect(_on_reaction_triggered)
+	shield.broken.connect(_on_shield_broken)
+	shield.expired.connect(_on_shield_expired)
 
 	_dot_indicator = DotIndicator.new()
 	_dot_indicator.position = indicator_offset + Vector2(10, -6)
@@ -179,6 +178,51 @@ func _spawn_text_popup(text: String, color: Color) -> void:
 	tween.parallel().tween_property(lbl, "modulate:a", 0.0, 1.0).set_ease(Tween.EASE_IN).set_delay(0.5)
 	tween.tween_callback(lbl.queue_free)
 
+
+func _on_reaction_triggered(outcome: Reactions.Outcome, pair: Array[StringName]) -> void:
+	var reaction_name: String = Reactions.get_reaction_name(outcome, pair)
+	if reaction_name.is_empty():
+		return
+
+	var color := Color(0.8, 0.8, 0.8)
+	if outcome in [Reactions.Outcome.SINH_TIER_1, Reactions.Outcome.SINH_TIER_2]:
+		color = ElementIndicator.ELEMENT_COLOR.get(Elements.sinh_generated_element(pair), color)
+	elif outcome in [Reactions.Outcome.KHAC_FULL_CLEAR, Reactions.Outcome.KHAC_THUA, Reactions.Outcome.KHAC_PARTIAL, Reactions.Outcome.KHAC_VU]:
+		color = ElementIndicator.ELEMENT_COLOR.get(pair[0], color)
+
+	var rank: int = UpgradeManager.reaction_rank(pair)
+	if rank == 1:
+		reaction_name += " I"
+	elif rank >= 2:
+		reaction_name += " II"
+	_spawn_text_popup(reaction_name, color)
+	if rank > 0:
+		_spawn_reaction_glow(color, rank)
+
+
+func _spawn_reaction_glow(color: Color, rank: int) -> void:
+	var ring := Line2D.new()
+	ring.width = 2.5 if rank == 1 else 4.0
+	ring.default_color = color
+	ring.closed = true
+	ring.z_index = 5
+	var points := PackedVector2Array()
+	for index in 32:
+		var angle := TAU * float(index) / 32.0
+		points.append(Vector2(cos(angle), sin(angle)) * 24.0)
+	ring.points = points
+	ring.scale = Vector2(0.7, 0.7)
+	ring.modulate.a = 0.9 if rank == 1 else 1.0
+	add_child(ring)
+
+	var duration := 0.38 if rank == 1 else 0.52
+	var expansion := Vector2(1.6, 1.6) if rank == 1 else Vector2(1.9, 1.9)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ring, "scale", expansion, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ring, "modulate:a", 0.0, duration)
+	tween.chain().tween_callback(ring.queue_free)
+
 ## Call once per physics frame from the owner. Ticks status/slow/disable
 ## and returns any DoT damage due this frame.
 func tick(delta: float) -> float:
@@ -188,6 +232,8 @@ func tick(delta: float) -> float:
 	armor_buff.tick(delta)
 	cc_resistance.tick(delta)
 	wildfire_overload.tick(delta)
+	shield.tick(delta)
+	sweep_buff.tick(delta)
 	_tick_icd(delta)
 	_tick_remnant_cooldowns(delta)
 	var dot_damage := dot_effect.tick(delta)
@@ -383,6 +429,14 @@ func handle_hit(hit_data: HitData, bypass_icd: bool = false) -> void:
 
 	if result.outcome != Reactions.Outcome.NO_REACTION:
 		reaction_triggered.emit(result.outcome, result.reaction_pair)
+		# §7.1 — duck-typed energy-fill hook: the attacker (hit_data.source)
+		# gets told a reaction it caused just resolved, so an energy-gated
+		# skill whose element is in the pair can fill its meter. Only the
+		# attacker's own method is called, so enemy-caused reactions never
+		# reach the Player's meter (enemies have no such method). The Vũ
+		# exclusion is the Player's responsibility (it knows the tier).
+		if hit_data.source != null and hit_data.source.has_method("on_reaction_caused"):
+			hit_data.source.on_reaction_caused(result.outcome, result.reaction_pair)
 
 	match result.outcome:
 		Reactions.Outcome.NO_REACTION:
@@ -943,6 +997,53 @@ func break_free_press() -> void:
 ## (reversed) against this pre-set status via the normal handle_hit path.
 func cast_apply_self(element: StringName, charge: int) -> void:
 	status.apply(element, charge)
+
+
+func cast_apply_shield(
+	duration: float,
+	explosion_damage: float = 12.0,
+	explosion_radius: float = 45.0,
+	stagger_duration: float = 0.5
+) -> void:
+	_shield_explosion_damage = explosion_damage
+	_shield_explosion_radius = explosion_radius
+	_shield_explosion_stagger = stagger_duration
+	_shield_explosion_enabled = true
+	shield.apply(duration)
+
+
+## Maid's Sweep (plan-shop-and-skills §7.2): refresh-only timed buff read at
+## Player._configure_hitbox_for_current_swing() — forces Thổ swings with
+## bigger reach/hitbox and a damage multiplier. Never touches raw Charge.
+func cast_sweep_buff(duration: float, damage_mult: float = 1.0, reach_mult: float = 1.0) -> void:
+	sweep_buff.apply(duration, damage_mult, reach_mult)
+
+
+func _on_shield_broken(attacker: Node) -> void:
+	_shield_explosion_bystander = _bystander_attacker(attacker)
+	_detonate_shield()
+
+
+func _on_shield_expired() -> void:
+	_shield_explosion_bystander = null
+	_detonate_shield()
+
+
+func _detonate_shield() -> void:
+	if not _shield_explosion_enabled:
+		return
+	_shield_explosion_enabled = false
+	for node in get_tree().get_nodes_in_group(ALL_COMBATANTS_GROUP):
+		var target := node as ElementalCombatant
+		if target == null or target == self or target == _shield_explosion_bystander:
+			continue
+		var target_owner := target.get_parent()
+		if target_owner == null or not target_owner.is_in_group("enemies"):
+			continue
+		if global_position.distance_to(target.global_position) > _shield_explosion_radius:
+			continue
+		target.bonus_damage_dealt.emit(_shield_explosion_damage)
+		target.apply_control(_shield_explosion_stagger)
 
 
 ## Cleansing Tide. A.3 draws a hard line between cleanse (answers the

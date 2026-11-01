@@ -54,6 +54,25 @@ func test_generator_places_one_dead_end_shop_and_round_trips_snapshot() -> void:
 		assert_eq(restored.shop_cell, generator.shop_cell)
 		assert_eq(restored.to_dict(), snapshot)
 
+
+func test_procedural_room_limits_camera_to_generated_map_bounds() -> void:
+	var player_scene := load("res://scenes/player/player.tscn") as PackedScene
+	var player := player_scene.instantiate() as Player
+	add_child_autofree(player)
+	RunManager._player = player
+
+	var room := ProceduralRoomController.new()
+	add_child_autofree(room)
+	var camera := player.get_node("Camera2D") as Camera2D
+	var bounds := room.map_gen.get_map_bounds()
+
+	assert_eq(camera.limit_left, floori(bounds.position.x))
+	assert_eq(camera.limit_right, ceili(bounds.end.x))
+	assert_eq(camera.limit_top, RoomController.CAMERA_LIMIT_TOP_UNRESTRICTED)
+	assert_eq(camera.limit_bottom, RoomController.CAMERA_LIMIT_BOTTOM_UNRESTRICTED)
+	RunManager._player = null
+
+
 func test_procedural_room_populates_a_visible_shop_station() -> void:
 	var room := ProceduralRoomController.new()
 	add_child_autofree(room)

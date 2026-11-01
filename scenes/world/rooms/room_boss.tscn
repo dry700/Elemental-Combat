@@ -12,9 +12,13 @@ size = Vector2(450, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
 size = Vector2(10, 30)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_boundary"]
+size = Vector2(20, 420)
+
 [node name="RoomBoss" type="Node2D" unique_id=1256543626]
 script = ExtResource("1_controller")
 exit = NodePath("Exit")
+camera_horizontal_limits = Vector2(-235, 235)
 
 [node name="Ground" type="StaticBody2D" parent="." unique_id=131327698]
 position = Vector2(0, 110)
@@ -26,6 +30,26 @@ shape = SubResource("RectangleShape2D_ground")
 [node name="Visual" type="Polygon2D" parent="Ground" unique_id=1648185248]
 color = Color(0.25, 0.25, 0.3, 1)
 polygon = PackedVector2Array(-225, -10, 225, -10, 225, 10, -225, 10)
+
+[node name="BoundaryLeft" type="StaticBody2D" parent="." unique_id=2073657101 groups=["unclimbable_walls"]]
+position = Vector2(-225, -100)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryLeft" unique_id=2021657102]
+shape = SubResource("RectangleShape2D_boundary")
+
+[node name="Visual" type="Polygon2D" parent="BoundaryLeft" unique_id=2021657103]
+color = Color(0.16, 0.17, 0.21, 1)
+polygon = PackedVector2Array(-10, -210, 10, -210, 10, 210, -10, 210)
+
+[node name="BoundaryRight" type="StaticBody2D" parent="." unique_id=2073657104 groups=["unclimbable_walls"]]
+position = Vector2(225, -100)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryRight" unique_id=2021657105]
+shape = SubResource("RectangleShape2D_boundary")
+
+[node name="Visual" type="Polygon2D" parent="BoundaryRight" unique_id=2021657106]
+color = Color(0.16, 0.17, 0.21, 1)
+polygon = PackedVector2Array(-10, -210, 10, -210, 10, 210, -10, 210)
 
 [node name="PlayerSpawn" type="Node2D" parent="." unique_id=1781304559 groups=["player_spawn"]]
 position = Vector2(-190, 90)

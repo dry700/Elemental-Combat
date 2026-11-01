@@ -38,6 +38,14 @@ func _open_upgrade_shop_for_test(hud: Hud) -> void:
 	hud._open_shop_menu(ShopStation.Category.UPGRADE)
 
 
+func _find_upgrade_option_index(hud: Hud, upgrade_type: String, pair: Array = []) -> int:
+	for index in hud._all_upgrade_options.size():
+		var option: Dictionary = hud._all_upgrade_options[index]
+		if option.get("type") == upgrade_type and (pair.is_empty() or option.get("pair") == pair):
+			return index
+	return -1
+
+
 func test_shop_station_opens_upgrade_menu_with_pickup_action() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
@@ -98,20 +106,28 @@ func test_upgrade_card_mouse_click_selects_before_confirming() -> void:
 	var hud := get_node_or_null("/root/Hud")
 	assert_not_null(hud)
 	UpgradeManager.award_qi(30.0)
+	player.current_health = player.max_health * 0.5
 	_open_upgrade_shop_for_test(hud)
 	assert_true(hud.is_upgrade_menu_active())
 
+	var option_index := -1
+	for index in range(1, Hud.UPGRADE_CARDS_VISIBLE):
+		var option: Dictionary = hud._all_upgrade_options[index]
+		if float(option.get("cost", 0.0)) <= UpgradeManager.qi:
+			option_index = index
+			break
+	assert_gte(option_index, 0)
+	var selected_option: Dictionary = hud._all_upgrade_options[option_index]
+	var selected_cost := float(selected_option.get("cost", 0.0))
 	var click := InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
 	click.pressed = true
-	hud._on_upgrade_option_gui_input(click, 1)
-	assert_eq(hud._upgrade_menu_selected_index, 1)
-	assert_eq(UpgradeManager.vitality_hp_bonus(), 0.0)
+	hud._on_upgrade_option_gui_input(click, option_index)
+	assert_eq(hud._upgrade_menu_selected_index, option_index)
 	assert_eq(UpgradeManager.qi, 30.0)
 
-	hud._on_upgrade_option_gui_input(click, 1)
-	assert_eq(UpgradeManager.vitality_hp_bonus(), 10.0)
-	assert_eq(UpgradeManager.qi, 10.0)
+	hud._on_upgrade_option_gui_input(click, option_index)
+	assert_eq(UpgradeManager.qi, 30.0 - selected_cost)
 	assert_true(hud.is_upgrade_menu_active())
 
 
@@ -124,8 +140,9 @@ func test_upgrade_shop_purchases_weapon_might() -> void:
 	_open_upgrade_shop_for_test(hud)
 	assert_true(hud.is_upgrade_menu_active())
 	assert_true(hud.has_method("_confirm_upgrade_selection"))
-	if hud.has_method("_set_upgrade_selection"):
-		hud._set_upgrade_selection(0)
+	var weapon_index := _find_upgrade_option_index(hud, "weapon")
+	assert_true(weapon_index >= 0)
+	hud._set_upgrade_selection(weapon_index)
 	hud._confirm_upgrade_selection()
 	assert_eq(UpgradeManager.weapon_might_multiplier(), 1.1)
 	assert_true(hud.is_upgrade_menu_active())
@@ -140,14 +157,22 @@ func test_room_clear_shop_allows_multiple_purchases_without_refresh() -> void:
 	assert_true(hud._all_upgrade_options.size() > 3)
 	assert_false(hud._all_upgrade_options.any(func(option): return option.get("type") == "refresh"))
 
-	if hud.has_method("_set_upgrade_selection"):
-		hud._set_upgrade_selection(0)
+	var visible_reaction := false
+	for index in Hud.UPGRADE_CARDS_VISIBLE:
+		if hud._is_reaction_upgrade(hud._all_upgrade_options[index]):
+			visible_reaction = true
+	assert_true(visible_reaction, "a reaction upgrade should appear on the first card page")
+
+	var weapon_index := _find_upgrade_option_index(hud, "weapon")
+	assert_true(weapon_index >= 0)
+	hud._set_upgrade_selection(weapon_index)
 	hud._confirm_upgrade_selection()
 	assert_true(hud.is_upgrade_menu_active())
 	assert_eq(UpgradeManager.weapon_might_multiplier(), 1.1)
 
-	if hud.has_method("_set_upgrade_selection"):
-		hud._set_upgrade_selection(1)
+	var vitality_index := _find_upgrade_option_index(hud, "vitality")
+	assert_true(vitality_index >= 0)
+	hud._set_upgrade_selection(vitality_index)
 	hud._confirm_upgrade_selection()
 	assert_true(hud.is_upgrade_menu_active())
 	assert_eq(UpgradeManager.vitality_hp_bonus(), 10.0)
@@ -162,15 +187,17 @@ func test_restore_card_heals_thirty_percent_and_charges_escalating_cost() -> voi
 	UpgradeManager.award_qi(30.0)
 	_open_upgrade_shop_for_test(hud)
 
-	assert_eq(hud._all_upgrade_options[2].get("type"), "restore")
-	var restore_index := 2
+	var restore_index := _find_upgrade_option_index(hud, "restore")
+	assert_true(restore_index >= 0)
 	hud._set_upgrade_selection(restore_index)
 	hud._confirm_upgrade_selection()
 
 	assert_almost_eq(player.current_health, 80.0, 0.01)
 	assert_eq(UpgradeManager.restore_uses(), 1)
 	assert_eq(UpgradeManager.qi, 10.0)
-	var next_restore: Dictionary = hud._all_upgrade_options[2]
+	var next_restore_index := _find_upgrade_option_index(hud, "restore")
+	assert_true(next_restore_index >= 0)
+	var next_restore: Dictionary = hud._all_upgrade_options[next_restore_index]
 	assert_eq(next_restore.get("cost"), 30.0)
 	assert_true(str(next_restore.get("desc")).contains("Used 1 times"))
 
@@ -180,9 +207,11 @@ func test_restore_at_full_health_does_not_charge() -> void:
 	assert_not_null(hud)
 	UpgradeManager.award_qi(30.0)
 	_open_upgrade_shop_for_test(hud)
-	hud._set_upgrade_selection(2)
+	var restore_index := _find_upgrade_option_index(hud, "restore")
+	assert_true(restore_index >= 0)
+	hud._set_upgrade_selection(restore_index)
 
-	assert_true(str(hud._all_upgrade_options[2].get("desc")).contains("[Full HP]"))
+	assert_true(str(hud._all_upgrade_options[restore_index].get("desc")).contains("[Full HP]"))
 	hud._confirm_upgrade_selection()
 
 	assert_eq(player.current_health, player.max_health)
@@ -270,11 +299,10 @@ func test_room_clear_ui_purchases_khac_ranks_on_later_card_page() -> void:
 		if option.get("type") == "khac_rank1" and option.get("pair") == pair:
 			rank_one_index = index
 			break
-	assert_true(rank_one_index >= 3)
-	hud._set_upgrade_selection(rank_one_index - 1)
 	hud._set_upgrade_selection(rank_one_index)
 	var card_index: int = rank_one_index - hud._upgrade_page_offset
-	assert_eq(card_index, 2)
+	assert_gte(card_index, 0)
+	assert_lt(card_index, Hud.UPGRADE_CARDS_VISIBLE)
 
 	var click := InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
@@ -294,3 +322,84 @@ func test_room_clear_ui_purchases_khac_ranks_on_later_card_page() -> void:
 	hud._confirm_upgrade_selection()
 	assert_true(UpgradeManager.khac_overwhelm_forced(pair))
 	assert_eq(UpgradeManager.qi, 0.0)
+
+
+func _visible_reaction_indicators(hud: Hud) -> Array:
+	var indicators: Array = []
+	for indicator in hud._reaction_strip.get_children():
+		if indicator.visible:
+			indicators.append(indicator)
+	return indicators
+
+
+func test_reaction_cards_and_hud_strip_show_owned_ranked_pairs() -> void:
+	var hud := get_node_or_null("/root/Hud")
+	assert_not_null(hud)
+	var sinh_pair: Array[StringName] = [Elements.KIM, Elements.THUY]
+	var khac_pair: Array[StringName] = [Elements.HOA, Elements.KIM]
+	UpgradeManager.award_qi(200.0)
+	_open_upgrade_shop_for_test(hud)
+
+	var sinh_rank_one_index := -1
+	for index in hud._all_upgrade_options.size():
+		var option: Dictionary = hud._all_upgrade_options[index]
+		if option.get("type") == "sinh_rank1" and option.get("pair") == sinh_pair:
+			sinh_rank_one_index = index
+			break
+	assert_true(sinh_rank_one_index >= 0)
+	hud._set_upgrade_selection(sinh_rank_one_index)
+	var card_index: int = sinh_rank_one_index - hud._upgrade_page_offset
+	var rank_one_card: UpgradeCard = hud._upgrade_cards[card_index]
+	assert_eq(rank_one_card._reaction_visual.reaction_pair, sinh_pair)
+	assert_eq(rank_one_card._reaction_visual.reaction_rank, 1)
+	hud._confirm_upgrade_selection()
+
+	var generated_element := Elements.sinh_generated_element(sinh_pair)
+	var sinh_rank_two_index := -1
+	for index in hud._all_upgrade_options.size():
+		var option: Dictionary = hud._all_upgrade_options[index]
+		if option.get("type") == "sinh_rank2" and option.get("pair") == sinh_pair \
+				and option.get("favored") == generated_element:
+			sinh_rank_two_index = index
+			break
+	assert_true(sinh_rank_two_index >= 0)
+	hud._set_upgrade_selection(sinh_rank_two_index)
+	card_index = sinh_rank_two_index - hud._upgrade_page_offset
+	var rank_two_card: UpgradeCard = hud._upgrade_cards[card_index]
+	assert_eq(rank_two_card._reaction_visual.reaction_rank, 2)
+	assert_eq(rank_two_card._reaction_visual.favored_element, generated_element)
+	hud._confirm_upgrade_selection()
+
+	assert_true(UpgradeManager.purchase_khac_rank1(khac_pair))
+	var visible_indicators := _visible_reaction_indicators(hud)
+	assert_eq(visible_indicators.size(), 2)
+	var first_indicator: Control = visible_indicators[0]
+	var second_indicator: Control = visible_indicators[1]
+	assert_true(first_indicator.visible)
+	assert_true(second_indicator.visible)
+	assert_eq(first_indicator.get("reaction_pair"), sinh_pair)
+	assert_eq(first_indicator.get("reaction_rank"), 2)
+	assert_eq(second_indicator.get("reaction_pair"), khac_pair)
+	assert_eq(second_indicator.get("reaction_rank"), 1)
+	await get_tree().process_frame
+	var strip_rect: Rect2 = hud._reaction_strip.get_global_rect()
+	assert_gt(
+			strip_rect.position.y,
+			hud.get_viewport().get_visible_rect().size.y * 0.65,
+			"reaction indicators should stay near the bottom of the HUD")
+	assert_false(
+			strip_rect.intersects(hud._qi_label.get_global_rect()),
+			"reaction indicators should not overlap the Qi label")
+	assert_false(
+			strip_rect.intersects(hud._player_hp_fill.get_global_rect()),
+			"reaction indicators should not overlap the player HP bar")
+
+	var saved_state: Dictionary = UpgradeManager.to_save_state()
+	UpgradeManager.reset()
+	assert_false(hud._reaction_strip.visible)
+	assert_eq(_visible_reaction_indicators(hud).size(), 0)
+	UpgradeManager.apply_save_state(saved_state)
+	visible_indicators = _visible_reaction_indicators(hud)
+	assert_eq(visible_indicators.size(), 2)
+	assert_eq(visible_indicators[0].get("reaction_rank"), 2)
+	assert_true(visible_indicators[0].visible)

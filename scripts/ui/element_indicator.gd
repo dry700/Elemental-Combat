@@ -76,49 +76,82 @@ func _draw() -> void:
 
 
 func _draw_diamond(color: Color) -> void:
-	var s := HALF_SIZE
-	var pts := PackedVector2Array([
-		Vector2(0, -s), Vector2(s, 0), Vector2(0, s), Vector2(-s, 0), Vector2(0, -s),
-	])
-	draw_polyline(pts, color, LINE_WIDTH)
+	draw_diamond(self, Vector2.ZERO, HALF_SIZE, LINE_WIDTH, color)
 
 
 func _draw_spiral(color: Color) -> void:
+	draw_spiral(self, Vector2.ZERO, HALF_SIZE, LINE_WIDTH, color)
+
+
+func _draw_wave(color: Color) -> void:
+	draw_wave(self, Vector2.ZERO, HALF_SIZE, LINE_WIDTH, color)
+
+
+func _draw_zigzag(color: Color) -> void:
+	draw_zigzag(self, Vector2.ZERO, HALF_SIZE, LINE_WIDTH, color)
+
+
+func _draw_dot_grid(color: Color) -> void:
+	draw_dot_grid(self, Vector2.ZERO, HALF_SIZE, color)
+
+
+static func draw_glyph(ci: CanvasItem, element: StringName, center: Vector2, half_size: float = HALF_SIZE, line_width: float = LINE_WIDTH, color: Color = Color.WHITE) -> void:
+	match element:
+		Elements.KIM:
+			draw_diamond(ci, center, half_size, line_width, color)
+		Elements.MOC:
+			draw_spiral(ci, center, half_size, line_width, color)
+		Elements.THUY:
+			draw_wave(ci, center, half_size, line_width, color)
+		Elements.HOA:
+			draw_zigzag(ci, center, half_size, line_width, color)
+		Elements.THO:
+			draw_dot_grid(ci, center, half_size, color)
+
+
+static func draw_diamond(ci: CanvasItem, center: Vector2, s: float, line_width: float, color: Color) -> void:
+	var pts := PackedVector2Array([
+		center + Vector2(0, -s), center + Vector2(s, 0), center + Vector2(0, s), center + Vector2(-s, 0), center + Vector2(0, -s),
+	])
+	ci.draw_polyline(pts, color, line_width)
+
+
+static func draw_spiral(ci: CanvasItem, center: Vector2, s: float, line_width: float, color: Color) -> void:
 	var pts := PackedVector2Array()
 	var turns := 1.5
 	var steps := 20
 	for i in range(steps + 1):
 		var t := float(i) / steps
 		var angle := t * TAU * turns
-		var radius := lerpf(0.5, HALF_SIZE, t)
-		pts.append(Vector2(cos(angle), sin(angle)) * radius)
-	draw_polyline(pts, color, LINE_WIDTH)
+		var radius := lerpf(0.5, s, t)
+		pts.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	ci.draw_polyline(pts, color, line_width)
 
 
-func _draw_wave(color: Color) -> void:
+static func draw_wave(ci: CanvasItem, center: Vector2, s: float, line_width: float, color: Color) -> void:
 	var pts := PackedVector2Array()
 	var steps := 14
 	for i in range(steps + 1):
 		var t := float(i) / steps
-		var x := lerpf(-HALF_SIZE, HALF_SIZE, t)
-		var y := sin(t * TAU) * (HALF_SIZE * 0.5)
-		pts.append(Vector2(x, y))
-	draw_polyline(pts, color, LINE_WIDTH)
+		var x := lerpf(-s, s, t)
+		var y := sin(t * TAU) * (s * 0.5)
+		pts.append(center + Vector2(x, y))
+	ci.draw_polyline(pts, color, line_width)
 
 
-func _draw_zigzag(color: Color) -> void:
-	var s := HALF_SIZE
+static func draw_zigzag(ci: CanvasItem, center: Vector2, s: float, line_width: float, color: Color) -> void:
 	var pts := PackedVector2Array([
-		Vector2(-s, -s), Vector2(s * 0.15, -s * 0.1), Vector2(-s * 0.15, s * 0.1), Vector2(s, s),
+		center + Vector2(-s, -s), center + Vector2(s * 0.15, -s * 0.1), center + Vector2(-s * 0.15, s * 0.1), center + Vector2(s, s),
 	])
-	draw_polyline(pts, color, LINE_WIDTH)
+	ci.draw_polyline(pts, color, line_width)
 
 
-func _draw_dot_grid(color: Color) -> void:
-	var offset := HALF_SIZE * 0.55
+static func draw_dot_grid(ci: CanvasItem, center: Vector2, s: float, color: Color) -> void:
+	var offset := s * 0.55
+	var radius := maxf(1.0, s * 0.28)
 	for dx in [-offset, offset]:
 		for dy in [-offset, offset]:
-			draw_circle(Vector2(dx, dy), 1.4, color)
+			ci.draw_circle(center + Vector2(dx, dy), radius, color)
 			
 ## Applies the shared element-recolor shader (shaders/element_recolor.gdshader)
 ## to any CanvasItem, tinted to the given element's ELEMENT_COLOR — used by

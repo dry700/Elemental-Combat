@@ -398,19 +398,25 @@ routes through the *same* `handle_hit()` pipeline on first contact) /
 The expanded functions are `AREA_BURST` (radius hit with optional bonus
 damage, control, slow, and element application), `PROJECTILE_FAN` (spread
 shots), `DASH` (Player DODGE state with skill-owned movement/i-frames), and
-`BUFF_ARMOR` (refresh-only `ArmorBuffEffect`). Projectile-fan damage and
-burst damage emit `bonus_damage_dealt`, so target armor mitigation applies;
-skills do not use Perfect Hit or Weapon Might. `ElementalCombatant` owns
-the reusable `cast_area_burst`, `cast_projectile_fan`, and `cast_buff_armor`
-entry points. `SkillPool` contains all 15 resources and supports element
-filtering and exclusion-aware rolls. Two slots cannot hold the same
-non-empty resource path, and `Player.get_skill_cooldown_ratio()` exposes
-the ready-to-cooling 0–1 ratio without exposing the cooldown dictionary.
+`BUFF_ARMOR` (refresh-only `ArmorBuffEffect`), and `APPLY_SHIELD`
+(refresh-only, one-hit `ShieldEffect`). Maid's Guard absorbs one weapon or
+projectile hit before damage, knockback, and reaction resolution; DoT and
+`bonus_damage_dealt` remain unaffected. Breaking or expiring the shield
+bursts for fixed damage and a stagger against nearby enemies, excluding the
+attacker. Projectile-fan and burst damage emit `bonus_damage_dealt`, so
+target armor mitigation applies; skills do not use Perfect Hit or Weapon
+Might. `ElementalCombatant` owns the reusable `cast_area_burst`,
+`cast_projectile_fan`, `cast_buff_armor`, and `cast_apply_shield` entry
+points. `SkillPool` contains all 16 resources and supports element filtering
+and exclusion-aware rolls. Two slots cannot hold the same non-empty resource
+path, and `Player.get_skill_cooldown_ratio()` exposes the ready-to-cooling
+0–1 ratio without exposing the cooldown dictionary.
 
-The roster has three skills per element. New skills are Ember Burst and
-Flame Dash (Fire), Undertow and Tide Step (Water), Thorn Volley and
-Barkskin (Wood), Throwing Blades and Shard Field (Metal), Seismic Slam and
-Earthen Bulwark (Earth). The shop stocks one random skill for 60 Qi;
+The roster has three skills per element, with Maid's Guard adding a fourth
+Earth skill. The other newer skills are Ember Burst and Flame Dash (Fire),
+Undertow and Tide Step (Water), Thorn Volley and Barkskin (Wood), Throwing
+Blades and Shard Field (Metal), and Seismic Slam and Earthen Bulwark (Earth).
+The shop stocks one random skill for 60 Qi;
 elemental spirits have an 8% matching-element drop chance, and bosses drop
 one guaranteed skill matching either phase element.
 
@@ -567,6 +573,8 @@ are tracked in their respective §4.8 subsections.
 
 #### 4.8.3 Getter API (revised)
 
+`reaction_rank(pair)` returns 0, 1, or 2 for the sorted reaction pair.
+It is a display getter only; reaction resolution remains unchanged.
 
 Removed: `get_charge_bonus`, `get_khac_magnitude_multiplier`,
 `has_lingering` — all superseded by the pair-keyed getters above.
@@ -976,14 +984,14 @@ do not create a new save category: Qi and upgrade ranks remain per-run,
 and saved max health excludes the active Vitality bonus. Release builds
 do not construct the panel or accept the playtest actions.
 
-### 8.1 Pickup Swap HUD
-
 During an active run, **Esc** opens a true pause menu (the scene tree is
 paused). It shows both equipped weapon slots and skill slots as the same
 item cards used by the pickup chooser. **Continue** resumes play; **Save
 and Exit** writes the current room-boundary resume snapshot and returns to
 the main menu without clearing the saved run. If the save fails, the menu
 stays open and reports the failure.
+
+### 8.1 Pickup Swap HUD
 
 Replaces the single-key "F opens the overlay" flow. Keyboard only.
 
@@ -1094,17 +1102,31 @@ older room-cleared Tab prompt:
   (weapon, skill, or rune) and a `ShopStation`, the pickup takes priority for the `F` key.
 - **Card layout:** The shop menu displays 3 cards at a time: Weapon Might,
   Vitality, Restore, Sinh Rank 1/2 (including favored element choice), and Khắc Rank 1/2.
+- **Upgrade offers:** The upgrade list is randomized on opening and after a purchase.
+  At least one available reaction upgrade appears on the first page when any remain;
+  other offers stay reachable on following pages.
+- **Reaction clues:** Reaction cards show both element glyphs and rank pips; Sinh Rank 2
+  highlights its favored element. A compact HUD strip shows only purchased reaction
+  pairs and their ranks, including after run resume.
+- **Combat feedback:** Upgraded reaction popups append the Roman-numeral rank and show
+  a brief generated-element glow ring; Rank 2 has a stronger ring than Rank 1.
 - **Navigation:** Arrow keys / W/S or mouse hover select cards; pressing `pickup` (F)
   or clicking confirms a purchase; `menu_cancel` (Esc) closes the menu.
 - **Category stock:** Weapon and Skill stations roll up to three eligible resources;
   Rune stations roll three weapon runes. Weapons and skills open the existing slot
   chooser on purchase. Offers stay fixed for the visit; refresh remains removed by D19.
+- **Slot chooser focus:** When a Weapon, Skill, or Rune offer opens the equipment
+  chooser, the shop cards hide until the choice is confirmed or cancelled, then return.
 - **Continuous shopping:** Multiple purchases can be made in a single shop visit without
   closing the menu; prices recalculate immediately upon purchase.
 
 Hand-authored shop rooms use `scripts/world/shop_room.gd` and contain no enemies or
 baseline rune drop. The boss-shop variant has Stop and Go deeper exits; `RunManager`
 routes those exit kinds to the run summary and next loop respectively.
+Shop rooms and the boss arena have tall solid side walls at the platform edges to keep
+the player from falling out. These walls do not trigger the player's wall-slide or
+wall-jump reset, preventing climbs out of the arena; exit triggers remain reachable just
+inside the walls.
 ---
 
 ## 9. Visuals
@@ -1881,10 +1903,13 @@ The room-building algorithm operates on a fixed 4x3 grid of "chunks".
 ### 19.3 Room Controller Integration
 `ProceduralRoomController` extends the original `RoomController`. When added to the tree:
 1. It runs `MapGenerator.generate()`.
-2. Sets `exit.locked = false` so normal procedural room exits are open from the start.
-3. Dynamically pins `PlayerSpawn` and `RoomExit` to the floor level (y = CHUNK_HEIGHT - 32 - 15) of the Start and End chunks respectively.
-4. Recursively harvests all `EnemySpawnPoint` markers baked inside the chunks.
-5. Populates the shop chunk via `_populate_shop()`.
+2. Sets horizontal camera limits to the occupied chunk edges, leaving vertical movement unrestricted; room transitions reset camera smoothing at the new player spawn.
+3. Sets `exit.locked = false` so normal procedural room exits are open from the start.
+4. Dynamically pins `PlayerSpawn` and `RoomExit` to the floor level (y = CHUNK_HEIGHT - 32 - 15) of the Start and End chunks respectively.
+5. Recursively harvests all `EnemySpawnPoint` markers baked inside the chunks.
+6. Populates the shop chunk via `_populate_shop()`.
+
+The hand-authored shop and boss rooms set only horizontal camera limits to match their side walls. Camera movement remains unrestricted vertically in all rooms.
 
 ### 19.4 Shop Contents & Mechanics
 When `_populate_shop()` locates the node in group `"shop_chunk"`, it instantiates the shop fixture at floor level (`floor_y = CHUNK_H - 32 - 15`):

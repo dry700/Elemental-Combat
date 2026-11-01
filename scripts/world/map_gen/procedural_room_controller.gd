@@ -71,6 +71,9 @@ func _enter_tree() -> void:
 		exit = exit_node
 
 func _ready() -> void:
+	var map_bounds := map_gen.get_map_bounds()
+	_apply_camera_horizontal_limits(Vector2(map_bounds.position.x, map_bounds.end.x))
+
 	# RoomController._ready has already run and looked for immediate children.
 	# But our chunks hold the EnemySpawnPoints as grandchildren!
 	_spawn_points.clear()

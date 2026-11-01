@@ -7,7 +7,7 @@ extends CharacterBody2D
 ## weight — tune these starting numbers via actual playtesting (Section 8),
 ## don't take them as final.
 
-enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED, WALL_SLIDE, PLUNGE, SKILL_SLAM }
+enum State { IDLE, RUN, JUMP, FALL, DODGE, ATTACK, DISABLED, WALL_SLIDE, PLUNGE, SKILL_SLAM, HEAVY_WINDUP }
 
 ## Emitted whenever a weapon slot changes — currently only WeaponPickup
 ## calls swap_weapon() below, but this is exposed generally in case
@@ -123,10 +123,17 @@ var _combo_step: int = 0
 var _combo_window_timer: float = 0.0
 var _attack_buffered: bool = false
 var _shot_fired: bool = false
+## --- Heavy hit windup (plan-shop-and-skills §8) ---
+var _heavy_hold_timer: float = 0.0
+var _heavy_action: String = ""
+var _heavy_charged: bool = false
+var _heavy_charge_ratio: float = 0.0
+var _heavy_arrow_speed_mult: float = 1.0  ## Applied to spawned arrows for a heavy SHOOT strike.
 var _perfect_streak_count: int = 0
 var _perfect_streak_last_hit_time: float = -999.0
 var _drop_through_timer: float = 0.0
 var _skill_cooldowns: Dictionary = {}  ## SkillData -> remaining cooldown seconds
+var _skill_energy: Dictionary = {}  ## SkillData (uses_energy) -> current energy 0..energy_max (plan-shop-and-skills §7.1)
 var _skill_slam_skill: SkillData
 var _skill_slam_charge: int = 0
 var _skill_slam_descending: bool = false
@@ -151,6 +158,10 @@ const WEAPON_GRIP_OFFSET: float = 2.0
 
 const ONE_WAY_PLATFORM_LAYER: int = 3  ## Must match Platform's Collision Layer in the editor.
 @export var drop_through_duration: float = 0.25  ## Long enough to fall clear of the platform.
+## §8 accessibility (WCAG, same rationale as Break-Free): when true, a tap
+## starts the heavy windup charging automatically and a SECOND tap releases
+## the strike, so players who can't hold a button can still charge.
+@export var heavy_tap_to_charge: bool = false
 
 func _ready() -> void:
 	if plunge_raycast != null:
@@ -205,6 +216,8 @@ func _physics_process(delta: float) -> void:
 		state = State.FALL
 
 	if elemental.is_disabled() and state not in [State.DODGE, State.ATTACK, State.SKILL_SLAM]:
+		if state == State.HEAVY_WINDUP:
+			_reset_heavy_windup()  # §8 — a stagger/stun cancels the charge.
 		if state != State.DISABLED:
 			_combo_window_timer = 0.0  # Getting staggered breaks any pending combo continuation.
 		state = State.DISABLED
@@ -243,6 +256,8 @@ func _physics_process(delta: float) -> void:
 			_process_dodge(delta)
 		State.ATTACK:
 			_process_attack(delta)
+		State.HEAVY_WINDUP:
+			_process_heavy_windup(delta)
 		State.DISABLED:
 			_process_disabled(delta)
 
@@ -339,7 +354,8 @@ func _handle_move_and_jump(delta: float) -> void:
 			_air_jumps_used += 1
 			state = State.JUMP
 			
-	if is_on_wall_only() and velocity.y > 0.0 and input_dir != 0.0:
+	if is_on_wall_only() and not _is_touching_unclimbable_wall() \
+			and velocity.y > 0.0 and input_dir != 0.0:
 		var wall_normal := get_wall_normal().x
 		if (wall_normal < 0 and input_dir > 0) or (wall_normal > 0 and input_dir < 0):
 			state = State.WALL_SLIDE
@@ -351,7 +367,8 @@ func _process_wall_slide(delta: float) -> void:
 	var input_dir := Input.get_axis("move_left", "move_right")
 	var wall_normal := get_wall_normal().x
 	
-	if not is_on_wall() or is_on_floor() or (wall_normal < 0 and input_dir < 0) or (wall_normal > 0 and input_dir > 0):
+	if not is_on_wall() or is_on_floor() or _is_touching_unclimbable_wall() \
+			or (wall_normal < 0 and input_dir < 0) or (wall_normal > 0 and input_dir > 0):
 		state = State.FALL
 		return
 	
@@ -364,6 +381,15 @@ func _process_wall_slide(delta: float) -> void:
 		state = State.JUMP
 		facing = int(sign(wall_normal)) if wall_normal != 0.0 else facing
 		visuals.scale.x = absf(visuals.scale.x) * facing
+
+
+func _is_touching_unclimbable_wall() -> bool:
+	for index in get_slide_collision_count():
+		var collision := get_slide_collision(index)
+		var collider := collision.get_collider() as Node
+		if collider != null and collider.is_in_group("unclimbable_walls"):
+			return true
+	return false
 
 
 func _start_plunge(weapon_to_use: WeaponStats) -> void:
@@ -521,13 +547,22 @@ func _try_start_attack() -> void:
 		if can_plunge_state and Input.is_action_pressed("drop_down") and plunge_raycast != null and not plunge_raycast.is_colliding():
 			_start_plunge(weapon)
 		else:
-			_start_attack(weapon)
+			_begin_attack(weapon, "attack")
 	elif Input.is_action_just_pressed("attack_secondary") and secondary_weapon != null:
 		var can_plunge_state = state in [State.JUMP, State.FALL, State.WALL_SLIDE] or _drop_through_timer > 0.0
 		if can_plunge_state and Input.is_action_pressed("drop_down") and plunge_raycast != null and not plunge_raycast.is_colliding():
 			_start_plunge(secondary_weapon)
 		else:
-			_start_attack(secondary_weapon)
+			_begin_attack(secondary_weapon, "attack_secondary")
+
+## §8 — heavy-aware attack entry. Heavy-capable weapons enter the charge
+## windup on press (a short release falls through to a normal swing, so
+## combo feel is unchanged); non-heavy weapons start a normal swing as before.
+func _begin_attack(weapon_to_use: WeaponStats, action: String) -> void:
+	if weapon_to_use != null and weapon_to_use.has_heavy_attack:
+		_start_heavy_windup(weapon_to_use, action)
+	else:
+		_start_attack(weapon_to_use)
 
 ## Starts a fresh swing, OR — same weapon, still inside its post-swing
 ## combo_window, and the combo hasn't already hit its weapon-defined cap
@@ -644,13 +679,15 @@ func _spawn_trail_vfx() -> void:
 func _fire_arrow() -> void:
 	var scene_root := get_tree().current_scene
 	if scene_root == null:
+		scene_root = get_parent()
+	if scene_root == null:
 		return
 	var origin := global_position + Vector2(facing * (WEAPON_GRIP_OFFSET + 4.0), 0.0)
 	for angle_degrees in _active_weapon.get_projectile_angles():
 		var arrow := ArrowProjectile.new()
 		arrow.attacker = self
 		arrow.direction = Vector2(facing, 0).rotated(deg_to_rad(angle_degrees))
-		arrow.speed = _active_weapon.projectile_speed
+		arrow.speed = _active_weapon.projectile_speed * _heavy_arrow_speed_mult
 		arrow.lifetime = _active_weapon.projectile_lifetime
 		arrow.element = hitbox.element
 		arrow.charge = hitbox.charge
@@ -672,7 +709,7 @@ func _fire_arrow() -> void:
 ## during which a FRESH press (via _try_start_attack -> _start_attack)
 ## still continues the combo instead of resetting to hit 1.
 func _end_or_chain_attack() -> void:
-	if _attack_buffered and _combo_step < _active_weapon.combo_steps.size():
+	if not _heavy_charged and _attack_buffered and _combo_step < _active_weapon.combo_steps.size():
 		_combo_step += 1
 		_attack_timer = 0.0
 		_attack_buffered = false
@@ -684,6 +721,103 @@ func _end_or_chain_attack() -> void:
 	_attack_buffered = false
 	_combo_window_timer = _active_weapon.combo_window
 	state = State.IDLE if is_on_floor() else State.FALL
+	_reset_heavy_windup()
+
+
+## --- Heavy hit windup (plan-shop-and-skills §8) ---
+## Entered on press for heavy-capable weapons. A short release falls through
+## to a normal swing (combo feel unchanged); holding past heavy_threshold
+## charges, and release strikes — scaling damage/reach/knockback (and bow
+## arrow speed) up to heavy_max_hold. Never raises reaction Charge. Dodge
+## and a stagger/stun both cancel the windup.
+func _start_heavy_windup(weapon_to_use: WeaponStats, action: String) -> void:
+	if weapon_to_use == null:
+		return
+	_active_weapon = weapon_to_use
+	_heavy_action = action
+	_heavy_hold_timer = 0.0
+	_heavy_charged = false
+	_heavy_charge_ratio = 0.0
+	_heavy_arrow_speed_mult = 1.0
+	state = State.HEAVY_WINDUP
+	weapon_sprite.texture = _active_weapon.weapon_texture
+	weapon_sprite.visible = weapon_sprite.texture != null
+	weapon_sprite.position = Vector2.ZERO
+	weapon_sprite.rotation = 0.0
+	weapon_sprite.modulate = Color.WHITE
+	hitbox.position.x = WEAPON_GRIP_OFFSET
+	hitbox.rotation = 0.0
+
+
+func _process_heavy_windup(delta: float) -> void:
+	# Dodge cancels the windup.
+	_try_start_dodge()
+	if state == State.DODGE:
+		_reset_heavy_windup()
+		return
+	# Committed charge: gravity still applies (see _apply_gravity), but
+	# horizontal control is damped — you slow to a stop while winding up.
+	var threshold := _active_weapon.heavy_threshold
+	var max_hold := _active_weapon.heavy_max_hold
+	if heavy_tap_to_charge:
+		# Accessibility: charge advances automatically; a second tap releases.
+		_heavy_hold_timer = minf(_heavy_hold_timer + delta, threshold + max_hold)
+		if _heavy_hold_timer >= threshold:
+			velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+			_update_heavy_tell(threshold, max_hold)
+		if Input.is_action_just_pressed(_heavy_action):
+			_release_heavy()
+	else:
+		if Input.is_action_pressed(_heavy_action):
+			_heavy_hold_timer = minf(_heavy_hold_timer + delta, threshold + max_hold)
+			if _heavy_hold_timer >= threshold:
+				velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+				_update_heavy_tell(threshold, max_hold)
+		else:
+			_release_heavy()
+
+
+func _release_heavy() -> void:
+	var threshold := _active_weapon.heavy_threshold
+	var max_hold := _active_weapon.heavy_max_hold
+	weapon_sprite.modulate = Color.WHITE
+	if _heavy_hold_timer >= threshold:
+		_heavy_charged = true
+		_heavy_charge_ratio = clampf((_heavy_hold_timer - threshold) / maxf(max_hold, 0.001), 0.0, 1.0)
+		# A heavy strike is a committed single hit (force_fresh → combo step 1).
+		_start_attack(_active_weapon, true)
+	else:
+		# Short press → normal swing (allow combo continuation).
+		_start_attack(_active_weapon, false)
+	_heavy_hold_timer = 0.0
+
+
+## Weapon-sprite tell: pulses and tints while winding up, with a bright flash
+## at full power (§8). Color is secondary to the growing-charge feel.
+func _update_heavy_tell(threshold: float, max_hold: float) -> void:
+	if weapon_sprite.texture == null:
+		return
+	var t := _heavy_hold_timer
+	var pulse := 0.85 + 0.15 * sin(t * 20.0)
+	var col: Color
+	if t < threshold:
+		var p := t / maxf(threshold, 0.001)
+		col = Color(1.0, 1.0 - 0.15 * (1.0 - p), 0.7 + 0.2 * p)
+	else:
+		var ratio := clampf((t - threshold) / maxf(max_hold, 0.001), 0.0, 1.0)
+		col = Color(1.0, 0.85, 0.5).lerp(Color(1.0, 1.0, 0.65), ratio)
+		if ratio >= 1.0:
+			col = Color(1.5, 1.25, 0.8)  # bright full-power flash (values >1 brighten the sprite)
+	weapon_sprite.modulate = Color(col.r * pulse, col.g * pulse, col.b * pulse, 1.0)
+
+
+func _reset_heavy_windup() -> void:
+	_heavy_hold_timer = 0.0
+	_heavy_charged = false
+	_heavy_charge_ratio = 0.0
+	_heavy_arrow_speed_mult = 1.0
+	weapon_sprite.modulate = Color.WHITE
+	weapon_sprite.visible = false
 
 
 ## Sets up the Hitbox for the swing currently starting — per-weapon reach
@@ -701,19 +835,31 @@ func _end_or_chain_attack() -> void:
 func _configure_hitbox_for_current_swing() -> void:
 	_shot_fired = false
 	var bonus_damage_pct := _get_active_rune_modifier_value(&"damage_pct")
+	# §7.2 — Maid's Sweep read-site: the buff is read HERE only, never on raw
+	# reaction Charge. While active, swings become Thổ with bigger
+	# reach/hitbox and a damage multiplier, and the rune alternation flip is
+	# skipped (the override is temporary; base weapon Charge is untouched).
+	var sweep_active := elemental.sweep_buff.active
+	_heavy_charge_ratio = clampf(_heavy_charge_ratio, 0.0, 1.0)
 	hitbox.damage = _active_weapon.damage * UpgradeManager.weapon_might_multiplier() * _combo_damage_multiplier() * (1.0 + bonus_damage_pct / 100.0)
-	hitbox.weapon_weight = StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
+	if _heavy_charged:
+		hitbox.damage *= lerpf(1.0, _active_weapon.heavy_damage_mult, _heavy_charge_ratio)
+	if sweep_active:
+		hitbox.damage *= elemental.sweep_buff.damage_mult
+	hitbox.weapon_weight = &"heavy" if _heavy_charged else StringName(WeaponStats.Weight.keys()[_active_weapon.weight].to_lower())
 	hitbox.perfect_condition = _active_weapon.perfect_condition
 	hitbox.perfect_multiplier = _active_weapon.perfect_multiplier
 	var active_rune := weapon_rune if _active_weapon == weapon else secondary_weapon_rune
-	var swing := _active_weapon.resolve_swing(active_rune)
-	hitbox.element = swing.element
+	var swing := _active_weapon.resolve_swing(active_rune, not sweep_active)
 	hitbox.charge = swing.charge
+	hitbox.element = Elements.THO if sweep_active else swing.element
 	hitbox.position.x = WEAPON_GRIP_OFFSET
 	hitbox.rotation = 0.0
 
 	var bonus_knockback := _get_active_rune_modifier_value(&"knockback")
 	hitbox.knockback_strength = 150.0 + bonus_knockback
+	if _heavy_charged:
+		hitbox.knockback_strength *= lerpf(1.0, _active_weapon.heavy_knockback_mult, _heavy_charge_ratio)
 
 	var bonus_attack_speed := _get_active_rune_modifier_value(&"attack_speed")
 	var speed_mult: float = 1.0 + (bonus_attack_speed / 100.0) if bonus_attack_speed > 0.0 else 1.0
@@ -725,6 +871,12 @@ func _configure_hitbox_for_current_swing() -> void:
 		actual_reach = float(_active_weapon.weapon_texture.get_width())
 	var bonus_reach := _get_active_rune_modifier_value(&"reach")
 	actual_reach += bonus_reach
+	if sweep_active:
+		actual_reach *= elemental.sweep_buff.reach_mult
+	if _heavy_charged:
+		actual_reach *= lerpf(1.0, _active_weapon.heavy_reach_mult, _heavy_charge_ratio)
+		if _current_combo_step_data().style == WeaponStats.AttackStyle.SHOOT:
+			_heavy_arrow_speed_mult = lerpf(1.0, _active_weapon.heavy_projectile_speed_mult, _heavy_charge_ratio)
 
 	hitbox.combo_step = _combo_step
 	hitbox.is_finisher = (_combo_step == _active_weapon.combo_steps.size())
@@ -738,6 +890,10 @@ func _configure_hitbox_for_current_swing() -> void:
 
 	var bonus_hitbox_size := _get_active_rune_modifier_value(&"hitbox_size")
 	var actual_radius := _active_weapon.hitbox_radius + bonus_hitbox_size
+	if _heavy_charged:
+		actual_radius *= lerpf(1.0, _active_weapon.heavy_reach_mult, _heavy_charge_ratio)
+	if sweep_active:
+		actual_radius *= elemental.sweep_buff.reach_mult
 
 	var rect := hitbox_shape.shape as RectangleShape2D
 	if rect != null:
@@ -820,7 +976,14 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 		return
 	if not Input.is_action_just_pressed(action_name):
 		return
-	if _skill_cooldowns.get(skill, 0.0) > 0.0:
+	# Energy-gated skills (plan-shop-and-skills §7.1) cast only when their
+	# meter is full and have no cooldown; cooldown skills gate on
+	# _skill_cooldowns as before.
+	if skill.uses_energy:
+		if get_skill_energy_ratio(skill) < 1.0:
+			print("Skill needs full energy: ", skill.skill_name)
+			return
+	elif _skill_cooldowns.get(skill, 0.0) > 0.0:
 		print("Skill on cooldown: ", skill.skill_name, " (", "%.1f" % _skill_cooldowns[skill], "s left)")
 		return
 
@@ -851,10 +1014,17 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 			_start_skill_dash(skill)
 		SkillData.Function.BUFF_ARMOR:
 			elemental.cast_buff_armor(skill.armor_bonus, skill.buff_duration)
+		SkillData.Function.APPLY_SHIELD:
+			elemental.cast_apply_shield(skill.buff_duration, skill.damage, skill.radius, skill.control_duration)
+		SkillData.Function.APPLY_SWEEP_BUFF:
+			elemental.cast_sweep_buff(skill.buff_duration, skill.sweep_damage_mult, skill.sweep_reach_mult)
 
 	if skill.function != SkillData.Function.JUMP_SLAM:
 		_spawn_skill_cast_vfx(skill.element, skill.cast_vfx_style, facing, skill.radius)
-	_skill_cooldowns[skill] = skill.cooldown
+	if skill.uses_energy:
+		_skill_energy[skill] = 0.0  ## Cast consumes the full meter (plan-shop-and-skills §7.1).
+	else:
+		_skill_cooldowns[skill] = skill.cooldown
 	print("Cast ", skill.skill_name)
 
 
@@ -1087,8 +1257,51 @@ func get_skill_cooldown_ratio(skill: SkillData) -> float:
 		return 0.0
 	return clampf(float(_skill_cooldowns.get(skill, 0.0)) / skill.cooldown, 0.0, 1.0)
 
+## Energy-gated skill meter ratio for the HUD radial fill (plan-shop-and-skills
+## §7.1). 0..1 — 1.0 means ready to cast.
+func get_skill_energy_ratio(skill: SkillData) -> float:
+	if skill == null or not skill.uses_energy or skill.energy_max <= 0.0:
+		return 0.0
+	return clampf(float(_skill_energy.get(skill, 0.0)) / skill.energy_max, 0.0, 1.0)
+
+## §7.1 duck-typed hook called from ElementalCombatant.handle_hit() on the
+## attacking Node when one of its hits causes a reaction. Fills the meter of
+## any equipped energy skill whose element is in the reaction pair, EXCEPT
+## Tương Vũ (reversed) outcomes. Only the attacker's own method is ever
+## called, so enemy-caused reactions never reach here.
+func on_reaction_caused(outcome: int, reaction_pair: Array) -> void:
+	if outcome == Reactions.Outcome.KHAC_VU:
+		return
+	var amount := _reaction_energy_amount(outcome)
+	if amount <= 0.0:
+		return
+	for skill in [skill_1, skill_2]:
+		if skill == null or not skill.uses_energy:
+			continue
+		if not reaction_pair.has(skill.element):
+			continue
+		_skill_energy[skill] = minf(float(_skill_energy.get(skill, 0.0)) + amount, skill.energy_max)
+
+## Placeholder fill amounts (plan §7.1): higher-quality reactions fill
+## faster. Khắc partial = 5, Sinh Tier 1 / Khắc full clear = 10,
+## Sinh Tier 2 / Thừa = 20.
+func _reaction_energy_amount(outcome: int) -> float:
+	match outcome:
+		Reactions.Outcome.KHAC_PARTIAL:
+			return 5.0
+		Reactions.Outcome.SINH_TIER_1:
+			return 10.0
+		Reactions.Outcome.KHAC_FULL_CLEAR:
+			return 10.0
+		Reactions.Outcome.SINH_TIER_2:
+			return 20.0
+		Reactions.Outcome.KHAC_THUA:
+			return 20.0
+		_:
+			return 0.0
+
 func _update_facing() -> void:
-	if state in [State.DODGE, State.ATTACK, State.SKILL_SLAM]:
+	if state in [State.DODGE, State.ATTACK, State.SKILL_SLAM, State.HEAVY_WINDUP]:
 		return  # Don't flip mid-action — avoids the hitbox flipping under an active swing.
 	
 	var input_dir := Input.get_axis("move_left", "move_right")
@@ -1143,6 +1356,11 @@ func get_health_ratio() -> float:
 
 func _on_hurtbox_hit(hit_data: HitData) -> void:
 	if playtest_invincible:
+		return
+	if elemental.shield.absorb_hit(hit_data.source):
+		var absorbed_weight: StringName = &"heavy" if hit_data.perfect else hit_data.weapon_weight
+		HitStop.freeze_for_weight(absorbed_weight)
+		ScreenShake.shake(3.0, 0.12)
 		return
 	_apply_damage(hit_data.damage, hit_data.perfect)
 	velocity += hit_data.knockback
@@ -1203,7 +1421,19 @@ func to_save_state() -> Dictionary:
 		"secondary_weapon_rune": secondary_weapon_rune.to_dict() if secondary_weapon_rune != null else null,
 		"skill_1_path": skill_1.resource_path if skill_1 != null else "",
 		"skill_2_path": skill_2.resource_path if skill_2 != null else "",
+		"skill_energy": _serialize_skill_energy(),
 	}
+
+
+## §7.1 — energy meters persist across save/resume (unlike cooldowns, which
+## are deliberately not saved). Serialized by resource_path so the map
+## round-trips across load(); instance identity is rebuilt on resume.
+func _serialize_skill_energy() -> Dictionary:
+	var out: Dictionary = {}
+	for skill in [skill_1, skill_2]:
+		if skill != null and skill.uses_energy:
+			out[skill.resource_path] = _skill_energy.get(skill, 0.0)
+	return out
 
 
 ## Restores a previously-saved state (RunManager, on resume). Weapon/
@@ -1233,6 +1463,15 @@ func apply_save_state(saved_state: Dictionary) -> void:
 
 	_load_skill_path(saved_state.get("skill_1_path", ""), true)
 	_load_skill_path(saved_state.get("skill_2_path", ""), false)
+	# §7.1 — restore energy meters keyed by the freshly-loaded skill
+	# instances. Legacy snapshots without "skill_energy" start at 0.
+	_skill_energy.clear()
+	var saved_energy: Dictionary = saved_state.get("skill_energy", {})
+	for skill in [skill_1, skill_2]:
+		if skill != null and skill.uses_energy:
+			var path: String = skill.resource_path
+			if saved_energy.has(path):
+				_skill_energy[skill] = float(saved_energy[path])
 
 
 func _load_weapon_path(path: String, is_primary: bool) -> void:
