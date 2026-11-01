@@ -222,8 +222,14 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Add `SupportAI` and authored `EnemyStats` support fields; the shielder shields the nearest unshielded enemy ally and keeps its distance from the player.
 - [x] Add the shielder as a killable enemy and place it in `chunk_crossroads_v2` and the chunk builder.
 - [x] Route Player and every enemy hit callback through the shared one-hit shield gate; absorbed hits skip damage, knockback, and reaction resolution.
-- [x] Verification: focused `test_support_ai.gd` passes (5 tests, 21 assertions).
+- [x] Add the pulsing shield ellipse and brief lightning link VFX.
+
+### Step 10 — Armor buffer support enemy
+- [x] Extend `SupportAI` to find allies without an active shield or armor buff and apply the configured effect.
+- [x] Add a killable armor buffer enemy with authored stats, a gold active-buff outline, and a spawn in `chunk_hallway_v2`.
+- [x] Reproduce its spawn in `scripts/editor_tools/build_chunks.gd`.
+- [ ] Verify the armor application, mitigation, refresh behavior, and room placement.
 
 ## Immediate next action
 
-- Manual playtest and tune placeholder values for the Shop & Skills Expansion; automated implementation and verification are complete.
+- Verify Step 10, then tune placeholder values in playtesting when ready; shielder retreat timing is accepted for now.

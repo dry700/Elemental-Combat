@@ -5,6 +5,7 @@ extends RefCounted
 ## already uses. Refresh-only.
 
 signal expired
+signal changed(active: bool)
 
 var bonus_armor: float = 0.0
 var active: bool = false
@@ -16,6 +17,7 @@ func apply(p_bonus_armor: float, p_duration: float) -> void:
 	bonus_armor = p_bonus_armor
 	_remaining_duration = p_duration
 	active = true
+	changed.emit(true)
 
 
 func tick(delta: float) -> void:
@@ -36,5 +38,8 @@ func get_remaining_duration() -> float:
 
 
 func clear() -> void:
+	var was_active := active
 	active = false
 	bonus_armor = 0.0
+	if was_active:
+		changed.emit(false)

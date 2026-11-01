@@ -4,8 +4,12 @@ extends Node
 ## unshielded enemy ally in range and keeps its owner away from the player.
 
 signal ally_shielded(ally: Node2D)
+signal ally_armored(ally: Node2D)
+
+enum SupportType { SHIELD, ARMOR_BUFFER }
 
 @export var stats: EnemyStats
+@export var support_type: SupportType = SupportType.SHIELD
 
 var _support_cooldown: float = 0.0
 var _retreat_cycle_remaining: float = -1.0
@@ -29,16 +33,32 @@ func update(delta: float, player: Node2D) -> void:
 		_stop_movement(delta)
 		return
 	if _support_cooldown <= 0.0:
-		var ally := find_nearest_unshielded_ally()
+		var ally := find_nearest_ally_needing_support()
 		if ally != null:
 			var combatant := ally.get("elemental") as ElementalCombatant
-			combatant.shield.apply(stats.support_shield_duration)
+			if support_type == SupportType.SHIELD:
+				combatant.shield.apply(stats.support_shield_duration)
+				ally_shielded.emit(ally)
+			else:
+				combatant.armor_buff.apply(stats.support_armor_bonus, stats.support_armor_duration)
+				ally_armored.emit(ally)
 			_support_cooldown = stats.support_cooldown
-			ally_shielded.emit(ally)
 	_update_spacing(player, delta, _retreat_burst_remaining > 0.0)
 
 
 func find_nearest_unshielded_ally() -> Node2D:
+	return _find_nearest_ally_needing_support(SupportType.SHIELD)
+
+
+func find_nearest_unarmored_ally() -> Node2D:
+	return _find_nearest_ally_needing_support(SupportType.ARMOR_BUFFER)
+
+
+func find_nearest_ally_needing_support() -> Node2D:
+	return _find_nearest_ally_needing_support(support_type)
+
+
+func _find_nearest_ally_needing_support(type: SupportType) -> Node2D:
 	if stats == null or stats.support_range <= 0.0 or not is_inside_tree():
 		return null
 	var owner_2d := get_parent() as Node2D
@@ -53,7 +73,11 @@ func find_nearest_unshielded_ally() -> Node2D:
 		if not ally.has_method("get"):
 			continue
 		var combatant := ally.get("elemental") as ElementalCombatant
-		if combatant == null or combatant.shield.active:
+		if combatant == null:
+			continue
+		if type == SupportType.SHIELD and combatant.shield.active:
+			continue
+		if type == SupportType.ARMOR_BUFFER and combatant.armor_buff.active:
 			continue
 		var hurtbox := ally.get_node_or_null("Hurtbox") as Hurtbox
 		if hurtbox != null and hurtbox.invulnerable:

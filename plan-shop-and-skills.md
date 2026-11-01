@@ -1,6 +1,6 @@
 # Plan: Shop Rooms, Interactive Exits, Reaction Clues, Maid's Skills, Heavy Hit
 
-Status: **implemented.** Steps 1–9 are complete, including the shielder support enemy; the full GUT suite passes. Remaining work is manual playtesting and tuning the placeholder values. Steps are tracked in `AGENT_PLAN.md`.
+Status: **implemented through Step 10.** Armor buffer support is in place; verification for the new enemy is pending. Manual playtesting and placeholder tuning remain deferred. Steps are tracked in `AGENT_PLAN.md`.
 Source of truth for existing systems is [Design.md](docs/Design.md); when this plan is implemented, fold it into docs/Design.md as new sections.
 
 ---
@@ -246,7 +246,7 @@ Tests to update: `test_run_manager_sequence.gd`, `test_room_clear_upgrade_menu.g
 
 ## 12. Support enemies
 
-Goal: enemies that help other enemies, starting with a **shielder**. Later types, decided: **armor buffer** (reuses `ArmorBuffEffect`), **cleanser** (clears an ally's elemental status, which interacts with Khắc play), and **summoner**. **No healer.**
+Goal: enemies that help other enemies, starting with a **shielder** and **armor buffer**. Future types: **cleanser** (clears an ally's elemental status, which interacts with Khắc play) and **summoner**. **No healer.**
 
 ### 12.1 Shielder
 
@@ -266,6 +266,10 @@ Goal: enemies that help other enemies, starting with a **shielder**. Later types
 
 Step 9 implemented: `SupportAI` shields the nearest unshielded enemy ally in range using the shared `ShieldEffect`, then moves away from the player to maintain spacing without stepping off platform edges. The shielder is a killable `CharacterBody2D` with authored `EnemyStats`, is counted in the room's `enemies` group, and is placed in `chunk_crossroads_v2` (also added to the chunk builder). Player and all enemy hurtbox callbacks use `ElementalCombatant.try_absorb_hit()` so an absorbed hit causes no damage, knockback, or reaction; support shields do not enable Maid's Guard's explosion. The target now displays a pulsing ellipse while shielded, and a faint lightning arc links the shielder to its ally when the shield is applied. Focused `test_support_ai.gd` passes (6 tests, 26 assertions). Final full-suite verification passes (382 tests, 2,338 assertions).
 
+### 12.3 Armor buffer
+
+The armor buffer reuses `SupportAI` and `ArmorBuffEffect`. It selects the nearest enemy ally without an active armor buff, applies the authored bonus and duration, then follows the same keep-distance retreat cycle as the shielder. Its gold outline shows while the temporary armor bonus is active. The enemy is killable and placed in `chunk_hallway_v2`; the editor chunk builder reproduces the spawn.
+
 ---
 
 ## 13. Resolved decisions (support enemies and Skill station)
@@ -274,7 +278,7 @@ Step 9 implemented: `SupportAI` shields the nearest unshielded enemy ally in ran
 |---|---|
 | Enemy shield on break | Plain one-hit absorb, no explosion. |
 | Shielder behavior | Shields the nearest unshielded ally in range, then keeps its distance from the player. |
-| Later support types | Armor buffer, cleanser, summoner. No healer. |
+| Later support types | Cleanser and summoner. No healer. |
 | Maid's skills rarity | About 10% per Skill station roll. |
 
 No open questions remain. Details still to tune in playtesting: all numbers marked as placeholders, and the summoner's spawn limits when it is designed.

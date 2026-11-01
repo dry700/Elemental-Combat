@@ -8,6 +8,8 @@
 [ext_resource type="Resource" path="res://scripts/resources/enemies/kim_spirit_stats.tres" id="7_uy1we"]
 [ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="8_gymri"]
 [ext_resource type="Resource" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="9_qy07l"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/armor_buffer_enemy.tscn" id="10_armor_buffer"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/armor_buffer_stats.tres" id="11_armor_stats"]
 
 [node name="Node2D" type="Node2D" unique_id=1856066136]
 script = ExtResource("1_aogw4")
@@ -41,3 +43,9 @@ position = Vector2(328, 192)
 script = ExtResource("5_83fo2")
 enemy_scene = ExtResource("8_gymri")
 enemy_stats = ExtResource("9_qy07l")
+
+[node name="SpawnPoint_ArmorBuffer" type="Node2D" parent="."]
+position = Vector2(216, 192)
+script = ExtResource("5_83fo2")
+enemy_scene = ExtResource("10_armor_buffer")
+enemy_stats = ExtResource("11_armor_stats")

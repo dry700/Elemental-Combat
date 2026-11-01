@@ -2,6 +2,7 @@ class_name ElementalCombatant
 extends Node2D
 const WildfireOverloadBurstScript = preload("res://scripts/reactions/wildfire_overload_burst.gd")
 const ShieldEllipseVFXScript = preload("res://scripts/reactions/shield_ellipse_vfx.gd")
+const ArmorBuffVFXScript = preload("res://scripts/reactions/armor_buff_vfx.gd")
 ## Composed component — NOT a base class. Player is a CharacterBody2D and
 ## TestDummy is a StaticBody2D (PatrolDummy is CharacterBody2D too, but
 ## the split already rules out a single shared ancestor), so inheritance
@@ -123,6 +124,7 @@ var _shield_explosion_radius: float = 0.0
 var _shield_explosion_stagger: float = 0.0
 var _shield_explosion_bystander: ElementalCombatant
 var _shield_ellipse_vfx: Node2D
+var _armor_buff_vfx: Node2D
 
 
 func _ready() -> void:
@@ -145,6 +147,10 @@ func _ready() -> void:
 	_shield_ellipse_vfx.name = "ShieldEllipseVFX"
 	add_child(_shield_ellipse_vfx)
 	shield.changed.connect(_shield_ellipse_vfx.set_active)
+	_armor_buff_vfx = ArmorBuffVFXScript.new()
+	_armor_buff_vfx.name = "ArmorBuffVFX"
+	add_child(_armor_buff_vfx)
+	armor_buff.changed.connect(_armor_buff_vfx.set_active)
 
 	_dot_indicator = DotIndicator.new()
 	_dot_indicator.position = indicator_offset + Vector2(10, -6)

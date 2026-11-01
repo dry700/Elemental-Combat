@@ -890,16 +890,17 @@ guarded by `_current_phase`. Dual-simultaneous-element attacks: **not
 implemented**, stays an explicit stretch goal.
 
 Support enemies compose `ElementalCombatant` with `SupportAI`; they do not
-inherit from `EnemyCombatAI` or another enemy. `EnemyStats.support_range`,
-`support_cooldown`, and `support_shield_duration` tune the support action.
-`SupportAI` searches the `enemies` group and applies the shared refresh-only
-`ShieldEffect` to the nearest unshielded ally. The support shield absorbs one
-hit and has no explosion; only Maid's Guard enables its break/expiry blast.
-When no ally needs a shield, the shielder uses its configured keep-distance
-and movement-speed fields to retreat from nearby players. It remains in the
-`enemies` group, so it must be killed to clear a room. The first shielder
-spawn is authored in `chunk_crossroads_v2` and reproduced by
-`scripts/editor_tools/build_chunks.gd`.
+inherit from `EnemyCombatAI` or another enemy. `SupportAI` searches the
+`enemies` group and selects the nearest ally missing its configured support
+effect. The shielder applies the shared refresh-only `ShieldEffect`; its
+shield absorbs one hit and has no explosion, while Maid's Guard retains its
+break/expiry blast. The armor buffer applies `ArmorBuffEffect`, which adds
+temporary armor to the ally's normal damage mitigation and displays a warm
+outline while active. Both use the configured support range, cooldown, and
+keep-distance retreat cycle. They remain in the `enemies` group and must be
+killed to clear a room. The shielder and armor buffer are authored in
+`chunk_crossroads_v2` and `chunk_hallway_v2`, respectively, and both are
+reproduced by `scripts/editor_tools/build_chunks.gd`.
 
 ---
 

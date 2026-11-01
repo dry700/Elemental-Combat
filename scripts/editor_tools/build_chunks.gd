@@ -17,6 +17,8 @@ var kim_scene = preload("res://scenes/enemies/test_dummy.tscn")
 var kim_stats = preload("res://scripts/resources/enemies/kim_spirit_stats.tres")
 var shielder_scene = preload("res://scenes/enemies/shielder_enemy.tscn")
 var shielder_stats = preload("res://scripts/resources/enemies/shielder_stats.tres")
+var armor_buffer_scene = preload("res://scenes/enemies/armor_buffer_enemy.tscn")
+var armor_buffer_stats = preload("res://scripts/resources/enemies/armor_buffer_stats.tres")
 var tileset = preload("res://scenes/world/chunks/chunk_tileset.tres")
 
 func _init():
@@ -101,6 +103,16 @@ func add_shielder(root, x, y):
     root.add_child(sp)
     sp.owner = root
 
+func add_armor_buffer(root, x, y):
+    var sp = Node2D.new()
+    sp.set_script(spawn_script)
+    sp.name = "SpawnPoint_ArmorBuffer"
+    sp.position = Vector2(x * 16.0 + 8.0, y * 16.0)
+    sp.set("enemy_scene", armor_buffer_scene)
+    sp.set("enemy_stats", armor_buffer_stats)
+    root.add_child(sp)
+    sp.owner = root
+
 func _build_hallway(tm, root):
     add_platform(root, 5, 16.5, 4)
     add_platform(root, 17, 15.0, 4)
@@ -159,6 +171,7 @@ func _build_hallway_v2(tm, root):
     fill_rect(tm, 12, 2, 2, 8)
     add_enemy(root, 4, 12.0, false)
     add_enemy(root, 20, 12.0)
+    add_armor_buffer(root, 13, 12.0)
 
 func _build_climb_v2(tm, root):
     add_platform(root, 6, 16.5, 3)

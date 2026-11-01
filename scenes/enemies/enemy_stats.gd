@@ -50,6 +50,8 @@ enum Tier { NORMAL, ELITE }
 @export var support_range: float = 0.0
 @export var support_cooldown: float = 5.0
 @export var support_shield_duration: float = 4.0
+@export var support_armor_bonus: float = 12.0
+@export var support_armor_duration: float = 5.0
 @export var support_keep_distance: float = 100.0
 @export var support_move_speed: float = 40.0
 @export var support_retreat_interval: float = 3.0

@@ -1,0 +1,52 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/armor_buffer_enemy.gd" id="1_armor_buffer"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
+[ext_resource type="Script" path="res://scripts/visuals/sprite_visual.gd" id="3_sprite_visual"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/armor_buffer_stats.tres" id="4_stats"]
+
+[sub_resource type="RectangleShape2D" id="body_shape"]
+size = Vector2(10, 14)
+
+[sub_resource type="StyleBoxFlat" id="health_bg"]
+bg_color = Color(0.15, 0.15, 0.15, 1)
+
+[sub_resource type="StyleBoxFlat" id="health_fill"]
+bg_color = Color(0.9, 0.66, 0.2, 1)
+
+[node name="ArmorBufferEnemy" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 5
+script = ExtResource("1_armor_buffer")
+enemy_stats = ExtResource("4_stats")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("body_shape")
+
+[node name="PlaceholderVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-5, -7, 5, -7, 5, 7, -5, 7)
+color = Color(0.82, 0.62, 0.22, 1)
+
+[node name="SpriteVisual" type="Node2D" parent="."]
+script = ExtResource("3_sprite_visual")
+entity_id = "armor_buffer"
+fallback_polygon = NodePath("../PlaceholderVisual")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+script = ExtResource("2_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("body_shape")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -11.0
+offset_top = -24.0
+offset_right = 11.0
+offset_bottom = -20.0
+theme_override_styles/background = SubResource("health_bg")
+theme_override_styles/fill = SubResource("health_fill")
+value = 100.0
+show_percentage = false
