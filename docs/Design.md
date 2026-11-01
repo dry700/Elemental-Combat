@@ -978,6 +978,13 @@ do not construct the panel or accept the playtest actions.
 
 ### 8.1 Pickup Swap HUD
 
+During an active run, **Esc** opens a true pause menu (the scene tree is
+paused). It shows both equipped weapon slots and skill slots as the same
+item cards used by the pickup chooser. **Continue** resumes play; **Save
+and Exit** writes the current room-boundary resume snapshot and returns to
+the main menu without clearing the saved run. If the save fails, the menu
+stays open and reports the failure.
+
 Replaces the single-key "F opens the overlay" flow. Keyboard only.
 
 **Flow**

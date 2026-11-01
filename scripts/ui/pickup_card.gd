@@ -23,6 +23,7 @@ func set_weapon(weapon, slot_rune = null, is_equipped: bool = false) -> void:
 	if weapon == null:
 		set_empty("Weapon")
 		return
+	_icon_tex.texture = null
 	
 	var text: String = weapon.weapon_name
 	if is_equipped:

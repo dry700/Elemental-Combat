@@ -72,13 +72,18 @@ func _load_from_disk() -> void:
 		_data = _default_data()
 
 
-func _save_to_disk() -> void:
+func _save_to_disk() -> bool:
 	var file := FileAccess.open(_save_path, FileAccess.WRITE)
 	if file == null:
 		push_warning("SaveManager: could not open %s for writing — progress not saved" % _save_path)
-		return
+		return false
 	file.store_string(JSON.stringify(_data, "\t"))
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		push_warning("SaveManager: failed to write %s (error %d)" % [_save_path, write_error])
+		return false
+	return true
 
 
 ## --- Meta-progression: weapons/skills ever found ---
@@ -143,7 +148,7 @@ func get_run_history() -> Array:
 
 ## --- Mid-run save/resume ---
 
-func save_in_progress_run(sequence: Array, current_index: int, player_state: Dictionary, elapsed_sec: float, map_structure: Dictionary = {}, upgrade_state: Dictionary = {}, loop: int = 1, shop_state: Dictionary = {}) -> void:
+func save_in_progress_run(sequence: Array, current_index: int, player_state: Dictionary, elapsed_sec: float, map_structure: Dictionary = {}, upgrade_state: Dictionary = {}, loop: int = 1, shop_state: Dictionary = {}) -> bool:
 	_data["in_progress_run"] = {
 		"sequence": sequence,
 		"current_index": current_index,
@@ -154,7 +159,7 @@ func save_in_progress_run(sequence: Array, current_index: int, player_state: Dic
 		"loop": loop,
 		"shop_state": shop_state,
 	}
-	_save_to_disk()
+	return _save_to_disk()
 
 
 func has_in_progress_run() -> bool:

@@ -128,6 +128,11 @@ var _upgrade_page_offset: int = 0  ## First visible option index.
 const UPGRADE_CARDS_VISIBLE: int = 3  ## Physical card count — unchanged.
 
 
+var _pause_menu_active: bool = false
+var _pause_overlay: Control
+var _pause_weapon_cards: Array[PickupCard] = []
+var _pause_skill_cards: Array[PickupCard] = []
+var _pause_status_label: Label
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 110  # Above VisionBlocker's own darkness overlay (layer 100) — HUD chrome stays visible even inside a steam cloud's blackout.
@@ -146,6 +151,7 @@ func _ready() -> void:
 
 	var um := get_node_or_null("/root/UpgradeManager")
 	if um != null:
+	_build_pause_menu(root)
 		um.qi_changed.connect(_on_qi_changed)
 		_on_qi_changed(um.qi)
 
@@ -434,6 +440,7 @@ func _refresh_boss_ref() -> void:
 ## bookkeeping to duplicate here, just "is anything in this group
 ## currently prompting."
 func _refresh_active_pickups() -> void:
+	_handle_pause_input()
 	_active_weapon_pickup = null
 	for node in get_tree().get_nodes_in_group("weapon_pickups"):
 		var pickup := node as WeaponPickup
@@ -446,6 +453,153 @@ func _refresh_active_pickups() -> void:
 		if pickup != null and pickup.get("_player_in_range") != null:
 			_active_skill_pickup = pickup
 			break
+func _build_pause_menu(root: Control) -> void:
+	_pause_overlay = Control.new()
+	_pause_overlay.name = "PauseOverlay"
+	_pause_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_pause_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	_pause_overlay.visible = false
+	root.add_child(_pause_overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.72)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pause_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560.0, 0.0)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "Paused"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	content.add_child(title)
+
+	var equipment_columns := HBoxContainer.new()
+	equipment_columns.add_theme_constant_override("separation", 8)
+	content.add_child(equipment_columns)
+	_pause_weapon_cards = _build_pause_equipment_column(equipment_columns, "Weapons", true)
+	_pause_skill_cards = _build_pause_equipment_column(equipment_columns, "Skills", false)
+
+	var continue_button := Button.new()
+	continue_button.text = "Continue"
+	continue_button.custom_minimum_size.y = 34.0
+	continue_button.pressed.connect(_close_pause_menu)
+	content.add_child(continue_button)
+
+	var save_exit_button := Button.new()
+	save_exit_button.text = "Save and Exit"
+	save_exit_button.custom_minimum_size.y = 34.0
+	save_exit_button.pressed.connect(_on_pause_save_exit_pressed)
+	content.add_child(save_exit_button)
+
+	_pause_status_label = Label.new()
+	_pause_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_status_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
+	content.add_child(_pause_status_label)
+
+
+func _build_pause_equipment_column(parent: HBoxContainer, heading: String, is_weapon: bool) -> Array[PickupCard]:
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	parent.add_child(column)
+
+	var title := Label.new()
+	title.text = heading
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 16)
+	column.add_child(title)
+
+	var cards: Array[PickupCard] = []
+	for slot_index in 2:
+		var card := preload("res://scenes/ui/swap_card.tscn").instantiate() as PickupCard
+		card.custom_minimum_size = Vector2(PickupCard.CARD_WIDTH, PickupCard.CARD_HEIGHT)
+		column.add_child(card)
+		cards.append(card)
+		if is_weapon:
+			var weapon: WeaponStats = null
+			var rune: RuneData = null
+			if _player != null:
+				weapon = _player.weapon if slot_index == 0 else _player.secondary_weapon
+				rune = _player.weapon_rune if slot_index == 0 else _player.secondary_weapon_rune
+			card.set_weapon(weapon, rune, weapon != null)
+		else:
+			var skill: SkillData = null
+			if _player != null:
+				skill = _player.skill_1 if slot_index == 0 else _player.skill_2
+			card.set_skill(skill)
+	return cards
+
+
+func _handle_pause_input() -> void:
+	if _pause_menu_active:
+		if Input.is_action_just_pressed("menu_cancel"):
+			_close_pause_menu()
+		return
+	if _overlay_active or _upgrade_menu_active:
+		return
+	if RunManager != null and RunManager._run_active \
+			and Input.is_action_just_pressed("menu_cancel"):
+		_open_pause_menu()
+
+
+func _open_pause_menu() -> void:
+	if _pause_menu_active or _overlay_active or _upgrade_menu_active:
+		return
+	_pause_menu_active = true
+	_pause_status_label.text = ""
+	_refresh_pause_equipment_cards()
+	_pause_overlay.visible = true
+	get_tree().paused = true
+
+
+func _refresh_pause_equipment_cards() -> void:
+	if _player == null:
+		return
+	_pause_weapon_cards[0].set_weapon(_player.weapon, _player.weapon_rune, _player.weapon != null)
+	_pause_weapon_cards[1].set_weapon(_player.secondary_weapon, _player.secondary_weapon_rune, _player.secondary_weapon != null)
+	_pause_skill_cards[0].set_skill(_player.skill_1)
+	_pause_skill_cards[1].set_skill(_player.skill_2)
+
+
+func _close_pause_menu() -> void:
+	_pause_menu_active = false
+	_pause_overlay.visible = false
+	get_tree().paused = false
+
+
+func _on_pause_save_exit_pressed() -> void:
+	if RunManager == null or not RunManager.save_mid_run():
+		_pause_status_label.text = "Save failed. Your run is still open."
+		return
+
+	get_tree().paused = false
+	RunManager._run_active = false
+	RunManager.set_process(false)
+	var error := get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	if error != OK:
+		RunManager._run_active = true
+		RunManager.set_process(true)
+		get_tree().paused = true
+		_pause_status_label.text = "Could not return to the main menu."
+		push_error("HUD: failed to return to the main menu after saving (error %d)" % error)
+		return
+	_pause_menu_active = false
+	_pause_overlay.visible = false
+
+
 	_active_rune_pickup = null
 	for node in get_tree().get_nodes_in_group("rune_pickups"):
 		if node.get("_player_in_range") != null:

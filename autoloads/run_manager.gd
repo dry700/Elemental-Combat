@@ -357,17 +357,21 @@ func _capture_pending_loadout() -> void:
 	pending_secondary_weapon_rune = _player.secondary_weapon_rune.to_dict() if _player.secondary_weapon_rune != null else {}
 
 
-func save_mid_run() -> void:
-	_autosave()
+func save_mid_run() -> bool:
+	if not _run_active:
+		push_warning("RunManager: cannot save because no run is active")
+		return false
+	return _autosave()
 
 
-func _autosave() -> void:
+func _autosave() -> bool:
 	if _player == null or _current_room == null:
-		return
+		push_warning("RunManager: cannot save without an active player and room")
+		return false
 	var map_structure: Dictionary = {}
 	if _current_room is ProceduralRoomController and _current_room.map_gen != null:
 		map_structure = _current_room.map_gen.to_dict()
 	var shop_state: Dictionary = {}
 	if Hud != null:
 		shop_state = Hud.get_shop_stock_save_state()
-	SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure, UpgradeManager.to_save_state(), loop, shop_state)
+	return SaveManager.save_in_progress_run(_sequence, _current_index, _player.to_save_state(), _elapsed_sec, map_structure, UpgradeManager.to_save_state(), loop, shop_state)
