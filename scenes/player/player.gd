@@ -106,6 +106,7 @@ var _sweep_hitbox_vfx: SweepHitboxVFX
 var _active_weapon: WeaponStats
 var _is_dead: bool = false
 var playtest_invincible: bool = false
+var cutscene_input_locked: bool = false
 
 var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
@@ -200,6 +201,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _is_dead:
+		return
+	if cutscene_input_locked:
+		_apply_gravity(delta)
+		velocity.x = 0.0
+		move_and_slide()
 		return
 	_update_timers(delta)
 	_apply_gravity(delta)

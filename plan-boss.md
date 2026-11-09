@@ -145,7 +145,7 @@ Follow the project's composition convention (no common enemy base class).
 6. HUD: wave ticks, invulnerable bar, countdown. **[Done — boss HUD displays wave-threshold ticks, dims during passive windows, and shows remaining time; verified by `test_boss_attacks.gd`]**
 7. Run the full suite, then do an interactive playtest to tune numbers and verify charge/shockwave jumpability. **[Automated verification complete — full GUT suite passes (419 tests, 2,596 assertions); interactive tuning and jumpability check remain]**
 
-8. Add the short boss-entry cutscene described in section 9. Keep it skippable and resume the existing fight without changing boss state, health, or wave thresholds.
+8. Add the short boss-entry cutscene described in section 9. **[Implemented — skippable intro locks player input and boss processing, frames the arena, plays an earth stomp and title card, then restores the camera and combat state.]**
 
 ---
 
