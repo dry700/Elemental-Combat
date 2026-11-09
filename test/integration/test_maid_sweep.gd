@@ -41,7 +41,8 @@ func test_maid_sweep_resource_loads_with_energy_fields() -> void:
 	assert_eq(skill.function, SkillData.Function.APPLY_SWEEP_BUFF)
 	assert_almost_eq(skill.buff_duration, 15.0, 0.01)
 	assert_almost_eq(skill.sweep_damage_mult, 1.4, 0.01)
-	assert_almost_eq(skill.sweep_reach_mult, 1.5, 0.01)
+	assert_almost_eq(skill.sweep_reach_mult, 2.0, 0.01)
+	assert_almost_eq(skill.sweep_hitbox_mult, 1.5, 0.01)
 
 
 func test_skill_resource_dispatches_maid_sweep_and_resets_energy() -> void:

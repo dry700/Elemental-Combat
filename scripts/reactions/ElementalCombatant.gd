@@ -1033,8 +1033,8 @@ func cast_apply_shield(
 ## Maid's Sweep (plan-shop-and-skills §7.2): refresh-only timed buff read at
 ## Player._configure_hitbox_for_current_swing() — forces Thổ swings with
 ## bigger reach/hitbox and a damage multiplier. Never touches raw Charge.
-func cast_sweep_buff(duration: float, damage_mult: float = 1.0, reach_mult: float = 1.0) -> void:
-	sweep_buff.apply(duration, damage_mult, reach_mult)
+func cast_sweep_buff(duration: float, damage_mult: float = 1.0, reach_mult: float = 1.0, hitbox_mult: float = -1.0) -> void:
+	sweep_buff.apply(duration, damage_mult, reach_mult, hitbox_mult)
 
 
 func _on_shield_broken(attacker: Node) -> void:

@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="BossStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/enemies/boss_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+boss_name = "Thổ Ngưu"
+element = &"tho"
+phase_2_element = &"hoa"
+phase_transition_health_ratio = 0.5
+phase_2_attack_cooldown_multiplier = 0.75
+armor = 15.0
+innate_charge = 2
+max_health = 700.0
+damage = 10.0
+knockback_strength = 130.0
+attack_cooldown = 1.4
+chase_speed = 42.5
+aggro_range = 400.0
+attack_range = 18.0
+telegraph_duration = 0.4
+special_telegraph_duration = 0.8
+active_window = 0.16
+cc_free_hits = 3
+qi_reward = 30.0
+wave_thresholds = Array[float]([0.75, 0.5, 0.25])
+passive_window_duration = 12.0
+passive_flight_height = 100.0
+passive_flight_speed = 120.0
+early_clear_stagger_duration = 2.0
+early_clear_damage_multiplier = 1.5
+charge_enabled = true
+charge_telegraph_duration = 0.8
+charge_speed = 220.0
+charge_max_distance = 450.0
+charge_damage = 14.0
+charge_innate_charge = 2
+charge_cooldown = 8.0
+charge_wall_stun_duration = 1.5
+charge_stun_damage_multiplier = 1.5
+shockwave_enabled = true
+shockwave_telegraph_duration = 0.6
+shockwave_speed = 130.0
+shockwave_damage = 8.0
+shockwave_innate_charge = 1
+shockwave_cooldown = 4.0
+rock_throw_enabled = true
+rock_damage = 6.0
+rock_speed = 200.0
+rock_cooldown = 5.0
+rock_telegraph_duration = 0.65
+rock_aim_distance = 190.0

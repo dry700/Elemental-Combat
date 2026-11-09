@@ -111,6 +111,7 @@ func _build_panel() -> void:
 	content.add_child(_skill_target)
 	_add_button(content, "Equip Q Skill", _on_equip_primary_skill_pressed)
 	_add_button(content, "Equip E Skill", _on_equip_secondary_skill_pressed)
+	_add_button(content, "Charge Energy Skills", _on_charge_energy_skills_pressed)
 
 	var stat_row := HBoxContainer.new()
 	content.add_child(stat_row)
@@ -134,7 +135,7 @@ func _build_panel() -> void:
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.text = "F12 closes. Select a skill, equip it to Q/E, then cast. Use +1000 Qi for the arena stall."
+	_status.text = "F12 closes. Select a skill, equip it to Q/E, then cast. Charge Energy Skills fills equipped meters; +1000 Qi helps test shops."
 	content.add_child(_status)
 
 
@@ -194,6 +195,24 @@ func _on_equip_primary_skill_pressed() -> void:
 
 func _on_equip_secondary_skill_pressed() -> void:
 	_equip_selected_skill(false)
+
+
+func _on_charge_energy_skills_pressed() -> void:
+	var player := _get_live_player()
+	if player == null:
+		_set_status("No live player to charge.")
+		return
+	var charged_skills := PackedStringArray()
+	for slot_index in range(2):
+		var skill: SkillData = player.skill_1 if slot_index == 0 else player.skill_2
+		if skill == null or not skill.uses_energy or skill.energy_max <= 0.0:
+			continue
+		player._skill_energy[skill] = skill.energy_max
+		charged_skills.append(skill.skill_name)
+	if charged_skills.is_empty():
+		_set_status("Equip an energy skill first.")
+	else:
+		_set_status("Fully charged: %s." % ", ".join(charged_skills))
 
 
 func _equip_selected_skill(is_primary: bool) -> void:

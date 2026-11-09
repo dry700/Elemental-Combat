@@ -127,6 +127,10 @@ func _on_hurtbox_hit(hit_data: HitData) -> void:
 
 ## Wildfire's chain (A.7 Link) landed on this dummy.
 func _on_bonus_damage_dealt(amount: float) -> void:
+	if _is_dead or hurtbox.invulnerable:
+		return
+	if elemental.try_absorb_hit():
+		return
 	_apply_damage(amount)
 
 

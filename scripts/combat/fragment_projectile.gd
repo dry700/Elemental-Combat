@@ -18,7 +18,7 @@ extends BaseProjectile
 @export var shred_amount: float = 2.0
 ## §4.8.9 — flat bonus damage emitted after the shred/status apply.
 ## Default 0 means normal Ore Surge fragments are completely unaffected.
-@export var damage_amount: float = 0.0
+@export var damage_amount: float = 10.0
 ## §4.8.10 Armor Sunder — bonus damage emitted when hitting a target whose
 ## armor is already <= 0 (shred would be wasted). Default 0 = inactive.
 @export var sunder_bonus_damage: float = 0.0

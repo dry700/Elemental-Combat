@@ -1,6 +1,6 @@
 # Current Implementation Plan
 
-Source of truth: [Design.md](docs/Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md). The proposed shop-and-skills work is detailed in [plan-shop-and-skills.md](plan-shop-and-skills.md).
+Source of truth: [Design.md](docs/Design.md). Execution order and repository rules are tracked in [AGENT_PLAN.md](AGENT_PLAN.md). The completed shop-and-skills work is detailed in [plan-shop-and-skills.md](docs/plan-shop-and-skills.md). The active boss plan is detailed in [plan-boss.md](plan-boss.md).
 
 ## Phase status
 
@@ -20,6 +20,7 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 - [x] P12 — Run optimization and economy tuning (Phases 1–9 complete)
 - [x] P13 — Perfect Hit and weapon window expansion
 - [x] P14 — Skill system expansion (automated verification complete; interactive playtest checkpoint pending)
+- [ ] P15 — Boss Overhaul: Thổ Ngưu (implementation in progress; see [plan-boss.md](plan-boss.md))
 
 ## Verified current state
 
@@ -37,6 +38,7 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 - P13 GUT verification: 269 tests passed, 1,760 assertions, 0 failures; 2 expected headless warnings.
 - P14 adds ten skills (15 total), five cast behaviors, cooldown HUD, duplicate prevention, a shared element-tinted cast burst, a directional water wave for Undertow, Seismic Slam's jump-and-ground-impact attack with screen shake, a 60 Qi shop stall, and matching-element spirit/boss drops.
 - P14 GUT verification: 299 tests passed, 1,898 assertions, 0 failures; existing headless diagnostics remain.
+- P15 automated implementation adds Thổ Ngưu's phase swap, three clamped wave thresholds, passive/invulnerable windows, room wave spawning and cleanup, rock/charge/shockwave attacks, and HUD ticks/countdown. During invulnerability, the boss moves to the arena center, flies to a hover position, and is intangible. Rock aims in 2D with a trajectory tell; all boss attacks use heavy hit feedback; shockwaves pierce each target once and emit intensified, element-tinted diamond sparks along the ground; boss-room platforms warn, crumble on the player's timer, then recover. Full GUT suite: 419 tests, 2,596 assertions, 0 failures; interactive playtest remains.
 - In-run pause menu: Esc pauses gameplay and displays both equipped weapon and skill slots; Continue resumes, while Save and Exit persists a resumable snapshot and returns to the main menu. Save failures keep the pause menu open.
 - Step 7 energy system and Maid's Sweep: each energy-gated skill has a per-skill meter filled only by player-triggered reactions involving its element (Vũ and enemy-caused reactions excluded; 5/10/20 by tier); Maid's Sweep consumes the full meter to apply a refresh-only Thổ weapon buff (×1.4 damage, ×1.5 reach/hitbox, ~15s) read only at the hitbox-config site, never on raw Charge. Meters persist across save/resume; the HUD shows a radial energy ring with a non-color full cue.
 - Step 8 Heavy Hit adds capped hold-and-release attacks for bow, greatsword, and hammer. Step 9 adds a shielder support enemy, shared one-hit shield handling, and a chunk spawn point.
@@ -50,11 +52,12 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 
 ## Exact next item
 
-- Automated implementation is complete through Step 9. The full GUT suite passes (382 tests, 2,338 assertions, 0 failures). `test_arena` includes the bow and shielder playtest setup; shielder retreat stops before platform edges, and shield application has ellipse and lightning feedback. Human feedback on attack timing and support spacing is still needed to tune placeholders. The P14 in-game skill visual checkpoint remains pending.
+- P15 automated implementation is complete through build-order steps 1–6, including center-flight and intangibility during passive windows, target-piercing shockwaves with intensified travelling sparks, and heavy hit feedback for all boss attacks. The full GUT suite passes (419 tests, 2,596 assertions, 0 failures). Next: interactive pass for attack timing, jumpability, and wave/support spacing. The P14 in-game skill visual checkpoint also remains pending.
 
 ## Deferred work
 
 - P14 implementation and test-arena playtest tooling are complete; finish the recorded interactive checkpoint before gameplay balance tuning.
+- P15 — Boss Overhaul: Thổ Ngưu is in progress. Stats, widened arena, boss wave/passive states, wave director, charge/rock/shockwave attacks, 2D rock trajectory telegraph, timed boss platforms, and HUD threshold/countdown feedback are implemented; interactive tuning remains.
 - Shop and Skills Expansion: Steps 1–3, Step 4.1 (interleaved room/shop run sequence), Step 4.2 (shop-state persistence), Step 5 (reaction-upgrade visual clues), Step 6 (Maid's Guard one-hit shield), and Step 7 (energy system and Maid's Sweep) are implemented.
 - Shop & Skills Expansion Steps 8–9 (Heavy Hit and the shielder support enemy) are implemented. Step 9 focused tests pass (6 tests, 22 assertions), including the cliff-edge regression.
 - Shop & Skills Expansion Step 5 (reaction-upgrade visual clues) is implemented. Its focused UpgradeManager, shop HUD, combat reaction, and run-persistence tests pass. At Step 5 completion, the suite had 340/340 tests and 2,109 assertions; the SpriteVisual fallback error is expected by its negative-path test.
@@ -66,6 +69,6 @@ Source of truth: [Design.md](docs/Design.md). Execution order and repository rul
 ## Key verification record
 
 - Full suite command: `& "E:\game-engine\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --headless --path "E:\FYP\elemental_roguelike\elemental_roguelike" -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit`
-- Latest full suite: 382 tests passed, 2,338 assertions, 0 failures. The SpriteVisual fallback error is expected by its negative-path test; headless shutdown reports existing resource diagnostics.
+- Latest full suite: 419 tests passed, 2,596 assertions, 0 failures. The SpriteVisual fallback error is expected by its negative-path test; headless shutdown reports existing resource diagnostics.
 - P13 result: 269 passing tests, 1,756 assertions, 0 failures. Two expected headless warnings remain.
 - Static analysis: clean across all workspace files.

@@ -1,13 +1,22 @@
 [gd_scene format=3 uid="uid://dtbrv3th6pq1c"]
 
-[ext_resource type="Script" uid="uid://cehj7nvox6aaa" path="res://scripts/world/room_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://scenes/world/rooms/boss_room.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://cu20i6ckpoxk2" path="res://scripts/world/enemy_spawn_point.gd" id="2_spawn"]
 [ext_resource type="Script" uid="uid://cce0wnblrsef7" path="res://scripts/world/room_exit.gd" id="3_exit"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/boss.tscn" id="4_boss"]
-[ext_resource type="Resource" path="res://scripts/resources/enemies/ember_tide_boss_stats.tres" id="5_stats"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/tho_nguu_boss_stats.tres" id="5_stats"]
+[ext_resource type="PackedScene" uid="uid://dtgj2pfdruvq3" path="res://scenes/world/one_way_platform.tscn" id="6_platform"]
+[ext_resource type="PackedScene" uid="uid://btt5dbn4i3e7r" path="res://scenes/enemies/patrol_dummy.tscn" id="7_brawler"]
+[ext_resource type="Resource" uid="uid://dtq8vxadaw86v" path="res://scripts/resources/enemies/neutral_brawler_stats.tres" id="8_brawler_stats"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/flying_enemy.tscn" id="9_flyer"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shooter_enemy.tscn" id="10_shooter"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/shielder_enemy.tscn" id="11_shielder"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/shielder_stats.tres" id="12_shielder_stats"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/armor_buffer_enemy.tscn" id="13_armor_buffer"]
+[ext_resource type="Resource" path="res://scripts/resources/enemies/armor_buffer_stats.tres" id="14_armor_buffer_stats"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
-size = Vector2(450, 20)
+size = Vector2(640, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exit"]
 size = Vector2(10, 30)
@@ -15,58 +24,159 @@ size = Vector2(10, 30)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_boundary"]
 size = Vector2(20, 420)
 
-[node name="RoomBoss" type="Node2D" unique_id=1256543626]
+[node name="RoomBoss" type="Node2D"]
 script = ExtResource("1_controller")
 exit = NodePath("Exit")
-camera_horizontal_limits = Vector2(-235, 235)
+camera_horizontal_limits = Vector2(-330, 330)
 
-[node name="Ground" type="StaticBody2D" parent="." unique_id=131327698]
+[node name="Ground" type="StaticBody2D" parent="."]
 position = Vector2(0, 110)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground" unique_id=739883215]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="Visual" type="Polygon2D" parent="Ground" unique_id=1648185248]
+[node name="Visual" type="Polygon2D" parent="Ground"]
 color = Color(0.25, 0.25, 0.3, 1)
-polygon = PackedVector2Array(-225, -10, 225, -10, 225, 10, -225, 10)
+polygon = PackedVector2Array(-320, -10, 320, -10, 320, 10, -320, 10)
 
-[node name="BoundaryLeft" type="StaticBody2D" parent="." unique_id=2073657101 groups=["unclimbable_walls"]]
-position = Vector2(-225, -100)
+[node name="BoundaryLeft" type="StaticBody2D" parent="." groups=["unclimbable_walls"]]
+position = Vector2(-320, -100)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryLeft" unique_id=2021657102]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryLeft"]
 shape = SubResource("RectangleShape2D_boundary")
 
-[node name="Visual" type="Polygon2D" parent="BoundaryLeft" unique_id=2021657103]
+[node name="Visual" type="Polygon2D" parent="BoundaryLeft"]
 color = Color(0.16, 0.17, 0.21, 1)
 polygon = PackedVector2Array(-10, -210, 10, -210, 10, 210, -10, 210)
 
-[node name="BoundaryRight" type="StaticBody2D" parent="." unique_id=2073657104 groups=["unclimbable_walls"]]
-position = Vector2(225, -100)
+[node name="BoundaryRight" type="StaticBody2D" parent="." groups=["unclimbable_walls"]]
+position = Vector2(320, -100)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryRight" unique_id=2021657105]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BoundaryRight"]
 shape = SubResource("RectangleShape2D_boundary")
 
-[node name="Visual" type="Polygon2D" parent="BoundaryRight" unique_id=2021657106]
+[node name="Visual" type="Polygon2D" parent="BoundaryRight"]
 color = Color(0.16, 0.17, 0.21, 1)
 polygon = PackedVector2Array(-10, -210, 10, -210, 10, 210, -10, 210)
 
-[node name="PlayerSpawn" type="Node2D" parent="." unique_id=1781304559 groups=["player_spawn"]]
-position = Vector2(-190, 90)
+[node name="PlayerSpawn" type="Node2D" parent="." groups=["player_spawn"]]
+position = Vector2(-260, 90)
 
-[node name="EnemySpawnPoint" type="Node2D" parent="." unique_id=695345081]
-position = Vector2(50, 86)
+[node name="PlatformLeft" parent="." instance=ExtResource("6_platform")]
+position = Vector2(-200, 50)
+width_tiles = 4
+timed_collapse_enabled = true
+
+[node name="PlatformCenter" parent="." instance=ExtResource("6_platform")]
+position = Vector2(-40, 0)
+width_tiles = 5
+timed_collapse_enabled = true
+
+[node name="PlatformRight" parent="." instance=ExtResource("6_platform")]
+position = Vector2(120, 45)
+width_tiles = 4
+timed_collapse_enabled = true
+
+[node name="EnemySpawnPoint" type="Node2D" parent="."]
+position = Vector2(60, 86)
 script = ExtResource("2_spawn")
 enemy_scene = ExtResource("4_boss")
 boss_stats = ExtResource("5_stats")
 
-[node name="Exit" type="Area2D" parent="." unique_id=441668208]
-position = Vector2(210, 95)
+[node name="Exit" type="Area2D" parent="."]
+position = Vector2(305, 95)
 collision_layer = 0
 script = ExtResource("3_exit")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit" unique_id=1894065617]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Exit"]
 shape = SubResource("RectangleShape2D_exit")
 
-[node name="Visual" type="Polygon2D" parent="Exit" unique_id=1237763999]
+[node name="Visual" type="Polygon2D" parent="Exit"]
 polygon = PackedVector2Array(-5, -15, 5, -15, 5, 15, -5, 15)
+
+[node name="BossRetreatAnchor" type="Node2D" parent="." groups=["boss_retreat_anchor"]]
+position = Vector2(0, 88)
+
+[node name="Wave1Spawns" type="Node2D" parent="."]
+
+[node name="Spawn_Brawler" type="Node2D" parent="Wave1Spawns"]
+position = Vector2(-120, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("7_brawler")
+enemy_stats = ExtResource("8_brawler_stats")
+
+[node name="Spawn_Flyer" type="Node2D" parent="Wave1Spawns"]
+position = Vector2(-80, -20)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("9_flyer")
+
+[node name="Spawn_Shooter" type="Node2D" parent="Wave1Spawns"]
+position = Vector2(150, 35)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("10_shooter")
+
+[node name="Spawn_Shielder" type="Node2D" parent="Wave1Spawns"]
+position = Vector2(200, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("11_shielder")
+enemy_stats = ExtResource("12_shielder_stats")
+
+[node name="Wave2Spawns" type="Node2D" parent="."]
+
+[node name="Spawn_Brawler" type="Node2D" parent="Wave2Spawns"]
+position = Vector2(100, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("7_brawler")
+enemy_stats = ExtResource("8_brawler_stats")
+
+[node name="Spawn_Flyer" type="Node2D" parent="Wave2Spawns"]
+position = Vector2(80, -30)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("9_flyer")
+
+[node name="Spawn_Shooter" type="Node2D" parent="Wave2Spawns"]
+position = Vector2(-170, 40)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("10_shooter")
+
+[node name="Spawn_Shielder" type="Node2D" parent="Wave2Spawns"]
+position = Vector2(-10, -10)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("11_shielder")
+enemy_stats = ExtResource("12_shielder_stats")
+
+[node name="Spawn_ArmorBuffer" type="Node2D" parent="Wave2Spawns"]
+position = Vector2(-220, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("13_armor_buffer")
+enemy_stats = ExtResource("14_armor_buffer_stats")
+
+[node name="Wave3Spawns" type="Node2D" parent="."]
+
+[node name="Spawn_Brawler" type="Node2D" parent="Wave3Spawns"]
+position = Vector2(-100, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("7_brawler")
+enemy_stats = ExtResource("8_brawler_stats")
+
+[node name="Spawn_Flyer1" type="Node2D" parent="Wave3Spawns"]
+position = Vector2(-40, -40)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("9_flyer")
+
+[node name="Spawn_Flyer2" type="Node2D" parent="Wave3Spawns"]
+position = Vector2(160, -30)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("9_flyer")
+
+[node name="Spawn_Shooter" type="Node2D" parent="Wave3Spawns"]
+position = Vector2(140, 35)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("10_shooter")
+
+[node name="Spawn_Shielder" type="Node2D" parent="Wave3Spawns"]
+position = Vector2(220, 90)
+script = ExtResource("2_spawn")
+enemy_scene = ExtResource("11_shielder")
+enemy_stats = ExtResource("12_shielder_stats")

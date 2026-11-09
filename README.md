@@ -58,4 +58,4 @@ Save data is handled by `SaveManager` and includes meta-progression, run history
 - [AGENT_PLAN.md](AGENT_PLAN.md) — active checklist for phase work
 - [plan.md](plan.md) — current execution log and verified status
 - [plan-elemental_roguelike.md](plan-elemental_roguelike.md) — roadmap summary aligned with the current design contract
-- [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) — run optimization and economy tuning specification
+- [docs/P12_RUN_OPTIMIZATION_PLAN.md](docs/P12_RUN_OPTIMIZATION_PLAN.md) — run optimization and economy tuning specification

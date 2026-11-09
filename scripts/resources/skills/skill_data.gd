@@ -45,6 +45,7 @@ enum CastVFXStyle {
 ## read-site only, never applied to raw reaction Charge (§7.2).
 @export var sweep_damage_mult: float = 1.0
 @export var sweep_reach_mult: float = 1.0
+@export var sweep_hitbox_mult: float = 1.0
 @export var damage: float = 0.0
 @export var radius: float = 0.0
 @export var control_duration: float = 0.0

@@ -149,14 +149,14 @@ remains accessible through the existing page navigation.
 
 - Cooldown skill. New `SkillData.Function.APPLY_SHIELD`, new `.tres` asset.
 - New component `scripts/reactions/shield_effect.gd` (refresh-only, `apply()` / `tick()` / `clear()` / signal), living on `ElementalCombatant` as `shield`.
-- **Absorbs one weapon or projectile hit:** damage, knockback and the elemental reaction are all negated. **DoT ticks and `bonus_damage_dealt` pass through.**
+- **Absorbs one direct non-DoT hit:** weapon, projectile, and `bonus_damage_dealt` damage (including Overgrowth turret shots, skill bursts, and reaction damage) are negated. DoT ticks still bypass the shield.
 - Hook point: `Player._on_hurtbox_hit()`, before `_apply_damage`, `velocity += knockback` and `elemental.handle_hit()`. If the shield absorbs, skip all of them.
 - **Explodes** when it breaks **or** expires (~12s), identical either way: fixed damage burst (via `bonus_damage_dealt`) plus a short stagger (`apply_control`) on nearby enemies. Radius check via `distance_to` against `ALL_COMBATANTS_GROUP`, bystander-excluded per §1.
 - Placeholders: duration 12s, damage 12, radius 45px, stagger 0.5s, cooldown 18s.
 - Entry point: `ElementalCombatant.cast_apply_shield()`, dispatched from `Player._try_cast_skill()`.
 - Interactions checked: dodge i-frames and `playtest_invincible` take priority; absorbed hits retain hit-stop and use distinct screen-shake feedback.
-- Tests: absorbs exactly one hit, DoT passes through, reaction not applied on absorbed hit, explosion on break, explosion on expiry, bystander exclusion, refresh-only.
-- Verification: 7 focused GUT tests pass (27 assertions), covering the shield lifecycle, explosion targeting, invincibility, feedback, and skill dispatch.
+- Tests: absorbs exactly one direct hit or bonus-damage event, DoT passes through, reaction not applied on absorbed hit, explosion on break, explosion on expiry, bystander exclusion, refresh-only, and Overgrowth turret shots are absorbed.
+- Verification: 9 focused GUT tests pass, covering the shield lifecycle, bonus damage, turret shots, DoT, explosion targeting, invincibility, feedback, and skill dispatch.
 
 ---
 
@@ -180,10 +180,10 @@ remains accessible through the existing page navigation.
 - Timed buff (~15s) via a new refresh-only component (e.g. `SweepBuffEffect`): while active, weapon swings become **Thổ**, with bigger hitbox/reach and a damage multiplier.
 - Read at `Player._configure_hitbox_for_current_swing()` only. Never touches raw reaction Charge (base weapon Charge stays).
 - Decide how the element override interacts with different-element rune alternation (`resolve_swing`); simplest is to override and skip alternation while active.
-- Placeholders: duration 15s, damage x1.4, reach x1.5, energy_max tuned so a few Thổ reactions fill it.
+- Current values: duration 15s, damage ×1.4, reach ×2, hitbox thickness ×1.5; energy_max is tuned so a few Thổ reactions fill it.
 - Tests: meter fills only from matching-element reactions, not from Vũ or enemy-caused reactions, cast resets meter, buff expires, swing element is Thổ while active.
 
-Step 7 implemented: each energy skill carries its own meter (keyed on the equipped `SkillData` instance), filled only by player-triggered reactions whose pair contains the skill's element — Vũ (reversed) and enemy-caused reactions are excluded. Fill amounts are 5 (Khắc partial), 10 (Sinh Tier 1 / Khắc full clear), and 20 (Sinh Tier 2 / Thừa). `Maid's Sweep` is energy-gated with no cooldown: casting consumes the full meter and applies a refresh-only `SweepBuffEffect` that, while active, forces Thổ swings at `Player._configure_hitbox_for_current_swing()` with ×1.4 damage and ×1.5 reach/hitbox (never touching raw Charge, and skipping the rune alternation flip via a new `advance_alternation` flag on `resolve_swing`). Meters persist across save/resume (keyed by resource path) and reset only on cast/new run. The HUD renders a radial energy ring (`SkillEnergyRing`) around the skill icon with a non-color full cue (thicker outline plus a complete ring). Focused `test_maid_sweep.gd` tests pass (15 tests); the full GUT suite passes (370/370, 2,280 assertions).
+Step 7 implemented: each energy skill carries its own meter (keyed on the equipped `SkillData` instance), filled only by player-triggered reactions whose pair contains the skill's element — Vũ (reversed) and enemy-caused reactions are excluded. Fill amounts are 5 (Khắc partial), 10 (Sinh Tier 1 / Khắc full clear), and 20 (Sinh Tier 2 / Thừa). `Maid's Sweep` is energy-gated with no cooldown: casting consumes the full meter and applies a refresh-only `SweepBuffEffect` that, while active, forces Thổ swings at `Player._configure_hitbox_for_current_swing()` with ×1.4 damage, ×2 reach, and ×1.5 hitbox thickness. Its solid glowing blade preview follows the extended hitbox during attacks and stays hidden outside them. The buff never touches raw Charge and skips the rune alternation flip via a new `advance_alternation` flag on `resolve_swing`. Meters persist across save/resume (keyed by resource path) and reset only on cast/new run. The HUD renders a radial energy ring (`SkillEnergyRing`) around the skill icon with a non-color full cue (thicker outline plus a complete ring). Focused `test_maid_sweep.gd` tests pass (15 tests); the full GUT suite passes (370/370, 2,280 assertions).
 
 ---
 

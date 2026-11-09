@@ -66,6 +66,9 @@ var _boss_name_label: Label
 var _boss_hp_bg: Control
 var _boss_hp_fill: Control
 var _boss_phase_tick: Control
+var _boss_wave_ticks: Array[Control] = []
+var _boss_wave_tick_thresholds: Array[float] = []
+var _boss_window_countdown: Label
 
 var _weapon_1_box: Control
 var _weapon_1_label: Label
@@ -299,8 +302,15 @@ func _build_boss_panel(root: Control) -> void:
 	var custom_boss = get_node_or_null("MarginContainer/BossUI")
 	if custom_boss != null:
 		_boss_panel = custom_boss
-		_boss_name_label = custom_boss.get_node("BossName")
-		_boss_hp_fill = custom_boss.get_node("BossHealthBar")
+		_boss_name_label = custom_boss.get_node("BossName") as Label
+		_boss_hp_bg = custom_boss.get_node("BossHealthBar") as Control
+		_boss_hp_fill = _boss_hp_bg
+		_boss_window_countdown = Label.new()
+		_boss_window_countdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_boss_window_countdown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_boss_window_countdown.add_theme_font_size_override("font_size", int(12 * UI_SCALE))
+		_boss_window_countdown.visible = false
+		custom_boss.add_child(_boss_window_countdown)
 		return
 	var panel_width := 440.0 * UI_SCALE
 	_boss_panel = Control.new()
@@ -320,6 +330,15 @@ func _build_boss_panel(root: Control) -> void:
 	_boss_hp_bg = _make_rect(_boss_panel, BAR_BG_COLOR, Vector2(0, 26 * UI_SCALE), Vector2(panel_width, 18 * UI_SCALE))
 	_boss_hp_fill = _make_rect(_boss_hp_bg, BOSS_HP_COLOR, Vector2.ZERO, _boss_hp_bg.size)
 	_boss_phase_tick = _make_rect(_boss_panel, PHASE_TICK_COLOR, Vector2.ZERO, Vector2(2 * UI_SCALE, _boss_hp_bg.size.y))
+	_boss_window_countdown = Label.new()
+	_boss_window_countdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_window_countdown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_window_countdown.position = Vector2(0.0, 45 * UI_SCALE)
+	_boss_window_countdown.size = Vector2(panel_width, 14 * UI_SCALE)
+	_boss_window_countdown.add_theme_font_size_override("font_size", int(12 * UI_SCALE))
+	_boss_window_countdown.visible = false
+	_boss_panel.add_child(_boss_window_countdown)
+	_boss_panel.size.y = 62 * UI_SCALE
 
 
 ## The pickup selection menu — hidden by default, shown centre-screen by
@@ -680,9 +699,13 @@ func _update_boss_panel() -> void:
 		if _boss_panel != null:
 			_boss_panel.visible = false
 		return
+	if _boss.boss_stats == null:
+		_boss_panel.visible = false
+		return
 	if _boss_panel != null:
 		_boss_panel.visible = true
 		_boss_name_label.text = _boss.boss_stats.boss_name
+		_update_boss_wave_ticks(_boss.boss_stats.wave_thresholds)
 		var ratio: float = _boss.get_health_ratio()
 		if _boss_hp_fill is ProgressBar:
 			_boss_hp_fill.value = ratio * 100.0
@@ -690,6 +713,35 @@ func _update_boss_panel() -> void:
 			_boss_hp_fill.size.x = _boss_hp_bg.size.x * ratio
 			if _boss_phase_tick != null:
 				_boss_phase_tick.position.x = _boss_hp_bg.size.x * _boss.boss_stats.phase_transition_health_ratio
+		var passive := _boss.is_passive
+		_boss_hp_fill.modulate = Color(0.65, 0.65, 0.7) if passive else Color.WHITE
+		if _boss_phase_tick != null:
+			_boss_phase_tick.visible = not _boss.boss_stats.wave_thresholds.has(_boss.boss_stats.phase_transition_health_ratio)
+		for tick in _boss_wave_ticks:
+			tick.modulate = Color(0.65, 0.65, 0.7) if passive else Color.WHITE
+		_boss_window_countdown.visible = passive
+		if passive:
+			_boss_window_countdown.text = "Boss returns in %.1fs" % _boss.get_passive_time_remaining()
+
+
+func _update_boss_wave_ticks(thresholds: Array[float]) -> void:
+	if thresholds == _boss_wave_tick_thresholds:
+		return
+	_boss_wave_tick_thresholds = thresholds.duplicate()
+	for tick in _boss_wave_ticks:
+		tick.queue_free()
+	_boss_wave_ticks.clear()
+	for threshold in _boss_wave_tick_thresholds:
+		var tick := ColorRect.new()
+		tick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tick.color = Color(1.0, 0.9, 0.55, 0.95)
+		var bar_size := _boss_hp_bg.size
+		if bar_size.x <= 0.0:
+			bar_size = _boss_hp_bg.get_combined_minimum_size()
+		tick.position = Vector2(bar_size.x * clampf(threshold, 0.0, 1.0) - 1.0, -2.0)
+		tick.size = Vector2(2.0, maxf(bar_size.y + 4.0, 8.0))
+		_boss_hp_bg.add_child(tick)
+		_boss_wave_ticks.append(tick)
 
 func _update_weapon_slots() -> void:
 	_fill_weapon_slot(_weapon_1_box, _weapon_1_label, _player.weapon if _player != null else null)
@@ -787,7 +839,14 @@ func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 	if box is ColorRect: box.color = ElementIndicator.ELEMENT_COLOR.get(skill.element, SLOT_EMPTY_COLOR)
 	tex_rect.texture = skill.icon
 	label.text = "" if skill.icon != null else skill.skill_name.substr(0, 1)
-	var cooldown_ratio := _player.get_skill_cooldown_ratio(skill) if _player != null else 0.0
+	var energy_ratio := _player.get_skill_energy_ratio(skill) if _player != null and skill.uses_energy else 0.0
+	# Energy skills reuse the cooldown shade as a remaining-charge mask: it
+	# drains away as Maid's Sweep fills, then disappears when the skill is ready.
+	var cooldown_ratio := 0.0
+	if skill.uses_energy:
+		cooldown_ratio = 1.0 - energy_ratio
+	elif _player != null:
+		cooldown_ratio = _player.get_skill_cooldown_ratio(skill)
 	cooldown_overlay.position = Vector2.ZERO
 	cooldown_overlay.size = Vector2(box.size.x, box.size.y * cooldown_ratio)
 	cooldown_overlay.visible = cooldown_ratio > 0.0
@@ -796,7 +855,7 @@ func _fill_skill_slot(box: Control, label: Label, skill: SkillData) -> void:
 	# plus complete ring at full is a non-color cue (A.1: color secondary).
 	if skill.uses_energy:
 		energy_ring.ring_color = ElementIndicator.ELEMENT_COLOR.get(skill.element, energy_ring.ring_color)
-		energy_ring.ratio = _player.get_skill_energy_ratio(skill) if _player != null else 0.0
+		energy_ring.ratio = energy_ratio
 		energy_ring.visible = true
 	else:
 		energy_ring.ratio = 0.0

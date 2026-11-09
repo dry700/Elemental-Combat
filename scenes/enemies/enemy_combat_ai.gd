@@ -18,6 +18,7 @@ extends Node2D
 enum State { IDLE, CHASE, TELEGRAPH, ACTIVE, COOLDOWN }
 
 @export var stats: EnemyStats
+@export var hit_weight: StringName = &"none"
 ## False for enemies that can never move (TestDummy) — update() still
 ## handles aggro/attack/cooldown identically either way; only
 ## should_chase()'s true branch changes.
@@ -133,6 +134,7 @@ func _start_active_window() -> void:
 	_timer = stats.active_window
 	_hitbox.damage = stats.damage
 	_hitbox.knockback_strength = stats.knockback_strength
+	_hitbox.weapon_weight = hit_weight
 	_hitbox.element = element_override if element_override != Elements.NONE else stats.element
 	_hitbox.charge = 2 if _current_is_special else 1
 	_hitbox.enable()
@@ -141,4 +143,11 @@ func _start_active_window() -> void:
 func _end_attack() -> void:
 	_hitbox.disable()
 	_cooldown_timer = stats.attack_cooldown * attack_cooldown_multiplier
+	_state = State.COOLDOWN
+
+
+## Cancels any ongoing attack wind-up or active hitbox immediately.
+func interrupt() -> void:
+	if _hitbox != null:
+		_hitbox.disable()
 	_state = State.COOLDOWN

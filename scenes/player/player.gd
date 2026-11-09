@@ -31,6 +31,7 @@ const DamagePopup = preload("res://scripts/ui/damage_number.gd")
 const DashShadowScript: Script = preload("res://scripts/combat/dash_shadow.gd")
 const SkillCastVFXScript: Script = preload("res://scripts/combat/skill_cast_vfx.gd")
 const SkillWaveVFXScript: Script = preload("res://scripts/combat/skill_wave_vfx.gd")
+const SweepHitboxVFXScript: Script = preload("res://scripts/combat/sweep_hitbox_vfx.gd")
 const DASH_SHADOW_INTERVAL: float = 0.045
 const NORMAL_DASH_SHADOW_COLOR := Color(0.72, 0.82, 1.0)
 const SKILL_SLAM_LAUNCH_VELOCITY: float = -260.0
@@ -101,6 +102,7 @@ var facing: int = 1  ## 1 = right, -1 = left
 ## indicator/Overgrowth-Link) lives in this composed component now,
 ## shared with TestDummy and PatrolDummy — see elemental_combatant.gd.
 var elemental := ElementalCombatant.new()
+var _sweep_hitbox_vfx: SweepHitboxVFX
 var _active_weapon: WeaponStats
 var _is_dead: bool = false
 var playtest_invincible: bool = false
@@ -181,6 +183,10 @@ func _ready() -> void:
 	# sub-resource.
 	if hitbox_shape.shape is RectangleShape2D:
 		hitbox_shape.shape = hitbox_shape.shape.duplicate()
+	_sweep_hitbox_vfx = SweepHitboxVFXScript.new()
+	_sweep_hitbox_vfx.name = "SweepHitboxVFX"
+	_sweep_hitbox_vfx.configure(self, hitbox_shape)
+	hitbox.add_child(_sweep_hitbox_vfx)
 
 	elemental.indicator_offset = Vector2(0, -13)
 	elemental.armor = starting_armor
@@ -189,6 +195,7 @@ func _ready() -> void:
 	# flips scale.x for facing, which would mirror the glyph shape unreadable.
 	elemental.bonus_damage_dealt.connect(_on_bonus_damage_dealt)
 	elemental.disabled_expired.connect(_on_disabled_expired)
+	elemental.sweep_buff.changed.connect(_sweep_hitbox_vfx.set_active)
 
 
 func _physics_process(delta: float) -> void:
@@ -893,7 +900,7 @@ func _configure_hitbox_for_current_swing() -> void:
 	if _heavy_charged:
 		actual_radius *= lerpf(1.0, _active_weapon.heavy_reach_mult, _heavy_charge_ratio)
 	if sweep_active:
-		actual_radius *= elemental.sweep_buff.reach_mult
+		actual_radius *= elemental.sweep_buff.hitbox_mult
 
 	var rect := hitbox_shape.shape as RectangleShape2D
 	if rect != null:
@@ -1017,7 +1024,7 @@ func _try_cast_skill(skill: SkillData, action_name: String) -> void:
 		SkillData.Function.APPLY_SHIELD:
 			elemental.cast_apply_shield(skill.buff_duration, skill.damage, skill.radius, skill.control_duration)
 		SkillData.Function.APPLY_SWEEP_BUFF:
-			elemental.cast_sweep_buff(skill.buff_duration, skill.sweep_damage_mult, skill.sweep_reach_mult)
+			elemental.cast_sweep_buff(skill.buff_duration, skill.sweep_damage_mult, skill.sweep_reach_mult, skill.sweep_hitbox_mult)
 
 	if skill.function != SkillData.Function.JUMP_SLAM:
 		_spawn_skill_cast_vfx(skill.element, skill.cast_vfx_style, facing, skill.radius)
@@ -1372,6 +1379,10 @@ func _on_hurtbox_hit(hit_data: HitData) -> void:
 
 ## Wildfire's chain (A.7 Link) landed on the player.
 func _on_bonus_damage_dealt(amount: float) -> void:
+	if _is_dead or playtest_invincible:
+		return
+	if elemental.try_absorb_hit():
+		return
 	_apply_damage(amount)
 	print("Player takes Wildfire chain damage: -", amount, " (", current_health, "/", max_health, " HP)")
 

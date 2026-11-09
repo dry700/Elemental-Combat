@@ -1,13 +1,12 @@
-[gd_resource type="Resource" script_class="EnemyStats" format=3]
+[gd_resource type="Resource" script_class="EnemyStats" format=3 uid="uid://cesxkuw0wvpl5"]
 
-[ext_resource type="Script" path="res://scenes/enemies/enemy_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://dumwspw37ptk4" path="res://scenes/enemies/enemy_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 max_health = 32.0
 qi_reward = 8.0
 support_range = 180.0
-support_cooldown = 5.0
-support_shield_duration = 4.0
+support_cooldown = 2.5
 support_keep_distance = 105.0
 support_move_speed = 45.0

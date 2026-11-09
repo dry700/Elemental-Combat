@@ -18,12 +18,14 @@ func test_shop_and_boss_rooms_have_tall_solid_side_boundaries() -> void:
 			assert_gte(wall_shape.size.y, 400.0, "wall should be too tall to jump over")
 			assert_ne(boundary.collision_layer & 1, 0, "player collision must include the boundary")
 			assert_true(boundary.is_in_group("unclimbable_walls"))
-			assert_almost_eq(absf(boundary.position.x), 225.0, 0.01)
+			var expected_boundary_x := 320.0 if scene_path == BOSS_ROOM_PATH else 225.0
+			assert_almost_eq(absf(boundary.position.x), expected_boundary_x, 0.01)
 			assert_true(boundary.get_node_or_null("Visual") is Polygon2D)
 		for node in room.get_children():
 			if node is RoomExit:
-				assert_lt(absf(node.position.x), 225.0, "room exit must remain inside the boundary")
-				assert_lte(225.0 - absf(node.position.x), 20.0, "room exit should stay reachable at the wall")
+				var expected_bound := 320.0 if scene_path == BOSS_ROOM_PATH else 225.0
+				assert_lt(absf(node.position.x), expected_bound, "room exit must remain inside the boundary")
+				assert_lte(expected_bound - absf(node.position.x), 20.0, "room exit should stay reachable at the wall")
 
 
 func test_shop_room_starts_cleared_without_baseline_rune() -> void:

@@ -2,6 +2,8 @@ extends GutTest
 
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const MAID_GUARD_PATH := "res://scripts/resources/skills/maid_guard.tres"
+const PATROL_DUMMY_SCENE_PATH := "res://scenes/enemies/patrol_dummy.tscn"
+const FlowerTurretScript := preload("res://scripts/reactions/flower_turret.gd")
 const CombatantOwner := preload("res://test/helpers/combatant_owner.gd")
 
 var player: Player
@@ -57,15 +59,45 @@ func test_dot_passes_through_active_shield() -> void:
 	assert_almost_eq(dot_damage, 4.0, 0.01)
 	assert_true(player.elemental.shield.active)
 
-	var receiver := ElementalCombatant.new()
-	receiver.show_debug_readout = false
-	add_child_autofree(receiver)
-	receiver.cast_apply_shield(12.0)
-	var bonus_damage := [0.0]
-	receiver.bonus_damage_dealt.connect(func(amount: float): bonus_damage[0] += amount)
-	receiver.bonus_damage_dealt.emit(3.0)
-	assert_almost_eq(bonus_damage[0], 3.0, 0.01, "bonus damage should still emit while shielded")
-	assert_true(receiver.shield.active)
+
+func test_bonus_damage_is_absorbed_but_dot_damage_still_bypasses_shield() -> void:
+	player.elemental.armor = 0.0
+	player.elemental.cast_apply_shield(12.0)
+	var initial_health := player.current_health
+
+	player._on_bonus_damage_dealt(5.0)
+
+	assert_almost_eq(player.current_health, initial_health, 0.01)
+	assert_false(player.elemental.shield.active, "direct non-DoT bonus damage should consume the shield")
+
+	player.elemental.cast_apply_shield(12.0)
+	player.elemental.dot_effect.apply(4.0, 0.1, 1.0, Elements.HOA)
+	var dot_damage := player.elemental.tick(0.1)
+	player._apply_damage(dot_damage)
+
+	assert_almost_eq(player.current_health, initial_health - 4.0, 0.01)
+	assert_true(player.elemental.shield.active, "DoT damage must not consume the shield")
+
+
+func test_overgrowth_turret_shot_is_absorbed_by_enemy_shield() -> void:
+	var stats := EnemyStats.new()
+	stats.max_health = 100.0
+	var target := load(PATROL_DUMMY_SCENE_PATH).instantiate() as PatrolDummy
+	target.enemy_stats = stats
+	target.starting_armor = 0.0
+	target.set_physics_process(false)
+	target.position = Vector2.ZERO
+	add_child_autofree(target)
+	target.elemental.shield.apply(4.0)
+	var initial_health := target._current_health
+
+	var turret := FlowerTurretScript.new() as FlowerTurret
+	add_child_autofree(turret)
+	turret.position = Vector2.ZERO
+	turret.call("_try_fire")
+
+	assert_almost_eq(target._current_health, initial_health, 0.01, "turret shot damage should be absorbed")
+	assert_false(target.elemental.shield.active, "turret shot should consume the one-hit shield")
 
 
 func test_shield_break_explodes_but_excludes_attacker_and_distant_enemies() -> void:

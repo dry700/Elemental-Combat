@@ -17,9 +17,24 @@ This is the working checklist for the project. It remains intentionally lightwei
 
 ## Phase order
 
-P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 (Perfect Hit) → P14 (Skill system) → Shop & Skills Expansion (plan-shop-and-skills.md)
+P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 (Perfect Hit) → P14 (Skill system) → Shop & Skills Expansion (docs/plan-shop-and-skills.md) → P15 (Boss Overhaul: Thổ Ngưu, plan-boss.md)
 
-## Shop & Skills Expansion (plan-shop-and-skills.md)
+## Boss Overhaul: Thổ Ngưu (plan-boss.md)
+
+### Status
+- [x] Design is drafted and tracked in `plan-boss.md`.
+- [x] Implement the phase split, wave windows, element swap, and arena changes.
+- [x] Add the boss move set, charge/shockwave logic, and projectile behavior.
+- [x] Wire wave spawns, early-clear stagger logic, and boss-death cleanup; existing rewards remain wired.
+- [x] Verify the full GUT suite (419 tests, 2,596 assertions, 0 failures).
+- [x] Aim rocks at elevated players with a visible trajectory tell; add warning/crumble/recovery behavior to boss-room platforms.
+- [x] Move Thổ Ngưu to the arena center and have it fly during each invulnerability window; verify movement in an integration test (9/9 boss tests pass).
+- [x] Add element-tinted diamond ground sparks along the travelling shockwave, reusing and intensifying the plunge particle effect.
+- [x] Give boss melee, charge, rock, and shockwave hits heavy-weight impact feedback; verify hit data and melee configuration.
+- [x] Make Thổ Ngưu intangible during passive invulnerability windows and restore body collision when the window ends.
+- [ ] Tune and verify the boss interactively.
+
+## Shop & Skills Expansion (docs/plan-shop-and-skills.md)
 
 ### Step 1 — Rune modifier assets and effect read-sites
 - [x] Author starter `RuneModifierDef` `.tres` assets (`damage_pct`, `reach`, `hitbox_size`, `knockback`, `attack_speed`) under `scripts/resources/runes/modifiers/`.
@@ -53,7 +68,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 ### Step 7 — Energy system and Maid's Sweep
 - [x] Add `uses_energy`/`energy_max` and `APPLY_SWEEP_BUFF` to `SkillData`; add the `SweepBuffEffect` refresh-only component (mirrors `ShieldEffect`) on `ElementalCombatant`.
 - [x] Fill energy meters from player-triggered reactions involving the skill's element (duck-typed `on_reaction_caused` hook in `handle_hit`); exclude Tương Vũ and enemy-caused reactions; amounts 5/10/20 by tier.
-- [x] Maid's Sweep cast consumes the full meter (no cooldown), forces Thổ swings with bigger reach/hitbox and ×1.4/×1.5 multipliers at the hitbox-config read-site only, and skips rune alternation while active.
+- [x] Maid's Sweep cast consumes the full meter (no cooldown), forces Thổ swings at ×1.4 damage, ×2 reach, and ×1.5 hitbox thickness at the hitbox-config read-site only, and skips rune alternation while active.
 - [x] Persist meters across save/resume; HUD radial energy ring with a non-color full cue.
 - [x] Verification: `test_maid_sweep.gd` (15 focused tests); full GUT suite 370/370 passed, 2,280 assertions, 0 failures.
 
@@ -150,7 +165,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - [x] Capture blockers and decisions before the final handoff.
 
 ### P12 — Run optimization and economy tuning
-- [x] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](docs/Design.md).
+- [x] Implement the run-optimization pass described in [P12_RUN_OPTIMIZATION_PLAN.md](docs/P12_RUN_OPTIMIZATION_PLAN.md) and keep the work aligned with [Design.md](docs/Design.md).
 - [x] Fix the bug sweep in Phase 1: boss armor/charge wiring, restore-via-vitality, refresh removal, resume-order HP loss, and test hygiene.
 - [x] Move Qi economy costs and purchase logic behind `UpgradeManager` API getters and spend tracking.
 - [x] Open the gate and generator changes for procedural-room flow, shop dead-end placement, and normal-room transitions.
@@ -205,7 +220,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 - Latest full-suite run: 370/370 tests passed, 2,280 assertions, 0 failures. Headless output includes the expected SpriteVisual fallback error from its negative-path test and existing shutdown resource diagnostics.
 - Shop & Skills Expansion Step 4.2 is implemented: shop state survives save/resume, purchases autosave, and legacy snapshots remain supported. Focused persistence tests pass (6 tests, 34 assertions).
 - Shop & Skills Expansion Step 5 is implemented: reaction ranks are shown on upgrade cards, combat popups, and the HUD strip. Focused UpgradeManager, shop HUD, combat reaction, and persistence tests pass; the full suite passes.
-- Shop & Skills Expansion Step 6 (Maid's Guard) is implemented. Focused shield tests pass (7 tests, 27 assertions).
+- Shop & Skills Expansion Step 6 (Maid's Guard) is implemented. Focused shield tests pass (9 tests), including shielded bonus-damage and Overgrowth turret regressions; DoT remains unblocked.
 - Shop & Skills Expansion Step 7 (Energy system and Maid's Sweep) is implemented. Focused `test_maid_sweep.gd` tests pass (15 tests); the full suite passes (370/370).
 - Shop & Skills Expansion Step 8 (Heavy Hit) is implemented; focused tests pass (6 tests, 32 assertions).
 - Shop & Skills Expansion Step 9 (shielder support enemy) is implemented; focused tests pass (6 tests, 26 assertions), including a platform-edge regression and shield visual checks. Full GUT suite: 382/382 passed, 2,338 assertions, 0 failures.
@@ -221,7 +236,7 @@ P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P1
 ### Step 9 — Support enemies
 - [x] Add `SupportAI` and authored `EnemyStats` support fields; the shielder shields the nearest unshielded enemy ally and keeps its distance from the player.
 - [x] Add the shielder as a killable enemy and place it in `chunk_crossroads_v2` and the chunk builder.
-- [x] Route Player and every enemy hit callback through the shared one-hit shield gate; absorbed hits skip damage, knockback, and reaction resolution.
+- [x] Route Player and every enemy direct-hit and bonus-damage callback through the shared one-hit shield gate; absorbed hits skip damage, knockback, and reaction resolution while DoT continues to bypass shields.
 - [x] Add the pulsing shield ellipse and brief lightning link VFX.
 
 ### Step 10 — Armor buffer support enemy

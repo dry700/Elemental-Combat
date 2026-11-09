@@ -71,10 +71,10 @@ changes needed there for the Final Report beyond good writing.
 | Enemy AI | `scenes/enemies/enemy_combat_ai.gd`, `scenes/enemies/enemy_stats.gd` | Aggro/telegraph/attack/cooldown state machine, shared by all enemy types |
 | Support AI | `scenes/enemies/support_ai.gd`, `scenes/enemies/shielder_enemy.gd` | Shields the nearest unshielded enemy ally and retreats to maintain spacing from the player |
 | Enemy bodies | `scenes/enemies/{test_dummy,patrol_dummy,boss,flying_enemy,shooter_enemy,swooper_enemy,shielder_enemy}.gd` | Health/death/flash, wires `ElementalCombatant` and the relevant combat/support component together |
-| Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd` | Phase-based two-element fight |
-| Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, room lifecycle, run sequencing, autosave hook |
+| Boss | `scripts/resources/enemies/boss_stats.gd`, `scenes/enemies/boss.gd`, `scenes/enemies/boss_attack_controller.gd`, `scripts/combat/boss_*_projectile.gd` | Thổ Ngưu phases, crowd waves, specials, and passive windows |
+| Rooms/run | `scripts/world/{room_controller,enemy_spawn_point,room_exit}.gd`, `scenes/world/rooms/boss_room.gd`, room-chunk builder, `autoloads/run_manager.gd` | Chunk composition, boss-wave direction, room lifecycle, run sequencing, autosave hook |
 | Save data | `autoloads/save_manager.gd` | Meta-progression, run history, mid-run resume including procedural map layout — local JSON |
-| HUD | `autoloads/hud.gd`, `assets/ui/hud_theme.tres` | HP/boss bar, equip slots, pickup swap chooser (§8.1) — code-built, no `.tscn` |
+| HUD | `autoloads/hud.gd`, `assets/ui/hud_theme.tres` | HP/boss bar with wave ticks and passive countdown, equip slots, pickup swap chooser (§8.1) — code-built, no `.tscn` |
 | Pickups | `scripts/items/{weapon_pickup,skill_pickup,rune_pickup}.gd` | Proximity tracking + in-world prompt only; all chooser input lives on `Hud` |
 | Runes | `scripts/resources/runes/{rune_data,rune_modifier_def,rune_roller}.gd` | Rolled runes, modifier catalogue, save serialization (§16) |
 | Fonts | `assets/fonts/madspixel.ttf` | The one UI font, applied via `hud_theme.tres` + project default (§8.2) |
@@ -402,12 +402,13 @@ damage, control, slow, and element application), `PROJECTILE_FAN` (spread
 shots), `DASH` (Player DODGE state with skill-owned movement/i-frames), and
 `BUFF_ARMOR` (refresh-only `ArmorBuffEffect`), and `APPLY_SHIELD`
 (refresh-only, one-hit `ShieldEffect`). Maid's Guard absorbs one weapon or
-projectile hit before damage, knockback, and reaction resolution; DoT and
-`bonus_damage_dealt` remain unaffected. Breaking or expiring the shield
-bursts for fixed damage and a stagger against nearby enemies, excluding the
-attacker. Projectile-fan and burst damage emit `bonus_damage_dealt`, so
-target armor mitigation applies; skills do not use Perfect Hit or Weapon
-Might. `ElementalCombatant` owns the reusable `cast_area_burst`,
+projectile hit before damage, knockback, and reaction resolution; it also
+absorbs direct non-DoT bonus damage such as Overgrowth turret shots, skill
+bursts, and reaction explosions. DoT ticks bypass the shield. Breaking or
+expiring the shield bursts for fixed damage and a stagger against nearby
+enemies, excluding the attacker. Projectile-fan and burst damage emit
+`bonus_damage_dealt`, so target shields and armor mitigation apply; skills
+do not use Perfect Hit or Weapon Might. `ElementalCombatant` owns the reusable `cast_area_burst`,
 `cast_projectile_fan`, `cast_buff_armor`, and `cast_apply_shield` entry
 points. `SkillPool` contains all 16 resources and supports element filtering
 and exclusion-aware rolls. Two slots cannot hold the same non-empty resource
@@ -889,6 +890,42 @@ reaction), retargets `EnemyCombatAI.element_override`. Fires once,
 guarded by `_current_phase`. Dual-simultaneous-element attacks: **not
 implemented**, stays an explicit stretch goal.
 
+The active hand-authored boss is **Thổ Ngưu**. It starts as Thổ and swaps
+to Hỏa during the 50% health wave. Its 700 HP, 15 armor, 10 base damage,
+attack timings, and wave thresholds are tuning placeholders. At 75%, 50%,
+and 25% health, damage clamps at the threshold and starts a wave containing
+at least a brawler, flyer, shooter, and support. The boss retreats and is
+invulnerable for up to 12 seconds; it first moves to the arena center, then
+flies to a hover position for the rest of the window. Surviving adds remain
+after the timer. The boss is intangible during the window so it cannot block
+the player, then body collision is restored when the window ends.
+Clearing the current wave early returns the boss staggered for 2 seconds,
+taking 1.5× damage. The room director owns wave spawning and clears
+remaining adds/projectiles when the boss dies.
+
+Alongside the existing telegraphed melee attack, Thổ Ngưu throws a rock at
+long range or when the player is elevated, charges at mid-range, and sends
+a ground shockwave at close range. The rock locks its two-dimensional aim
+when telegraphing and shows a bright trajectory line with an arrowhead for
+0.65 seconds; the player can dodge in any direction before it fires.
+Specials do not repeat consecutively. Rock and shockwave projectiles send
+`HitData` through `Hurtbox.take_hit()`; the charge uses a 12 px-high hitbox
+so it can be jumped, and hitting an arena wall stuns the boss for
+1.5 seconds with a 1.5× damage window. Phase 2 shortens attack cooldowns.
+The shockwave pierces through targets but only damages each target once. It
+emits larger, faster, denser upward diamond sparks along its path, reusing
+the plunge impact debris. All boss attacks use heavy hit feedback for
+stronger hit-stop and camera shake on impact. The boss HUD marks wave
+thresholds, dims while the boss is invulnerable, and shows the
+passive-window countdown.
+
+The three boss-room one-way platforms are temporary counterplay rather
+than safe camping spots. Standing on a platform starts a 3-second timer;
+it flashes during the final 1.2 seconds, then drops for 2 seconds before
+returning. Jumping up through a platform does not trigger its timer, and
+platforms in other rooms remain permanent. Attack timing and jumpability
+still require interactive playtesting.
+
 Support enemies compose `ElementalCombatant` with `SupportAI`; they do not
 inherit from `EnemyCombatAI` or another enemy. `SupportAI` searches the
 `enemies` group and selects the nearest ally missing its configured support
@@ -911,7 +948,8 @@ Normal procedural rooms have their exit door **open from the start**
 for Qi or navigate directly toward the exit. All room exits require the player
 to stand in range and press F; a nearby pickup takes priority over an exit.
 Locked exits show no prompt and ignore F. The boss room (`room_boss.tscn`,
-using `RoomController`) remains locked until the boss is defeated.
+using `BossRoomController`, which extends `RoomController`) remains locked
+until the boss is defeated.
 
 `RunManager` (autoload) owns sequencing: each loop contains
 `ROOMS_PER_RUN = 3` random normal procedural rooms (no immediate repeat),

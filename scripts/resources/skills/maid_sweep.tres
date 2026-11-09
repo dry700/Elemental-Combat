@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1")
 skill_name = "Maid's Sweep"
-description = "Fill the meter by triggering Tho reactions. Cast to sweep Tho into your weapon for 15 seconds: bigger reach and hitbox, and 40% more damage."
+description = "Fill the meter with Tho reactions. Cast to make Tho blade attacks twice as long, 1.5 times wider, and 40% stronger for 15 seconds."
 element = &"tho"
 function = 11
 cooldown = 0.0
@@ -13,4 +13,5 @@ uses_energy = true
 energy_max = 100.0
 buff_duration = 15.0
 sweep_damage_mult = 1.4
-sweep_reach_mult = 1.5
+sweep_reach_mult = 2.0
+sweep_hitbox_mult = 1.5
